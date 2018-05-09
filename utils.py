@@ -31,7 +31,7 @@ def define_scope(function, scope=None, *args, **kwargs):
     @functools.wraps(function)
     def decorator(self):
         if not hasattr(self, attribute):
-            with tf.variable_scope(name, *args, **kwargs):
+            with tf.name_scope(name, *args, **kwargs):
                 setattr(self, attribute, function(self))
         return getattr(self, attribute)
     return decorator

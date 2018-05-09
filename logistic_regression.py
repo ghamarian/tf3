@@ -2,6 +2,8 @@ import tensorflow as tf
 import numpy as np
 from utils import define_scope
 from random_generator import generate_classes_random_multifeature
+from tensorflow.python import debug as tf_debug
+
 
 
 class Model:
@@ -12,10 +14,12 @@ class Model:
         self.input_size = input.shape[0]
         self.number_of_features = input.shape[1]
         self.number_of_classes = number_of_classes
+        self.input
+        self.target
         self.logits
         self.prediction
-        self.optimizer
         self.loss
+        self.optimizer
         self.error
 
     @define_scope
@@ -39,11 +43,11 @@ class Model:
 
     @define_scope
     def input(self):
-        return tf.placeholder(tf.float32, [None, self.number_of_features])
+        return tf.placeholder(tf.float32, [None, self.number_of_features], name="input")
 
     @define_scope
     def target(self):
-        return tf.placeholder(tf.int32, [None, self.number_of_classes])
+        return tf.placeholder(tf.int32, [None, self.number_of_classes], name="target")
 
     @define_scope
     def error(self):
@@ -62,6 +66,7 @@ if __name__ == '__main__':
 
     model = Model(x, number_of_classes)
     with tf.Session() as sess:
+        sess = tf_debug.TensorBoardDebugWrapperSession(sess, "localhost:7000")
         sess.run(tf.global_variables_initializer())
         for i in range(number_of_epochs):
             sess.run(model.optimizer, feed_dict={model.input: x, model.target: y})

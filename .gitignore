@@ -1,3 +1,5 @@
 mnist
 .python-version
 .idea
+**/*.csv
+checkpoint

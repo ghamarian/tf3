@@ -1,4 +1,3 @@
-import tensorflow as tf
 import numpy as np
 import shutil
 import tensorflow as tf
@@ -40,6 +39,21 @@ def read_dataset(filename, mode, batch_size=512):
     return _input_fn
 
 
+def amir_read_dataset(filename, mode, batch_size=512):
+    def _input_fn():
+        def decode_csv(value_column):
+            columns = tf.decode_csv(value_column, record_defaults=DEFAULTS)
+            features = dict(zip(CSV_COLUMNS, columns))
+            label = features.pop(LABEL_COLUMN)
+            return features, label
+
+        filenames_dataset = tf.data.Dataset.list_files(filename)
+
+        textlines_dataset = filenames_dataset.flat_map(tf.data.TextLineDataset)
+
+        dataset = textlines_dataset.map(decode_csv)
+
+
 def get_train():
     return read_dataset('./taxi-train.csv', mode=tf.estimator.ModeKeys.TRAIN)
 
@@ -60,21 +74,25 @@ INPUT_COLUMNS = [
     tf.feature_column.numeric_column('passengers'),
 ]
 
+
 def add_more_features(feats):
-  # Nothing to add (yet!)
-  return feats
+    # Nothing to add (yet!)
+    return feats
+
 
 feature_cols = add_more_features(INPUT_COLUMNS)
 
 tf.logging.set_verbosity(tf.logging.INFO)
 OUTDIR = 'taxi_trained'
-shutil.rmtree(OUTDIR, ignore_errors = True) # start fresh each time
+shutil.rmtree(OUTDIR, ignore_errors=True)  # start fresh each time
 model = tf.estimator.LinearRegressor(
-      feature_columns = feature_cols, model_dir = OUTDIR)
-model.train(input_fn = get_train(), steps = 1000)
+    feature_columns=feature_cols, model_dir=OUTDIR)
+model.train(input_fn=get_train(), steps=1000)
 
 
 def print_rmse(model, name, input_fn):
-  metrics = model.evaluate(input_fn = input_fn, steps = 1)
-  print('RMSE on {} dataset = {}'.format(name, np.sqrt(metrics['average_loss'])))
+    metrics = model.evaluate(input_fn=input_fn, steps=1)
+    print('RMSE on {} dataset = {}'.format(name, np.sqrt(metrics['average_loss'])))
+
+
 print_rmse(model, 'validation', get_valid())

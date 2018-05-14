@@ -1,5 +1,7 @@
 import functools
 import tensorflow as tf
+import os
+import request
 
 def doublewrap(function):
     """
@@ -35,3 +37,12 @@ def define_scope(function, scope=None, *args, **kwargs):
                 setattr(self, attribute, function(self))
         return getattr(self, attribute)
     return decorator
+
+
+def download_dataset(url, file, path_dataset):
+    if not os.path.exists(path_dataset):
+        os.makedirs(path_dataset)
+    if not os.path.exists(file):
+        data = request.urlopen(url).read()
+        with open(file, "wb") as f:
+            f.write(data)

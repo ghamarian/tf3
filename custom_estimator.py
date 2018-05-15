@@ -19,19 +19,24 @@ feature_list = [tf.feature_column.numeric_column(feature) for feature in feature
 # feature_list += tf.feature_column.categorical_column_with_vocabulary_list( 'species', ['setosa', 'versicolor', 'virginica'] )
 
 def my_model_fn(features, labels, mode):
-    head = multi_class_head(3)
+
+    # table = tf.contrib.lookup.index_table_from_tensor(tf.constant(['setosa', 'versicolor', 'virginica']))
+    # indices = table.lookup(labels)
+    # head = multi_class_head(3)
+
+    head = multi_class_head(3, label_vocabulary=['setosa', 'versicolor', 'virginica'])
     net = tf.feature_column.input_layer(features, feature_list)
     h1 = tf.keras.layers.Dense(32, activation=tf.keras.activations.relu)(net)
     logits = tf.keras.layers.Dense(3)(h1)
     optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
     return head.create_estimator_spec(features, mode, logits=logits, labels=labels, optimizer=optimizer)
+    # return head.create_estimator_spec(features, mode, logits=logits, labels=indices, optimizer=optimizer)
 
 
 def train_input_fn():
-    return tf.contrib.data.make_csv_dataset('iris-new.csv', BATCH_SIZE, num_epochs=NUM_EPOCHS, label_name='species')
+    return tf.contrib.data.make_csv_dataset('iris.csv', BATCH_SIZE, num_epochs=NUM_EPOCHS, label_name='species')
 
 def pandas_train_input_fn(df):
-    result = df['species']
     return tf.estimator.inputs.pandas_input_fn(
         x=df,
         y=df['species'],
@@ -44,5 +49,5 @@ def pandas_train_input_fn(df):
 
 estimator = Estimator(my_model_fn)
 
-# estimator.train(train_input_fn)
-estimator.train(pandas_train_input_fn(pd.read_csv('iris.csv')))
+estimator.train(train_input_fn)
+# estimator.train(pandas_train_input_fn(pd.read_csv('iris.csv')))

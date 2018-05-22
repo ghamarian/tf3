@@ -10,5 +10,5 @@ class TrainCSVReader(CSVReader):
         self.label_name = self._get_label_name()
 
     def _set_params(self, params: Dict[str, object]) -> None:
-        self.batch_size = params.get('batch_size', self._get_int_from_config('TRAINING', 'batch_size'))
-        self.num_epochs = params.get('num_epochs', self._get_int_from_config('TRAINING', 'num_epochs'))
+        self.batch_size = self._get_param_with_config_default(params, 'TRAINING', 'batch_size')
+        self.num_epochs = self._get_param_with_config_default(params, 'TRAINING', 'num_epochs')

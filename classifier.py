@@ -18,7 +18,9 @@ feature_columns = [
     tf.feature_column.numeric_column(key) for key in csv_reader.feature_names()
 ]
 
-runConfig = tf.estimator.RunConfig(model_dir="checkpoint", save_checkpoints_steps=100, save_summary_steps=100,
+runConfig = tf.estimator.RunConfig(model_dir="checkpoint",
+                                   save_checkpoints_steps=100, # this sets the minimum for evaluation. you can only evaluate based on time
+                                   save_summary_steps=100,
                                    keep_checkpoint_max=5)
 
 model = tf.estimator.DNNClassifier([10, 5, 5], feature_columns, n_classes=3,

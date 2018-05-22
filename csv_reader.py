@@ -17,7 +17,7 @@ class CSVReader(metaclass=ABCMeta):
     def set_params(self, params: Dict[str, object]) -> None:
         pass
 
-    def make_dataset_from_config(self, params: Dict[str, object]) -> tf.data.Dataset:
+    def make_dataset_from_config(self, params: Dict[str, object] = None) -> tf.data.Dataset:
         self.set_params(params)
         return self.make_csv_dataset()
 

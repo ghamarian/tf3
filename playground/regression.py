@@ -1,5 +1,5 @@
 import tensorflow as tf
-from utils import define_scope
+from playground.utils import define_scope
 from tensorflow.examples.tutorials.mnist import input_data
 
 class Model:

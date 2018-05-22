@@ -19,7 +19,6 @@ feature_list = [tf.feature_column.numeric_column(feature) for feature in feature
 # feature_list += tf.feature_column.categorical_column_with_vocabulary_list( 'species', ['setosa', 'versicolor', 'virginica'] )
 
 def my_model_fn(features, labels, mode):
-
     # table = tf.contrib.lookup.index_table_from_tensor(tf.constant(['setosa', 'versicolor', 'virginica']))
     # indices = table.lookup(labels)
     # head = multi_class_head(3)
@@ -35,6 +34,7 @@ def my_model_fn(features, labels, mode):
 
 def train_input_fn():
     return tf.contrib.data.make_csv_dataset('iris.csv', BATCH_SIZE, num_epochs=NUM_EPOCHS, label_name='species')
+
 
 def pandas_train_input_fn(df):
     return tf.estimator.inputs.pandas_input_fn(

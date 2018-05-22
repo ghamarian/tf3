@@ -1,7 +1,6 @@
 import tensorflow as tf
-import numpy as np
-from utils import define_scope
-from random_generator import generate_classes_random_multifeature
+from playground.utils import define_scope
+from playground.random_generator import generate_classes_random_multifeature
 from tensorflow.python import debug as tf_debug
 
 

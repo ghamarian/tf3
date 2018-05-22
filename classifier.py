@@ -12,10 +12,10 @@ tf.reset_default_graph()
 tf.logging.set_verbosity(tf.logging.DEBUG)
 
 CONFIG_FILE = "config/default.ini"
-csv_reader = TrainCSVReader(utils.abs_path_of(CONFIG_FILE))
+train_reader = TrainCSVReader(utils.abs_path_of(CONFIG_FILE))
 
 feature_columns = [
-    tf.feature_column.numeric_column(key) for key in csv_reader._feature_names()
+    tf.feature_column.numeric_column(key) for key in train_reader._feature_names()
 ]
 
 runConfig = tf.estimator.RunConfig(model_dir="checkpoint",
@@ -31,15 +31,15 @@ model = tf.estimator.DNNClassifier([10, 5, 5], feature_columns, n_classes=3,
 # model.train(lambda: csv_reader.make_dataset_from_config({'batch_size': 32}), hooks=[hook])
 # model.train(lambda: csv_reader.make_dataset_from_config({'batch_size': 32}))
 
-validate_csv_reader = ValidationCSVReader(utils.abs_path_of(CONFIG_FILE))
+validate_reader = ValidationCSVReader(utils.abs_path_of(CONFIG_FILE))
 # model.evaluate(lambda: validate_csv_reader.make_dataset_from_config({}))
 
 train_spec = tf.estimator.TrainSpec(
-    input_fn=lambda: csv_reader.make_dataset_from_config({'batch_size': 32}), max_steps=5000)
+    input_fn=lambda: train_reader.make_dataset_from_config({'batch_size': 32}), max_steps=5000)
 
 # TODO what are all these aparameters
 eval_spec = tf.estimator.EvalSpec(
-    input_fn=lambda: validate_csv_reader.make_dataset_from_config({}),
+    input_fn=lambda: validate_reader.make_dataset_from_config({}),
     steps=1,  # How many batches of test data
     start_delay_secs=0, throttle_secs=1)
 # throttle_secs=1)

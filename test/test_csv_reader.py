@@ -24,21 +24,19 @@ def validation_reader():
 
 def test_get_label_name(train_reader, validation_reader):
     lable_name = train_reader.get_label_name()
-    print(lable_name)
+    assert lable_name == 'species'
     columns = train_reader.column_names()
-    print(columns)
+    np.testing.assert_array_equal(columns, ['sepal_length', 'sepal_width', 'petal_length', 'petal_width', 'species'])
 
     lable_name = validation_reader.get_label_name()
-    print(lable_name)
+    assert lable_name == 'species'
     columns = validation_reader.column_names()
-    print(columns)
+    np.testing.assert_array_equal(columns, ['sepal_length', 'sepal_width', 'petal_length', 'petal_width', 'species'])
 
 
 def test_dataset(train_reader):
- for x, y in train_reader.make_dataset_from_config({'batch_size': 128}):
-     print(x, y)
-     sys.stdout.flush()
-
+    for x, y in train_reader.make_dataset_from_config({'batch_size': 128}):
+        print(y.shape)
 
 def test_feature_columns(train_reader):
     a = train_reader.feature_names().values

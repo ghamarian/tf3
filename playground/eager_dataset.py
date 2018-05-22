@@ -4,10 +4,10 @@ import tensorflow as tf
 
 tf.logging.set_verbosity(tf.logging.DEBUG)
 
-dataset = tf.contrib.data.make_csv_dataset("input.csv", 2, num_epochs=10, label_name="price")
+dataset = tf.contrib.data._make_csv_dataset("input.csv", 2, num_epochs=10, label_name="price")
 
 def train_input_fn():
-    return tf.contrib.data.make_csv_dataset("input.csv", 64, num_epochs=10, label_name="price")
+    return tf.contrib.data._make_csv_dataset("input.csv", 64, num_epochs=10, label_name="price")
 
 a = dataset.make_one_shot_iterator().get_next()
 

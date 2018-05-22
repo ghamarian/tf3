@@ -15,7 +15,7 @@ CONFIG_FILE = "config/default.ini"
 csv_reader = TrainCSVReader(utils.abs_path_of(CONFIG_FILE))
 
 feature_columns = [
-    tf.feature_column.numeric_column(key) for key in csv_reader.feature_names()
+    tf.feature_column.numeric_column(key) for key in csv_reader._feature_names()
 ]
 
 runConfig = tf.estimator.RunConfig(model_dir="checkpoint",

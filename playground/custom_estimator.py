@@ -33,7 +33,7 @@ def my_model_fn(features, labels, mode):
 
 
 def train_input_fn():
-    return tf.contrib.data.make_csv_dataset('iris.csv', BATCH_SIZE, num_epochs=NUM_EPOCHS, label_name='species')
+    return tf.contrib.data._make_csv_dataset('iris.csv', BATCH_SIZE, num_epochs=NUM_EPOCHS, label_name='species')
 
 
 def pandas_train_input_fn(df):

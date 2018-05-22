@@ -8,7 +8,7 @@ NUM_EPOCHS = 100
 
 
 def train_input_fn():
-    return tf.contrib.data.make_csv_dataset('input.csv', BATCH_SIZE, num_epochs=NUM_EPOCHS, label_name='price')
+    return tf.contrib.data._make_csv_dataset('input.csv', BATCH_SIZE, num_epochs=NUM_EPOCHS, label_name='price')
 
 
 feature_columns = [

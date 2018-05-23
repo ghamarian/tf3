@@ -42,5 +42,10 @@ class CSVReader(metaclass=ABCMeta):
         mask = self.config.get_as_slice('TASK0', 'ground_truth_column')
         return columns[mask]
 
+    def get_label_unique_values(self):
+        label_column = self._get_label_name()
+        df = pd.read_csv(self.filename, usecols=[label_column])
+        return df[label_column].unique()
+
     def _get_param_with_config_default(self, params, section, param_name):
         return params.get(param_name, self._get_int_from_config(section, param_name))

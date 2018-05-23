@@ -35,10 +35,17 @@ def test_get_label_name(train_reader, validation_reader):
 
 
 def test_dataset(train_reader):
-    for x, y in train_reader.make_dataset_from_config({'batch_size': 128}):
+    for x, y in train_reader.make_dataset_from_config({'batch_size': 128, 'num_epochs': 4}):
         print(y.shape)
+
 
 def test_feature_columns(train_reader):
     a = train_reader._feature_names().values
     print(a, type(a), a.shape)
-    np.testing.assert_array_equal(train_reader._feature_names(), ['sepal_length', 'sepal_width', 'petal_length', 'petal_width'])
+    np.testing.assert_array_equal(train_reader._feature_names(),
+                                  ['sepal_length', 'sepal_width', 'petal_length', 'petal_width'])
+
+def test_unique_values(train_reader):
+    np.testing.assert_array_equal(train_reader.get_label_unique_values(), ['setosa', 'versicolor', 'virginica'])
+
+

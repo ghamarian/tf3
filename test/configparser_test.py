@@ -7,3 +7,4 @@ def test_configreader():
     assert config.get_as_slice("TASK0","ground_truth_column")  == -1
 
     print(config['PROCESS']['experiment_ID'])
+

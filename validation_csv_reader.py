@@ -12,5 +12,5 @@ class ValidationCSVReader(CSVReader):
         self.num_epochs = 1
 
     def _set_params(self, params: Dict[str, object]) -> None:
-        self.batch_size = params.get('validation_batch_size', self.config.validation_batch_size())
+        self.batch_size = params['validation_batch_size']
 

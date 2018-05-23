@@ -13,6 +13,7 @@ class CSVReader(metaclass=ABCMeta):
         self.num_epochs = None
         self.label_name = None
 
+
     def make_dataset_from_config(self, params: Dict[str, object] = None) -> tf.data.Dataset:
         self._set_params(params)
         return self._make_csv_dataset()

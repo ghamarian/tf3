@@ -3,9 +3,14 @@ import utils
 from tensorflow.python import debug as tf_debug
 import shutil
 import config_reader
+from model_builder import ModelBuilder
 
 from train_csv_reader import TrainCSVReader
 from validation_csv_reader import ValidationCSVReader
+
+HIDDEN_LAYERS = 'hidden_layers'
+
+MAX_STEPS = 'max_steps'
 
 KEEP_CHECKPOINT_MAX = 'keep_checkpoint_max'
 
@@ -14,7 +19,7 @@ SAVE_SUMMARY_STEPS = 'save_summary_steps'
 SAVE_CHECKPOINTS_STEPS = 'save_checkpoints_steps'
 
 
-class Classifier():
+class Classifier:
 
     def __init__(self, params, train_csv_reader, validation_csv_reader):
         self.params = params
@@ -44,17 +49,31 @@ class Classifier():
 
     def _create_model(self):
         # TODO hidden_layers to be fixed
-        hidden_layers = self.params['hidden_layers'][0]
+        hidden_layers = self.params[HIDDEN_LAYERS][0]
         label_vocabulary = self.train_csv_reader.label_unique_values()
+
+        # TODO modelbuilder class, and director which has the model builder
+        # TODO modelDirector -> builder -> parameters, hidden layers, feature_columns, n_classes, vocabulary
+        # TODO runConfig
+
+        a = ModelBuilder(self.feature_columns)
+        b = a.grab("tensorflow.python.estimator.canned.linear.LinearRegressor", self.feature_columns)
+
+
+
+        # self.model = self.modelDirector.createModel(params)
+
+
         self.model = tf.estimator.DNNClassifier(hidden_layers, self.feature_columns, n_classes=len(label_vocabulary),
                                                 label_vocabulary=label_vocabulary.tolist(),
                                                 config=self.runConfig)
 
     def _create_specs(self):
-        max_steps = self.params['max_steps']
+        max_steps = self.params[MAX_STEPS]
         self.train_spec = tf.estimator.TrainSpec(
             input_fn=self._train_input_fn, max_steps=max_steps)
 
+        # TODO throttle and start_delay and steps?
         self.eval_spec = tf.estimator.EvalSpec(
             input_fn=self._validation_input_fn,
             steps=1,  # How many batches of test data
@@ -71,14 +90,10 @@ class Classifier():
 
 
 CONFIG_FILE = "config/default.ini"
-# def update_params(self, params):
-#     config_params = self.config.all()
-#     config_params.update(params)
-#     return config_params
-
 config = config_reader.read_config(CONFIG_FILE)
 train_csv_reader = TrainCSVReader(config)
 validation_csv_reader = ValidationCSVReader(config)
+
 params = {'batch_size': 32,
           'max_steps': 5000,
           'save_checkpoints_steps': 100,
@@ -89,6 +104,7 @@ params = {'batch_size': 32,
           }
 config_params = config.all()
 config_params.update(params)
+
 classifier = Classifier(config_params, train_csv_reader, validation_csv_reader)
 classifier.clear_checkpoint()
 classifier.run()

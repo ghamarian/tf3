@@ -5,12 +5,12 @@ from typing import Dict
 
 class ValidationCSVReader(CSVReader):
 
-    def __init__(self, config_path: str):
-        super().__init__(config_path)
-        self.filename = abs_path_of(self._get_from_config('PATHS', 'validation_file'))
+    def __init__(self, config: str):
+        super().__init__(config)
+        self.filename = self.config.validation_path()
         self.label_name = self._get_label_name()
         self.num_epochs = 1
 
     def _set_params(self, params: Dict[str, object]) -> None:
-        self.batch_size = self._get_param_with_config_default(params, 'TRAINING', 'validation_batch_size')
+        self.batch_size = params.get('validation_batch_size', self.config.validation_batch_size())
 

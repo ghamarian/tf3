@@ -3,3 +3,4 @@ mnist
 .idea
 **/*.csv
 checkpoint
+test/.pytest_cache/*

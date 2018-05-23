@@ -46,6 +46,6 @@ def test_feature_columns(train_reader):
                                   ['sepal_length', 'sepal_width', 'petal_length', 'petal_width'])
 
 def test_unique_values(train_reader):
-    np.testing.assert_array_equal(train_reader.get_label_unique_values(), ['setosa', 'versicolor', 'virginica'])
+    np.testing.assert_array_equal(train_reader.label_unique_values(), ['setosa', 'versicolor', 'virginica'])
 
 

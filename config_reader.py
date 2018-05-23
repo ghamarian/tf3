@@ -5,9 +5,17 @@ from typing import Dict
 import ast
 from collections import OrderedDict
 
+NETWORK = "NETWORK"
+
+TASK0 = 'TASK0'
+
+FEATURES = 'FEATURES'
+
 PROCESS = 'PROCESS'
 
 TRAINING = 'TRAINING'
+
+PATHS = 'PATHS'
 
 
 class CustomConfigParser(configparser.ConfigParser):
@@ -30,7 +38,7 @@ class CustomConfigParser(configparser.ConfigParser):
 
         return utils.abs_path_of(raw_get)
 
-    def _from_training(self, param) :
+    def _from_training(self, param):
         return self.get(TRAINING, param)
 
     def _from_network(self, param):
@@ -39,6 +47,9 @@ class CustomConfigParser(configparser.ConfigParser):
     def _from_process(self):
         return dict(self.items(TRAINING))
 
+    def _from_paths(self, param):
+        return self[PATHS][param]
+
     def training(self) -> Dict[str, str]:
         print(self.items(TRAINING))
         return dict(self.items(TRAINING))
@@ -46,13 +57,16 @@ class CustomConfigParser(configparser.ConfigParser):
     def process(self) -> Dict[str, str]:
         return dict(self.items(PROCESS))
 
+    def path(self):
+        return dict(self.items(PATHS))
+
     def train_batch_size(self) -> int:
         return int(self._from_training('batch_size'))
 
     def learning_rate(self) -> int:
         return int(self._from_training('learning_rate'))
 
-    def validation_batch(self) -> int:
+    def validation_batch_size(self) -> int:
         return int(self._from_training('validation_batch_size'))
 
     def optimizer(self) -> str:
@@ -70,15 +84,46 @@ class CustomConfigParser(configparser.ConfigParser):
     def hidden_layers(self):
         return ast.literal_eval(self.get('NETWORK', 'hidden_layers'))
 
+    def features(self):
+        return dict(self.items[FEATURES])
 
+    def feature_slice(self):
+        return self.get_as_slice(FEATURES, 'columns')
 
-# [PROCESS]
-# experiment_ID: L${NETWORK:num_layers}_H${NETWORK:layer_size}_DO${TRAINING:dropout_keep_probability}_L1${TRAINING:l1_regularization}_L2${TRAINING:l2_regularization}_B${TRAINING:batch_size}_LR${TRAINING:learning_rate} #empty means auto name
-# checkpoint_every:  5000 # in number of iterations
-# validation_interval: 10 # in number of iterations, default if omitted:15
-# initialize_with_checkpoint: #checkpoints/enigma/training.ckpt-5000
-# val_check_after: 5  # in number of iterations, default if omitted:1000
-#
+    def checkpoint_dir(self):
+        return self.get_rel_path(PATHS, 'checkpoint_dir')
+
+    def training_path(self):
+        return utils.abs_path_of(self._from_paths('training_file'))
+
+    def validation_path(self):
+        return utils.abs_path_of(self._from_paths('validation_file'))
+
+    # TODO TASK0?
+    def label_slice(self):
+        return self.get_as_slice(TASK0, 'ground_truth_column')
+
+    def all(self):
+        result = dict(self.items(TRAINING))
+        result.update(self.items(PROCESS))
+        result.update(self.items(TASK0))
+        result.update(self.items(NETWORK))
+        result.update(self.items(PATHS))
+
+        int_columns = ["num_epochs", "batch_size", "validation_batch_size", "save_summary_steps",
+                       "keep_checkpoint_max", "throttle", "validation_interval", "save_checkpoints_steps"]
+
+        float_columns = ["learning_rate", "l1_regularization", "l2_regularization", "dropout_keep_probability"]
+
+        for key in int_columns:
+            result[key] = int(result[key])
+
+        for key in float_columns:
+            result[key] = float(result[key])
+
+        result.update({'hidden_layers': self.hidden_layers()})
+
+        return result
 
 
 def read_config(path):

@@ -1,9 +1,7 @@
 import tensorflow as tf
 from importlib import import_module
 from inspect import Parameter, signature, getfullargspec
-
-import pprint
-
+from collections import OrderedDict
 
 class ModelBuilder:
 
@@ -11,9 +9,26 @@ class ModelBuilder:
         self.features = features
         self.cls = tf.estimator.Estimator
         self.subclasses = self._all_subclasses(self.cls)
+        self.subclasses_names = self.subclasses_name_list()
         self.positional = self.positional_arguments()
         self.none_args = self.none_arguments()
-        self.singatuer = self.signature_list()
+        self.all_args = self.signature_dict()
+        self.name_class_dict = self.create_name_class_dict()
+
+    def actual_class_of(self, name):
+        return self.name_class_dict[name]
+
+    def create_name_class_dict(self):
+        return OrderedDict(zip(self.subclasses_names, self.subclasses))
+
+    def positional_args_of(self, name):
+        return self.positional[name]
+
+    def none_args_of(self, name):
+        return self.none_args[name]
+
+    def all_args_of(self, name):
+        return self.all_args[name]
 
     def estimator_class_list(self, klass):
         subclasses = set()
@@ -42,6 +57,9 @@ class ModelBuilder:
             module_name, class_name = estimator_name.rsplit('.', 1)
             estimator_module = import_module(module_name)
             estimator_class = getattr(estimator_module, class_name)
+
+            assert self.check_args(estimator_name, args, kwargs)
+
             instance = estimator_class(*args, **kwargs)
 
         except (AttributeError, ModuleNotFoundError):
@@ -51,6 +69,7 @@ class ModelBuilder:
                 raise ImportError('{} is not an estimator!'.format(estimator_name))
 
         return instance
+
 
     def _arguments_with(self, predicate):
         all_args = {}
@@ -69,28 +88,21 @@ class ModelBuilder:
     def none_arguments(self):
         return self._arguments_with(lambda p: p == Parameter.empty or p == None)
 
-    def signature_list(self):
+    def signature_dict(self):
         args = [getfullargspec(estimator).args for estimator in self.subclasses]
         for arg in args:
             arg.remove('self')
 
-        return  list(zip(self.subclasses_name_list(), args))
+        return OrderedDict(zip(self.subclasses_name_list(), args))
 
+    def check_args(self, cls, args, kwargs) -> bool:
+       positional = self.positional_args_of(cls)
+       if len(args) < len(positional):
+           return False
+       none_args = self.none_args_of(cls)
+       all_args = self.all_args_of(cls)
+       if kwargs.keys() - all_args:
+          return False
 
-# print("\n".join([str(key) for key in inheritors(tf.estimator.Estimator)]))
+       return True
 
-
-# print(ModelBuilder([]).subclasses_name_list(tf.estimator.Estimator))
-# mb = ModelBuilder([])
-# plist = mb.parameters_list(tf.estimator.Estimator)
-# print(pprint.pformat(plist))
-
-# print(pprint.pformat(mb.signature_list(), width=200))
-
-# print("\n".join([str(l) for l in mb.parameters_list(tf.estimator.Estimator)]))
-
-
-# print(len(ModelBuilder([]).estimator_class_list(tf.estimator.Estimator)))
-#
-# print(len(ModelBuilder([]).all_subclasses(tf.estimator.Estimator)))
-# grab("tensorflow.python.estimator.canned.LinearRegressor", )

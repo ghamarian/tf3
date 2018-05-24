@@ -1,5 +1,4 @@
 from csv_reader import CSVReader
-from utils import abs_path_of
 from typing import Dict
 
 
@@ -13,4 +12,3 @@ class ValidationCSVReader(CSVReader):
 
     def _set_params(self, params: Dict[str, object]) -> None:
         self.batch_size = params['validation_batch_size']
-

@@ -60,7 +60,7 @@ class Classifier:
         self.params['config'] = self.runConfig
         self.params['hidden_units'] = hidden_layers
 
-        self.model = mb.create_from_model(self.params['model_name'], self.feature_columns, self.params)
+        self.model = mb.create_from_model_name(self.params['model_name'], self.feature_columns, self.params)
 
         # self.model = tf.estimator.DNNClassifier(hidden_layers, self.feature_columns, n_classes=len(label_vocabulary), label_vocabulary=label_vocabulary.tolist(), config=self.runConfig)
 

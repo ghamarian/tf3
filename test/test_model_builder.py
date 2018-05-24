@@ -42,8 +42,8 @@ NONE_ARGS = {'BaselineClassifier': ['model_dir', 'weight_column', 'label_vocabul
 
 def test_all_subclasses(model_builder):
     output(model_builder.subclasses)
-    output(model_builder.subclasses_name_list())
-    np.testing.assert_array_equal(model_builder.subclasses_name_list(), NAME_LIST)
+    output(model_builder.populate_subclasses_name_list())
+    np.testing.assert_array_equal(model_builder.populate_subclasses_name_list(), NAME_LIST)
     positional = model_builder.populate_positional_arguments(),
     np.testing.assert_array_equal(positional, POSITIONAL)
     none = model_builder.populate_none_arguments()
@@ -98,12 +98,12 @@ def test_too_many_arguments(model_builder, positional, args):
     assert not model_builder.check_args(DNNREGRESSOR, positional, args)
 
 def test_create_from_model(model_builder, args):
-    output(model_builder.create_from_model(DNNREGRESSOR, [], args))
+    output(model_builder.create_from_model_name(DNNREGRESSOR, [], args))
 
 
 def test_create_from_model_not_all_args(model_builder, args):
     del args['input_layer_partitioner']
-    output(model_builder.create_from_model(DNNREGRESSOR, [], args))
+    output(model_builder.create_from_model_name(DNNREGRESSOR, [], args))
     # output(model_builder.create_from_model('DNNClassifier', [], args))
 
 

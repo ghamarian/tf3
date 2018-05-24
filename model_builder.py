@@ -10,7 +10,7 @@ class ModelBuilder:
         self.features = features
         self.cls = tf.estimator.Estimator
         self.subclasses = self._all_subclasses(self.cls)
-        self.subclasses_names = self.subclasses_name_list()
+        self.subclasses_names = self.populate_subclasses_name_list()
         self.positional_args = self.populate_positional_arguments()
         self.none_args = self.populate_none_arguments()
         self.all_args = self.populate_all_arguments()
@@ -21,9 +21,6 @@ class ModelBuilder:
 
     def module_of(self, name):
         return self.name_class_dict[name].__module__
-
-    def populate_name_class_dict(self):
-        return OrderedDict([(x.__name__, x) for x in self.subclasses])
 
     def positional_args_of(self, name):
         return self.positional_args[name]
@@ -38,10 +35,7 @@ class ModelBuilder:
         return cls.__subclasses__() + [g for s in cls.__subclasses__()
                                        for g in self._all_subclasses(s)]
 
-    def subclasses_name_list(self):
-        return [cls.__name__ for cls in self.subclasses]
-
-    def create_from_model(self, model_name, feature_columns, params):
+    def create_from_model_name(self, model_name, feature_columns, params):
         featured_params = params
         featured_params['feature_columns'] = feature_columns
         positional = self.positional_args_of(model_name)
@@ -49,14 +43,13 @@ class ModelBuilder:
         args = [featured_params[key] for key in positional]
         kwargs = self.select_kwargs_from_params(model_name, featured_params, positional)
 
-
-        return self.create(model_name, *args, **kwargs)
+        return self._create(model_name, *args, **kwargs)
 
     def select_kwargs_from_params(self, model_name, featured_params, positional):
         return OrderedDict([(key, featured_params[key]) for key in self.all_args_of(model_name) if
                             key in featured_params and key not in positional])
 
-    def create(self, model_name, *args, **kwargs):
+    def _create(self, model_name, *args, **kwargs):
         try:
             model_module = self.module_of(model_name)
             model_class = self.class_of(model_name)
@@ -96,7 +89,13 @@ class ModelBuilder:
         for arg in args:
             arg.remove('self')
 
-        return OrderedDict(zip(self.subclasses_name_list(), args))
+        return OrderedDict(zip(self.populate_subclasses_name_list(), args))
+
+    def populate_name_class_dict(self):
+        return OrderedDict([(x.__name__, x) for x in self.subclasses])
+
+    def populate_subclasses_name_list(self):
+        return [cls.__name__ for cls in self.subclasses]
 
     def check_args(self, cls, args, kwargs) -> bool:
         positional = self.positional_args_of(cls)

@@ -1,3 +1,4 @@
+import config_reader
 from train_csv_reader import TrainCSVReader
 from validation_csv_reader import ValidationCSVReader
 import utils
@@ -13,13 +14,18 @@ CONFIG_FILE = "config/default.ini"
 
 
 @pytest.fixture
-def train_reader():
-    return TrainCSVReader(utils.abs_path_of(CONFIG_FILE))
+def config():
+    return config_reader.read_config(utils.abs_path_of(CONFIG_FILE))
 
 
 @pytest.fixture
-def validation_reader():
-    return ValidationCSVReader(utils.abs_path_of(CONFIG_FILE))
+def train_reader(config):
+    return TrainCSVReader(config)
+
+
+@pytest.fixture
+def validation_reader(config):
+    return ValidationCSVReader(config=config)
 
 
 def test_get_label_name(train_reader, validation_reader):

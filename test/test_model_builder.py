@@ -5,6 +5,8 @@ from model_builder import ModelBuilder
 import pprint
 import numpy as np
 
+DNNREGRESSOR = 'DNNRegressor'
+
 
 @pytest.fixture
 def model_builder():
@@ -83,25 +85,25 @@ def args(all):
     return result
 
 def test_check_args(model_builder, positional, args):
-    assert model_builder.check_args('DNNRegressor', positional, args)
+    assert model_builder.check_args(DNNREGRESSOR, positional, args)
 
 
 def test_less_positional(model_builder, positional, args):
     positional.pop(0)
-    assert not model_builder.check_args('DNNRegressor', positional, args)
+    assert not model_builder.check_args(DNNREGRESSOR, positional, args)
 
 
 def test_too_many_arguments(model_builder, positional, args):
     args.update({'amir': 12})
-    assert not model_builder.check_args('DNNRegressor', positional, args)
+    assert not model_builder.check_args(DNNREGRESSOR, positional, args)
 
 def test_create_from_model(model_builder, args):
-    output(model_builder.create_from_model('DNNRegressor', [], args))
+    output(model_builder.create_from_model(DNNREGRESSOR, [], args))
 
 
 def test_create_from_model_not_all_args(model_builder, args):
     del args['input_layer_partitioner']
-    output(model_builder.create_from_model('DNNRegressor', [], args))
+    output(model_builder.create_from_model(DNNREGRESSOR, [], args))
     # output(model_builder.create_from_model('DNNClassifier', [], args))
 
 

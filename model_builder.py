@@ -41,36 +41,36 @@ class ModelBuilder:
     def subclasses_name_list(self):
         return [cls.__name__ for cls in self.subclasses]
 
-    def create_from_model(self, estimator_name, feature_columns, params):
+    def create_from_model(self, model_name, feature_columns, params):
         featured_params = params
         featured_params['feature_columns'] = feature_columns
-        positional = self.positional_args_of(estimator_name)
+        positional = self.positional_args_of(model_name)
 
         args = [featured_params[key] for key in positional]
-        kwargs = self.select_kwargs_from_params(estimator_name, featured_params, positional)
+        kwargs = self.select_kwargs_from_params(model_name, featured_params, positional)
 
 
-        return self.create(estimator_name, *args, **kwargs)
+        return self.create(model_name, *args, **kwargs)
 
-    def select_kwargs_from_params(self, estimator_name, featured_params, positional):
-        return OrderedDict([(key, featured_params[key]) for key in self.all_args_of(estimator_name) if
+    def select_kwargs_from_params(self, model_name, featured_params, positional):
+        return OrderedDict([(key, featured_params[key]) for key in self.all_args_of(model_name) if
                             key in featured_params and key not in positional])
 
-    def create(self, class_name, *args, **kwargs):
+    def create(self, model_name, *args, **kwargs):
         try:
-            module_name = self.module_of(class_name)
-            estimator_class = self.class_of(class_name)
-            import_module(module_name)
+            model_module = self.module_of(model_name)
+            model_class = self.class_of(model_name)
+            import_module(model_module)
 
-            assert self.check_args(class_name, args, kwargs)
+            assert self.check_args(model_name, args, kwargs)
 
-            instance = estimator_class(*args, **kwargs)
+            instance = model_class(*args, **kwargs)
 
         except (AttributeError, ModuleNotFoundError):
-            raise ImportError('{} is not an estimator!'.format(class_name))
+            raise ImportError('{} is not an estimator!'.format(model_name))
         else:
-            if not issubclass(estimator_class, tf.estimator.Estimator):
-                raise ImportError('{} is not an estimator!'.format(class_name))
+            if not issubclass(model_class, self.cls):
+                raise ImportError('{} is not an estimator!'.format(model_name))
 
         return instance
 

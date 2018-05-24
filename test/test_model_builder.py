@@ -1,5 +1,3 @@
-from unittest.mock import MagicMock
-
 import pytest
 import tensorflow as tf
 
@@ -79,8 +77,8 @@ def all():
 @pytest.fixture
 def args(all):
     from itertools import count
-    magic_mocks = (str(count) for _ in count())
-    result = dict(zip(all, magic_mocks))
+    values = (str(count) for _ in count())
+    result = dict(zip(all, values))
     result.update({'config': tf.estimator.RunConfig()})
     return result
 
@@ -93,7 +91,7 @@ def test_less_positional(model_builder, positional, args):
     assert not model_builder.check_args('DNNRegressor', positional, args)
 
 
-def test_too_many(model_builder, positional, args):
+def test_too_many_arguments(model_builder, positional, args):
     args.update({'amir': 12})
     assert not model_builder.check_args('DNNRegressor', positional, args)
 
@@ -104,6 +102,7 @@ def test_create_from_model(model_builder, args):
 def test_create_from_model_not_all_args(model_builder, args):
     del args['input_layer_partitioner']
     output(model_builder.create_from_model('DNNRegressor', [], args))
+    # output(model_builder.create_from_model('DNNClassifier', [], args))
 
 
 # SUB_CLASSES = [tf.python.estimator.canned.baseline.BaselineClassifier,

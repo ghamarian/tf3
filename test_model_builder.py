@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+
 import pytest
 import tensorflow as tf
 
@@ -97,18 +99,19 @@ def test_all_subclasses(model_builder):
     output(model_builder.subclasses)
     output(model_builder.subclasses_name_list())
     np.testing.assert_array_equal(model_builder.subclasses_name_list(), NAME_LIST)
-    positional = model_builder.positional_arguments(),
+    positional = model_builder.populate_positional_arguments(),
     np.testing.assert_array_equal(positional, POSITIONAL)
-    none = model_builder.none_arguments()
+    none = model_builder.populate_none_arguments()
     np.testing.assert_array_equal(none, NONE_ARGS)
-    all_args = model_builder.signature_dict()
+    all_args = model_builder.populate_all_arguments()
     # output(all_args)
     print(model_builder.none_args_of('DNNRegressor'))
     print(model_builder.all_args_of('DNNRegressor'))
     print(model_builder.positional_args_of('DNNRegressor'))
-    # name_class_dict = model_builder.name_class_dict
-    # output(name_class_dict['DNNRegressor'])
-    output(model_builder.actual_class_of('DNNRegressor'))
+    class_module_dict = model_builder.class_module_dict
+    output(class_module_dict['DNNRegressor'])
+    output(model_builder.module_of('DNNRegressor'))
+    print()
 
 
 @pytest.fixture
@@ -131,8 +134,10 @@ def all():
 @pytest.fixture
 def args(all):
     from itertools import count
-    return dict(zip(all, count()))
-
+    magic_mocks = (str(count) for _ in count())
+    result = dict(zip(all, magic_mocks))
+    result.update({'config': tf.estimator.RunConfig()})
+    return result
 
 def test_check_args(model_builder, positional, args):
     assert model_builder.check_args('DNNRegressor', positional, args)

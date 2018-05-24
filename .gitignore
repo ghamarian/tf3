@@ -4,3 +4,5 @@ mnist
 **/*.csv
 checkpoint
 test/.pytest_cache/*
+.pytest_cache
+checkpoints

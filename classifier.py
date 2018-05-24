@@ -52,10 +52,6 @@ class Classifier:
         hidden_layers = self.params[HIDDEN_LAYERS][0]
         label_vocabulary = self.train_csv_reader.label_unique_values()
 
-        # TODO modelbuilder class, and director which has the model builder
-        # TODO modelDirector -> builder -> parameters, hidden layers, feature_columns, n_classes, vocabulary
-        # TODO runConfig
-
         mb = ModelBuilder(self.feature_columns)
         # b = a.grab("tensorflow.python.estimator.canned.linear.LinearRegressor", self.feature_columns)
 

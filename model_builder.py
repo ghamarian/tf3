@@ -3,6 +3,7 @@ from importlib import import_module
 from inspect import Parameter, signature, getfullargspec
 from collections import OrderedDict
 
+
 class ModelBuilder:
 
     def __init__(self, features):
@@ -30,18 +31,6 @@ class ModelBuilder:
     def all_args_of(self, name):
         return self.all_args[name]
 
-    def estimator_class_list(self, klass):
-        subclasses = set()
-        work = [klass]
-        while work:
-            parent = work.pop()
-            for child in parent.__subclasses__():
-                if child not in subclasses:
-                    print(child)
-                    subclasses.add(child)
-                    work.append(child)
-        return subclasses
-
     def _all_subclasses(self, cls):
         return cls.__subclasses__() + [g for s in cls.__subclasses__()
                                        for g in self._all_subclasses(s)]
@@ -52,13 +41,29 @@ class ModelBuilder:
     def method_name(self, cls):
         return str(cls).rsplit('.', 1)[1][:-2]
 
+    def create_from_model(self, estimator_name, feature_columns, params):
+        featured_params = params
+        featured_params['feature_columns'] = feature_columns
+        positional = self.positional_args_of(estimator_name)
+
+        args = [featured_params[key] for key in positional]
+        kwargs = self.select_kwargs_from_params(estimator_name, featured_params, positional)
+
+        estimator = str(self.actual_class_of(estimator_name))[8:-2]
+
+        return self.create(estimator, *args, **kwargs)
+
+    def select_kwargs_from_params(self, estimator_name, featured_params, positional):
+        return OrderedDict([(key, featured_params[key]) for key in self.all_args_of(estimator_name) if
+                            key in featured_params and key not in positional])
+
     def create(self, estimator_name, *args, **kwargs):
         try:
             module_name, class_name = estimator_name.rsplit('.', 1)
             estimator_module = import_module(module_name)
             estimator_class = getattr(estimator_module, class_name)
 
-            assert self.check_args(estimator_name, args, kwargs)
+            assert self.check_args(class_name, args, kwargs)
 
             instance = estimator_class(*args, **kwargs)
 
@@ -69,7 +74,6 @@ class ModelBuilder:
                 raise ImportError('{} is not an estimator!'.format(estimator_name))
 
         return instance
-
 
     def _arguments_with(self, predicate):
         all_args = {}
@@ -96,13 +100,12 @@ class ModelBuilder:
         return OrderedDict(zip(self.subclasses_name_list(), args))
 
     def check_args(self, cls, args, kwargs) -> bool:
-       positional = self.positional_args_of(cls)
-       if len(args) < len(positional):
-           return False
-       none_args = self.none_args_of(cls)
-       all_args = self.all_args_of(cls)
-       if kwargs.keys() - all_args:
-          return False
+        positional = self.positional_args_of(cls)
+        if len(args) < len(positional):
+            return False
+        none_args = self.none_args_of(cls)
+        all_args = self.all_args_of(cls)
+        if kwargs.keys() - all_args:
+            return False
 
-       return True
-
+        return True

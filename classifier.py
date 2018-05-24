@@ -56,17 +56,17 @@ class Classifier:
         # TODO modelDirector -> builder -> parameters, hidden layers, feature_columns, n_classes, vocabulary
         # TODO runConfig
 
-        a = ModelBuilder(self.feature_columns)
-        b = a.grab("tensorflow.python.estimator.canned.linear.LinearRegressor", self.feature_columns)
+        mb = ModelBuilder(self.feature_columns)
+        # b = a.grab("tensorflow.python.estimator.canned.linear.LinearRegressor", self.feature_columns)
 
+        self.params['n_classes'] = len(label_vocabulary)
+        self.params['label_vocabulary'] = label_vocabulary.tolist()
+        self.params['config'] = self.runConfig
+        self.params['hidden_units'] = hidden_layers
 
+        self.model = mb.create_from_model(self.params['model_name'], self.feature_columns, self.params)
 
-        # self.model = self.modelDirector.createModel(params)
-
-
-        self.model = tf.estimator.DNNClassifier(hidden_layers, self.feature_columns, n_classes=len(label_vocabulary),
-                                                label_vocabulary=label_vocabulary.tolist(),
-                                                config=self.runConfig)
+        # self.model = tf.estimator.DNNClassifier(hidden_layers, self.feature_columns, n_classes=len(label_vocabulary), label_vocabulary=label_vocabulary.tolist(), config=self.runConfig)
 
     def _create_specs(self):
         max_steps = self.params[MAX_STEPS]

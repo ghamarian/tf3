@@ -5,6 +5,7 @@ from model_builder import ModelBuilder
 import pprint
 import numpy as np
 
+
 @pytest.fixture
 def model_builder():
     return ModelBuilder([])
@@ -13,17 +14,6 @@ def model_builder():
 def output(a):
     print(pprint.pformat(a))
 
-
-# SUB_CLASSES = [tf.python.estimator.canned.baseline.BaselineClassifier,
-#  tf.python.estimator.canned.baseline.BaselineRegressor,
-#  tf.python.estimator.canned.boosted_trees.BoostedTreesClassifier,
-#  tf.python.estimator.canned.boosted_trees.BoostedTreesRegressor,
-#  tf.python.estimator.canned.dnn.DNNClassifier,
-#  tf.python.estimator.canned.dnn.DNNRegressor,
-#  tf.python.estimator.canned.linear.LinearClassifier,
-#  tf.python.estimator.canned.linear.LinearRegressor,
-#  tf.python.estimator.canned.dnn_linear_combined.DNNLinearCombinedClassifier,
-#  tf.python.estimator.canned.dnn_linear_combined.DNNLinearCombinedRegressor]
 
 NAME_LIST = ['BaselineClassifier', 'BaselineRegressor', 'BoostedTreesClassifier', 'BoostedTreesRegressor',
              'DNNClassifier', 'DNNRegressor', 'LinearClassifier', 'LinearRegressor', 'DNNLinearCombinedClassifier',
@@ -123,12 +113,14 @@ def test_all_subclasses(model_builder):
 
 @pytest.fixture
 def none():
-   return ['hidden_units', 'feature_columns', 'model_dir', 'weight_column', 'dropout', 'input_layer_partitioner',
-           'config', 'warm_start_from']
+    return ['hidden_units', 'feature_columns', 'model_dir', 'weight_column', 'dropout', 'input_layer_partitioner',
+            'config', 'warm_start_from']
+
 
 @pytest.fixture
 def positional():
     return ['hidden_units', 'feature_columns']
+
 
 @pytest.fixture
 def all():
@@ -142,13 +134,35 @@ def args(all):
     return dict(zip(all, count()))
 
 
-def test_check_args(model_builder, positional, none, args):
+def test_check_args(model_builder, positional, args):
     assert model_builder.check_args('DNNRegressor', positional, args)
 
-def test_less_positional(model_builder, positional, none, args):
-    positional.pop(0)
-    assert not model_builder.check_args('DNNRegressor',  positional, args)
 
-def test_too_many(model_builder, positional, none, args):
+def test_less_positional(model_builder, positional, args):
+    positional.pop(0)
+    assert not model_builder.check_args('DNNRegressor', positional, args)
+
+
+def test_too_many(model_builder, positional, args):
     args.update({'amir': 12})
-    assert not model_builder.check_args('DNNRegressor',  positional, args)
+    assert not model_builder.check_args('DNNRegressor', positional, args)
+
+def test_create_from_model(model_builder, args):
+    output(model_builder.create_from_model('DNNRegressor', [], args))
+
+
+def test_create_from_model_not_all_args(model_builder, args):
+    del args['input_layer_partitioner']
+    output(model_builder.create_from_model('DNNRegressor', [], args))
+
+
+# SUB_CLASSES = [tf.python.estimator.canned.baseline.BaselineClassifier,
+#  tf.python.estimator.canned.baseline.BaselineRegressor,
+#  tf.python.estimator.canned.boosted_trees.BoostedTreesClassifier,
+#  tf.python.estimator.canned.boosted_trees.BoostedTreesRegressor,
+#  tf.python.estimator.canned.dnn.DNNClassifier,
+#  tf.python.estimator.canned.dnn.DNNRegressor,
+#  tf.python.estimator.canned.linear.LinearClassifier,
+#  tf.python.estimator.canned.linear.LinearRegressor,
+#  tf.python.estimator.canned.dnn_linear_combined.DNNLinearCombinedClassifier,
+#  tf.python.estimator.canned.dnn_linear_combined.DNNLinearCombinedRegressor]

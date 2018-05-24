@@ -108,7 +108,7 @@ def test_all_subclasses(model_builder):
     print(model_builder.none_args_of('DNNRegressor'))
     print(model_builder.all_args_of('DNNRegressor'))
     print(model_builder.positional_args_of('DNNRegressor'))
-    class_module_dict = model_builder.class_module_dict
+    class_module_dict = model_builder.name_class_dict
     output(class_module_dict['DNNRegressor'])
     output(model_builder.module_of('DNNRegressor'))
     print()

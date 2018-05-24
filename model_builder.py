@@ -14,18 +14,16 @@ class ModelBuilder:
         self.positional_args = self.populate_positional_arguments()
         self.none_args = self.populate_none_arguments()
         self.all_args = self.populate_all_arguments()
-        self.class_module_dict = self.populate_class_module_dict()
+        self.name_class_dict = self.populate_name_class_dict()
+
+    def class_of(self, name):
+        return self.name_class_dict[name]
 
     def module_of(self, name):
-        return self.class_module_dict[name]
+        return self.name_class_dict[name].__module__
 
-    def populate_class_module_dict(self):
-
-        full_names = [str(full_name)[8:-2] for full_name in self.subclasses]
-        module_name = [name.rsplit('.', 1) for name in full_names]
-        return OrderedDict([(y, x) for (x, y) in module_name])
-
-        # return OrderedDict(zip(self.subclasses_names, str(self.subclasses).rsplit('.', 1)[0][8:]))
+    def populate_name_class_dict(self):
+        return OrderedDict([(x.__name__, x) for x in self.subclasses])
 
     def positional_args_of(self, name):
         return self.positional_args[name]
@@ -40,13 +38,8 @@ class ModelBuilder:
         return cls.__subclasses__() + [g for s in cls.__subclasses__()
                                        for g in self._all_subclasses(s)]
 
-
-
     def subclasses_name_list(self):
-        return [self.method_name(cls) for cls in self.subclasses]
-
-    def method_name(self, cls):
-        return str(cls).rsplit('.', 1)[1][:-2]
+        return [cls.__name__ for cls in self.subclasses]
 
     def create_from_model(self, estimator_name, feature_columns, params):
         featured_params = params
@@ -56,20 +49,18 @@ class ModelBuilder:
         args = [featured_params[key] for key in positional]
         kwargs = self.select_kwargs_from_params(estimator_name, featured_params, positional)
 
-        # TODO: fix this code
-        module_name = self.module_of(estimator_name)
 
-        return self.create(estimator_name, module_name, *args, **kwargs)
+        return self.create(estimator_name, *args, **kwargs)
 
     def select_kwargs_from_params(self, estimator_name, featured_params, positional):
         return OrderedDict([(key, featured_params[key]) for key in self.all_args_of(estimator_name) if
                             key in featured_params and key not in positional])
 
-    def create(self, class_name, module_name, *args, **kwargs):
+    def create(self, class_name, *args, **kwargs):
         try:
-            # module_name, class_name = estimator_name.rsplit('.', 1)
-            estimator_module = import_module(module_name)
-            estimator_class = getattr(estimator_module, class_name)
+            module_name = self.module_of(class_name)
+            estimator_class = self.class_of(class_name)
+            import_module(module_name)
 
             assert self.check_args(class_name, args, kwargs)
 
@@ -90,7 +81,7 @@ class ModelBuilder:
             for x, p in signature(cls).parameters.items():
                 if predicate(p.default) and p.kind != Parameter.VAR_POSITIONAL:
                     args.append(x)
-            all_args.update({self.method_name(cls): args})
+            all_args.update({cls.__name__: args})
 
         return all_args
 

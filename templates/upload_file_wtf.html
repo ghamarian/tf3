@@ -9,14 +9,9 @@
     <h1>{{ name }}</h1>
     {#        {{ wtf.quick_form(form, form_type='inline', enctype="multipart/form-data", button_map={'submit': 'primary'}) }}#}
     <div class="row">
-        <label for="train_dataset">Enter train dataset</label>
         {{ wtf.quick_form(form, id='train_dataset', enctype="multipart/form-data", button_map={'submit': 'primary'}) }}
     </div>
 
-    <div class="row">
-        <label for="test_dataset">Enter test dataset</label>
-        {{ wtf.quick_form(form, id='test_dataset', enctype="multipart/form-data", button_map={'submit': 'primary'}) }}
-    </div>
 
 {% endblock %}
 

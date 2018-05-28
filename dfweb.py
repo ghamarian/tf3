@@ -6,7 +6,7 @@ import os
 
 from werkzeug.utils import secure_filename
 
-from file_upload import FileForm
+from file_upload import DatasetFileForm
 
 WTF_CSRF_SECRET_KEY = 'a random string'
 
@@ -44,10 +44,10 @@ def flash_errors(form):
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
-    form = FileForm()
-    form.file()
+    form = DatasetFileForm()
+    form.train_file()
     if form.validate_on_submit():
-        f = form.file.data
+        f = form.train_file.data
         filename = secure_filename(f.filename)
 
         target = os.path.join(APP_ROOT, "datasets")

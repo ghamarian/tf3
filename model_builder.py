@@ -40,14 +40,14 @@ class ModelBuilder:
         featured_params['feature_columns'] = feature_columns
         positional = self.positional_args_of(model_name)
 
-        args = [featured_params[key] for key in positional]
-        kwargs = self.select_kwargs_from_params(model_name, featured_params, positional)
+        args = [featured_params.pop(key) for key in positional]
+        kwargs = self.select_kwargs_from_params(model_name, featured_params)
 
         return self._create(model_name, *args, **kwargs)
 
-    def select_kwargs_from_params(self, model_name, featured_params, positional):
+    def select_kwargs_from_params(self, model_name, featured_params):
         return OrderedDict([(key, featured_params[key]) for key in self.all_args_of(model_name) if
-                            key in featured_params and key not in positional])
+                            key in featured_params])
 
     def _create(self, model_name, *args, **kwargs):
         try:
@@ -72,17 +72,18 @@ class ModelBuilder:
         for cls in self.subclasses:
             args = []
             for x, p in signature(cls).parameters.items():
-                if predicate(p.default) and p.kind != Parameter.VAR_POSITIONAL:
+                if predicate(p):
                     args.append(x)
             all_args.update({cls.__name__: args})
 
         return all_args
 
     def populate_positional_arguments(self):
-        return self._arguments_with(lambda p: p == Parameter.empty)
+        return self._arguments_with(lambda p: p.default == Parameter.empty and p.kind != Parameter.VAR_POSITIONAL)
 
     def populate_none_arguments(self):
-        return self._arguments_with(lambda p: p == Parameter.empty or p == None)
+        return self._arguments_with(
+            lambda p: (p.default == Parameter.empty or p.default == None) and p.kind != Parameter.VAR_POSITIONAL)
 
     def populate_all_arguments(self):
         args = [getfullargspec(estimator).args for estimator in self.subclasses]

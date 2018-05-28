@@ -1,5 +1,6 @@
 import pytest
 import tensorflow as tf
+from mock import patch
 
 from model_builder import ModelBuilder
 import pprint
@@ -30,14 +31,24 @@ POSITIONAL = ({'BaselineClassifier': [], 'BaselineRegressor': [],
 
 NONE_ARGS = {'BaselineClassifier': ['model_dir', 'weight_column', 'label_vocabulary', 'config'],
              'BaselineRegressor': ['model_dir', 'weight_column', 'config'],
-             'BoostedTreesClassifier': ['feature_columns', 'n_batches_per_layer', 'model_dir', 'weight_column', 'label_vocabulary', 'config'],
-             'BoostedTreesRegressor': ['feature_columns', 'n_batches_per_layer', 'model_dir', 'weight_column', 'config'],
-             'DNNClassifier': ['hidden_units', 'feature_columns', 'model_dir', 'weight_column', 'label_vocabulary', 'dropout', 'input_layer_partitioner', 'config', 'warm_start_from'],
-             'DNNLinearCombinedClassifier': ['model_dir', 'linear_feature_columns', 'dnn_feature_columns', 'dnn_hidden_units', 'dnn_dropout', 'weight_column', 'label_vocabulary', 'input_layer_partitioner', 'config', 'warm_start_from'],
-             'DNNLinearCombinedRegressor': ['model_dir', 'linear_feature_columns', 'dnn_feature_columns', 'dnn_hidden_units', 'dnn_dropout', 'weight_column', 'input_layer_partitioner', 'config', 'warm_start_from'],
-             'DNNRegressor': ['hidden_units', 'feature_columns', 'model_dir', 'weight_column', 'dropout', 'input_layer_partitioner', 'config', 'warm_start_from'],
-             'LinearClassifier': ['feature_columns', 'model_dir', 'weight_column', 'label_vocabulary', 'config', 'partitioner', 'warm_start_from'],
-             'LinearRegressor': ['feature_columns', 'model_dir', 'weight_column', 'config', 'partitioner', 'warm_start_from']}
+             'BoostedTreesClassifier': ['feature_columns', 'n_batches_per_layer', 'model_dir', 'weight_column',
+                                        'label_vocabulary', 'config'],
+             'BoostedTreesRegressor': ['feature_columns', 'n_batches_per_layer', 'model_dir', 'weight_column',
+                                       'config'],
+             'DNNClassifier': ['hidden_units', 'feature_columns', 'model_dir', 'weight_column', 'label_vocabulary',
+                               'dropout', 'input_layer_partitioner', 'config', 'warm_start_from'],
+             'DNNLinearCombinedClassifier': ['model_dir', 'linear_feature_columns', 'dnn_feature_columns',
+                                             'dnn_hidden_units', 'dnn_dropout', 'weight_column', 'label_vocabulary',
+                                             'input_layer_partitioner', 'config', 'warm_start_from'],
+             'DNNLinearCombinedRegressor': ['model_dir', 'linear_feature_columns', 'dnn_feature_columns',
+                                            'dnn_hidden_units', 'dnn_dropout', 'weight_column',
+                                            'input_layer_partitioner', 'config', 'warm_start_from'],
+             'DNNRegressor': ['hidden_units', 'feature_columns', 'model_dir', 'weight_column', 'dropout',
+                              'input_layer_partitioner', 'config', 'warm_start_from'],
+             'LinearClassifier': ['feature_columns', 'model_dir', 'weight_column', 'label_vocabulary', 'config',
+                                  'partitioner', 'warm_start_from'],
+             'LinearRegressor': ['feature_columns', 'model_dir', 'weight_column', 'config', 'partitioner',
+                                 'warm_start_from']}
 
 
 def test_all_subclasses(model_builder):
@@ -79,10 +90,11 @@ def all():
 @pytest.fixture
 def args(all):
     from itertools import count
-    values = (str(count) for _ in count())
+    values = (str(i) for i in count())
     result = dict(zip(all, values))
     result.update({'config': tf.estimator.RunConfig()})
     return result
+
 
 def test_check_args(model_builder, positional, args):
     assert model_builder.check_args(DNNREGRESSOR, positional, args)
@@ -97,8 +109,18 @@ def test_too_many_arguments(model_builder, positional, args):
     args.update({'amir': 12})
     assert not model_builder.check_args(DNNREGRESSOR, positional, args)
 
+
 def test_create_from_model(model_builder, args):
     output(model_builder.create_from_model_name(DNNREGRESSOR, [], args))
+
+
+def test_positional_args_removed(model_builder, positional, args):
+    with patch.object(model_builder, '_create') as f:
+        model_builder.create_from_model_name(DNNREGRESSOR, positional, args)
+        f.assert_called_once_with("DNNRegressor", '0', ['hidden_units', 'feature_columns'], activation_fn='6',
+                                  config=args['config'], dropout='7', input_layer_partitioner='8', label_dimension='3',
+                                  loss_reduction='11', model_dir='2', optimizer='5', warm_start_from='10',
+                                  weight_column='4')
 
 
 def test_create_from_model_not_all_args(model_builder, args):
@@ -106,14 +128,14 @@ def test_create_from_model_not_all_args(model_builder, args):
     output(model_builder.create_from_model_name(DNNREGRESSOR, [], args))
     # output(model_builder.create_from_model('DNNClassifier', [], args))
 
+    # SUB_CLASSES = [tf.python.estimator.canned.baseline.BaselineClassifier,
+    #  tf.python.estimator.canned.baseline.BaselineRegressor,
+    #  tf.python.estimator.canned.boosted_trees.BoostedTreesClassifier,
+    #  tf.python.estimator.canned.boosted_trees.BoostedTreesRegressor,
+    #  tf.python.estimator.canned.dnn.DNNClassifier,
+    #  tf.python.estimator.canned.dnn.DNNRegressor,
+    #  tf.python.estimator.canned.linear.LinearClassifier,
+    #  tf.python.estimator.canned.linear.LinearRegressor,
+    #  tf.python.estimator.canned.dnn_linear_combined.DNNLinearCombinedClassifier,
+    #  tf.python.estimator.canned.dnn_linear_combined.DNNLinearCombinedRegressor]
 
-# SUB_CLASSES = [tf.python.estimator.canned.baseline.BaselineClassifier,
-#  tf.python.estimator.canned.baseline.BaselineRegressor,
-#  tf.python.estimator.canned.boosted_trees.BoostedTreesClassifier,
-#  tf.python.estimator.canned.boosted_trees.BoostedTreesRegressor,
-#  tf.python.estimator.canned.dnn.DNNClassifier,
-#  tf.python.estimator.canned.dnn.DNNRegressor,
-#  tf.python.estimator.canned.linear.LinearClassifier,
-#  tf.python.estimator.canned.linear.LinearRegressor,
-#  tf.python.estimator.canned.dnn_linear_combined.DNNLinearCombinedClassifier,
-#  tf.python.estimator.canned.dnn_linear_combined.DNNLinearCombinedRegressor]

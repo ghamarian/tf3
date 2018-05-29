@@ -1,4 +1,4 @@
-$("#slider").roundSlider({
+slider = $("#slider").roundSlider({
     sliderType: "min-range",
     editableTooltip: false,
     radius: 105,
@@ -13,17 +13,23 @@ $("#slider").roundSlider({
 
 function changeTooltip(e) {
     var val = e.value, speed;
-
     return val + "%"
 }
 
-// $("#slider").roundSlider({
-//     sliderType: "min-range",
-//     radius: 130,
-//     showTooltip: false,
-//     width: 16,
-//     value: 46,
-//     handleSize: 0,
-//     handleShape: "square",
-//     circleShape: "half-top"
-// });
+
+$('#split').click(function (event) {
+        event.preventDefault();
+        var percent = $('#slider').roundSlider("getValue");
+
+        $.ajax('/split', {
+            data: {'percent': percent},
+            dataType: 'json',
+            type: "POST",
+            cache: false,
+            success: function (data) {
+                $('#next').prop('disabled', false);
+            }
+        });
+    }
+);
+

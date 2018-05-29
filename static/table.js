@@ -27,8 +27,7 @@ $(document).ready(function () {
     category = {
         'categorical': '<select> <option value = "categorical" selected> Categorical </option> <option value = "numerical"> Numerical </option>',
         'numerical': '<select> <option value = "categorical" > Categorical </option> <option value = "numerical" selected> Numerical </option>'
-    };
-
+    }
 
     table = $('#amir').DataTable({
         "columnDefs": [
@@ -48,8 +47,6 @@ $(document).ready(function () {
         ],
         'ordering': false,
         // "pageLength": 2
-
-
     });
 
 
@@ -57,7 +54,6 @@ $(document).ready(function () {
         var info = table.page.info();
         $('#pageInfo').html('Showing page: ' + info.page + ' of ' + info.pages);
         var data = table.$('select option:selected').text();
-        alert(data);
     });
 
     // $('#send').click(function () {
@@ -75,9 +71,6 @@ $(document).ready(function () {
         event.preventDefault();
         // var cat_column = table.columns(1).data()[0]
         var cat_column = table.$('select option:selected').text().split();
-
-        console.log(cat_column);
-        console.log(typeof(cat_column));
 
 
         $.ajax('/cat_col', {

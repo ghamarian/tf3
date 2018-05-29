@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
 
 {% block styles %}
     {{ super() }}
@@ -7,16 +8,27 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='my.css') }}">
 {% endblock %}
 
+
 {% block app_content %}
+    <div class="row" id="slider-div">
+        <h1 class="col-md-12 col-lg-12 align-middle">Select the test dataset percentage </h1>
+        <div class="col-md-12 col-lg-12" id="slider"></div>
+    </div>
     <div class="row">
-        <div id="slider"></div>
+        <div class="col-md-4 col lg-4">
+            <button type="button" id="split" class="btn btn-default">Split</button>
+        </div>
+        <div class="col-md-4 col lg-4">
+            <form action="{{ url_for('slider') }}" mehtod="post">
+                <button type="submit" formmethod="post" id="next" class="btn btn-primary" disabled>Next</button>
+            </form>
+        </div>
+
     </div>
 {% endblock %}
 
 {% block scripts %}
     {{ super() }}
-    <script type="text/javascript"
-            src="{{ url_for('.static', filename='roundslider.min.js') }}"></script>
-
+    <script type="text/javascript" src="{{ url_for('.static', filename='roundslider.min.js') }}"></script>
     <script src="{{ url_for('.static', filename='slider.js') }}"></script>
 {% endblock %}

@@ -27,7 +27,7 @@ $(document).ready(function () {
     category = {
         'categorical': '<select> <option value = "categorical" selected> Categorical </option> <option value = "numerical"> Numerical </option>',
         'numerical': '<select> <option value = "categorical" > Categorical </option> <option value = "numerical" selected> Numerical </option>'
-    }
+    };
 
     table = $('#amir').DataTable({
         "columnDefs": [
@@ -35,13 +35,6 @@ $(document).ready(function () {
                 "render": function (data, type, row) {
                     return category[data];
                 },
-                // "data": function (row, type, val, meta) {
-                //     if (type === 'set') {
-                //         row.cat = category[val];
-                //         return;
-                //     }
-                //     return row.cat;
-                // },
                 "targets": 1
             }
         ],
@@ -51,9 +44,9 @@ $(document).ready(function () {
 
 
     $('#amir').on('page.dt', function () {
-        var info = table.page.info();
+        let info = table.page.info();
         $('#pageInfo').html('Showing page: ' + info.page + ' of ' + info.pages);
-        var data = table.$('select option:selected').text();
+        let data = table.$('select option:selected').text();
     });
 
     // $('#send').click(function () {
@@ -70,7 +63,7 @@ $(document).ready(function () {
     $('#send').click(function (event) {
         event.preventDefault();
         // var cat_column = table.columns(1).data()[0]
-        var cat_column = table.$('select option:selected').text().split();
+        let cat_column = table.$('select option:selected').text().split();
 
 
         $.ajax('/cat_col', {

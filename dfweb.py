@@ -13,6 +13,8 @@ from werkzeug.utils import secure_filename
 
 from file_upload import DatasetFileForm
 
+SAMPLE_DATA_SIZE = 6
+
 WTF_CSRF_SECRET_KEY = 'a random string'
 
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -24,11 +26,6 @@ app.secret_key = WTF_CSRF_SECRET_KEY
 config = {}
 
 
-# @app.route('/')
-def hello_world():
-    return render_template("main.html")
-
-
 @app.route('/')
 def analysis():
     return redirect(url_for('upload'))
@@ -36,10 +33,13 @@ def analysis():
 
 @app.route('/slider', methods=['GET', 'POST'])
 def slider():
+    # form = SliderSubmit()
+    # if form.validate_on_submit():
     if request.method == 'POST':
         # return render_template('feature_selection.html', name='Dataset features', data=config['df'])
         return redirect(url_for('feature'))
     return render_template("slider.html")
+    # return render_template("slider.html", form=form)
 
 
 @app.route('/split', methods=['GET', 'POST'])
@@ -47,8 +47,8 @@ def split():
     dataset_file = config['train']
     removed_ext = os.path.splitext(dataset_file)[0]
 
-    train_file = f"{removed_ext}-train.csv"
-    test_file = f"{removed_ext}-test.csv"
+    train_file = "{}-train.csv".format(removed_ext)
+    test_file = "{}-test.csv".format(removed_ext)
 
     percent = int(request.form['percent'])
     dataset = pd.read_csv(dataset_file)
@@ -69,7 +69,7 @@ def feature():
     x = config['df']
     col_number = x.columns.shape[0]
     cat = assign_category(col_number)
-    data = (x.iloc[:6, :]).T
+    data = (x.iloc[:SAMPLE_DATA_SIZE, :]).T
     data.reset_index()
     data.insert(0, 'category', cat)
 

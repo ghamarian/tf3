@@ -85,7 +85,7 @@ class CustomConfigParser(configparser.ConfigParser):
         return ast.literal_eval(self.get('NETWORK', 'hidden_layers'))
 
     def features(self):
-        return dict(self.items[FEATURES])
+        return dict(self.items(FEATURES))
 
     def feature_slice(self):
         return self.get_as_slice(FEATURES, 'columns')

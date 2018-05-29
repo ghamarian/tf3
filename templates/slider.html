@@ -18,10 +18,11 @@
         <div class="col-md-4 col lg-4">
             <button type="button" id="split" class="btn btn-default">Split</button>
         </div>
-        <div class="col-md-4 col lg-4">
+        <div class="col-md-2 col lg-2">
             <form action="{{ url_for('slider') }}" mehtod="post">
                 <button type="submit" formmethod="post" id="next" class="btn btn-primary" disabled>Next</button>
             </form>
+            {#        {{ wtf.quick_form(form, button_map={'submit': 'primary'}) }}#}
         </div>
 
     </div>

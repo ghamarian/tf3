@@ -28,7 +28,8 @@ class FeatureSelection():
         self.column_list = {'numerical': self.numerical_columns,
                             'bool': self.bool_columns,
                             'categorical': self.categorical_columns,
-                            'int': self.int_columns}
+                            'int': self.int_columns,
+                            'hash': self.hash_columns}
 
     def feature_list(self):
         return dict(itertools.chain.from_iterable(
@@ -55,7 +56,10 @@ class FeatureSelection():
 
         categorical_features = []
         for feature in feature_types['categorical']:
-            vocab_list = self.cat_unique_values_dict.get(feature, self.df[feature].unique().tolist())
+            if feature in self.bool_columns:
+                vocab_list = [True, False]
+            else:
+                vocab_list = self.cat_unique_values_dict.get(feature, self.df[feature].unique().tolist())
             categorical_features.append(tf.feature_column.categorical_column_with_vocabulary_list(feature, vocab_list))
 
         hash_features = [tf.feature_column.categorical_column_with_hash_bucket(key, self.unique_value_size_dict[key])

@@ -37,4 +37,4 @@ def test_populate_features():
                                          'int_big_variance': 138,
                                          'int_col': 5,
                                          'species': 3}
-    pprint(fs.feature_list())
+    pprint(fs.feature_dict())

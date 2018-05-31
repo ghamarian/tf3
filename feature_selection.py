@@ -6,8 +6,9 @@ import lazy_property
 from pprint import pprint
 
 
-class FeatureSelection():
+class FeatureSelection:
     MAX_CATEGORICAL_SIZE = 5
+    MAX_RANGE_SIZE = 10
 
     def __init__(self, df):
         self.features = {}
@@ -20,18 +21,18 @@ class FeatureSelection():
         self.bool_columns = self.select_columns_with_type('bool')
         self.unique_value_size_dict.update(dict(itertools.product(self.bool_columns, [2])))
 
-        known_columns = list(
-            itertools.chain.from_iterable([self.numerical_columns, self.int_columns, self.bool_columns]))
-        self.cat_or_hash_columns = [col_name for col_name in df.columns if col_name not in known_columns]
+        self.cat_or_hash_columns = self.select_columns_with_type('flexible', 'object')
         self.populate_hash_and_categorical()
+
 
         self.column_list = {'numerical': self.numerical_columns,
                             'bool': self.bool_columns,
                             'categorical': self.categorical_columns,
-                            'int': self.int_columns,
+                            'int-range': [key for key in self.int_columns if self.unique_value_size_dict[key] < self.MAX_RANGE_SIZE],
+                            'int-hash': [key for key in self.int_columns if self.unique_value_size_dict[key] >= self.MAX_RANGE_SIZE],
                             'hash': self.hash_columns}
 
-    def feature_list(self):
+    def feature_dict(self):
         return dict(itertools.chain.from_iterable(
             [itertools.product(self.column_list[key], [key]) for key in self.column_list]))
 
@@ -68,5 +69,5 @@ class FeatureSelection():
         self.feature_columns = itertools.chain.from_iterable(
             [numerical_features, categorical_features, hash_features, range_features])
 
-    def select_columns_with_type(self, dftype):
-        return self.df.select_dtypes(include=[dftype]).columns.tolist()
+    def select_columns_with_type(self, *dftype):
+        return self.df.select_dtypes(include=dftype).columns.tolist()

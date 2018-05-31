@@ -11,15 +11,13 @@
 {% block app_content %}
     <h1>{{ name }}</h1>
 
-    {{ data.to_html(classes="table table-striped display", table_id="amir") | safe }}
+    {{ data.to_html(classes="table table-striped display", table_id="target") | safe }}
 
     <button type="button" id="select">Select</button>
 
-    <form action="{{ url_for('feature') }}">
+    <form action="{{ url_for('target') }}">
         <button type="submit" formmethod="post" id="next" class="btn btn-primary" disabled>Next</button>
     </form>
-
-    <meta id="category-data" data-name='{{ cat | tojson }}'>
 
 
 {% endblock %}
@@ -30,7 +28,6 @@
     {#    <script src="{{ url_for('.static', filename='jquery.dataTables.js') }}"></script>#}
     {#    <script src="{{ url_for('.static', filename='dataTables.select.js') }}"></script>#}
     <script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.16/sl-1.2.5/datatables.min.js"></script>
-    <script src="{{ url_for('.static', filename='table.js') }}"></script>
-    <script>CATEGORIES.init({{ cat | tojson | safe }})</script>
+    <script src="{{ url_for('.static', filename='target.js') }}"></script>
 
 {% endblock %}

@@ -7,7 +7,10 @@ import numpy as np
 from flask_bootstrap import Bootstrap
 import os
 from sklearn.model_selection import train_test_split
+
+from feature_selection import FeatureSelection
 from slider_action import SliderSubmit
+import itertools
 
 from werkzeug.utils import secure_filename
 
@@ -66,19 +69,28 @@ def split():
 
 @app.route('/feature')
 def feature():
+    if request.method == 'POST':
+        return render_template('target_selection.html')
+
     x = config['df']
-    col_number = x.columns.shape[0]
-    cat = assign_category(col_number)
+    x.reset_index(inplace=True, drop=True)
+    categories, unique_values = assign_category(x)
     data = (x.iloc[:SAMPLE_DATA_SIZE, :]).T
-    data.reset_index()
-    data.insert(0, 'category', cat)
+    data.insert(0, 'Unique Values', unique_values)
+    data.insert(0, 'Category', categories)
 
-    return render_template("feature_selection.html", name='Dataset features', data=data)
+    sample_column_names = ["Sample {}".format(i) for i in range(1, SAMPLE_DATA_SIZE + 1)]
+    data.columns = list(itertools.chain(['Category', '#Unique Values'], sample_column_names))
+
+    return render_template("feature_selection.html", name='Dataset features selection', data=data, cat=categories)
 
 
-def assign_category(col_numbers):
-    cat = np.random.choice(['numerical', 'categorical'], col_numbers)
-    return cat
+def assign_category(df):
+    fs = FeatureSelection(df)
+    feature_dict = fs.feature_dict()
+    unique_vlaues = [fs.unique_value_size_dict.get(key, -1) for key in df.columns]
+    category_list = [feature_dict[key] for key in df.columns]
+    return category_list, unique_vlaues
 
 
 @app.route('/cat_col', methods=['GET', 'POST'])

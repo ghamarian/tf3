@@ -67,11 +67,10 @@ def split():
     return jsonify({'done': True})
 
 
-@app.route('/feature')
-def feature():
-    if request.method == 'POST':
-        return render_template('target_selection.html')
 
+@app.route('/feature', methods=['GET', 'POST'])
+def feature():
+    # TODO do it once and test this.
     x = config['df']
     x.reset_index(inplace=True, drop=True)
     categories, unique_values = assign_category(x)
@@ -81,6 +80,9 @@ def feature():
 
     sample_column_names = ["Sample {}".format(i) for i in range(1, SAMPLE_DATA_SIZE + 1)]
     data.columns = list(itertools.chain(['Category', '#Unique Values'], sample_column_names))
+
+    if request.method == 'POST':
+        return render_template('target_selection.html', data=data)
 
     return render_template("feature_selection.html", name='Dataset features selection', data=data, cat=categories)
 

@@ -36,36 +36,50 @@ def analysis():
 
 @app.route('/slider', methods=['GET', 'POST'])
 def slider():
-    # form = SliderSubmit()
-    # if form.validate_on_submit():
-    if request.method == 'POST':
+    form = SliderSubmit(id="form")
+    if form.validate_on_submit():
+    # if request.method == 'POST':
+        split_train_test(request)
         # return render_template('feature_selection.html', name='Dataset features', data=config['df'])
         return redirect(url_for('feature'))
-    return render_template("slider.html")
+    return render_template("slider.html", form=form)
     # return render_template("slider.html", form=form)
 
 
-@app.route('/split', methods=['GET', 'POST'])
-def split():
+def split_train_test(request):
     dataset_file = config['train']
     removed_ext = os.path.splitext(dataset_file)[0]
-
     train_file = "{}-train.csv".format(removed_ext)
     test_file = "{}-test.csv".format(removed_ext)
-
     percent = int(request.form['percent'])
     dataset = pd.read_csv(dataset_file)
     test_size = (dataset.shape[0] * percent) // 100
-
     train_df, test_df = train_test_split(dataset, test_size=test_size)
-
     train_df.to_csv(train_file)
     test_df.to_csv(test_file)
-
     config['df'] = train_df
 
-    return jsonify({'done': True})
 
+# @app.route('/split', methods=['GET', 'POST'])
+# def split():
+#     dataset_file = config['train']
+#     removed_ext = os.path.splitext(dataset_file)[0]
+#
+#     train_file = "{}-train.csv".format(removed_ext)
+#     test_file = "{}-test.csv".format(removed_ext)
+#
+#     percent = int(request.form['percent'])
+#     dataset = pd.read_csv(dataset_file)
+#     test_size = (dataset.shape[0] * percent) // 100
+#
+#     train_df, test_df = train_test_split(dataset, test_size=test_size)
+#
+#     train_df.to_csv(train_file)
+#     test_df.to_csv(test_file)
+#
+#     config['df'] = train_df
+#
+#     return jsonify({'done': True})
 
 
 @app.route('/feature', methods=['GET', 'POST'])
@@ -81,10 +95,13 @@ def feature():
     sample_column_names = ["Sample {}".format(i) for i in range(1, SAMPLE_DATA_SIZE + 1)]
     data.columns = list(itertools.chain(['Category', '#Unique Values'], sample_column_names))
 
-    if request.method == 'POST':
+    form = SliderSubmit()
+
+    # if request.method == 'POST':
+    if form.validate_on_submit():
         return render_template('target_selection.html', data=data)
 
-    return render_template("feature_selection.html", name='Dataset features selection', data=data, cat=categories)
+    return render_template("feature_selection.html", name='Dataset features selection', data=data, cat=categories, form=form)
 
 
 def assign_category(df):

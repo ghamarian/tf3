@@ -2,7 +2,6 @@ import pandas as pd
 import tensorflow as tf
 import itertools
 import utils
-import lazy_property
 from pprint import pprint
 
 

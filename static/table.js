@@ -12,20 +12,18 @@ var CATEGORIES = CATEGORIES || (function () {
     };
 }());
 
-
 $(document).ready(function () {
+    var categorical = 'categorical';
+    var hash = 'hash';
+    var none = 'none';
+    var range = 'range';
+    var numerical = 'numerical';
 
-    let categorical = 'categorical';
-    let hash = 'hash';
-    let none = 'none';
-    let range = 'range';
-    let numerical = 'numerical';
-
-    let options = {
+    var options = {
         numerical: () => $('<option>').attr('value', numerical).text('Numerical'),
         categorical: () => $('<option>').attr('value', categorical).text('Categorical'),
         hash: () => $('<option>').attr('value', hash).text('Hash'),
-        none: () => $('<option>').attr('value', none).text('None'),
+        none: () => $('<option>').attr('value', none).text('No use'),
         range: () => $('<option>').attr('value', range).text('Range')
     };
 
@@ -61,7 +59,7 @@ $(document).ready(function () {
             },
             {
                 "render": function (data, type, row) {
-                    return data === -1 ? 'Not relevant' : data;
+                    return data == -1 ? 'Not relevant' : data;
                 },
                 "targets": 2
             }
@@ -73,10 +71,14 @@ $(document).ready(function () {
     // console.log($('#category-data').data());
 
     $('form').submit(function () {
-        let cat_column = table.$('select option:selected').text().split();
+        let cat_column = table.$('select option:selected').map(function () {
+            return this.value;
+        }).get();
+
         var input = $("<input>")
             .attr("type", "hidden")
             .attr("name", "cat_column").val(JSON.stringify(cat_column));
         $('form').append($(input));
     });
+
 });

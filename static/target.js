@@ -13,14 +13,7 @@ $(document).ready(function () {
             }
         ],
         'ordering': false,
-        'select': true
-        // "pageLength": 2
-    });
-
-    table_tag.on('page.dt', function () {
-        let info = table.page.info();
-        $('#pageInfo').html('Showing page: ' + info.page + ' of ' + info.pages);
-        let data = table.$('select option:selected').text();
+        'select': 'single'
     });
 
     $('#select').click(function (event) {
@@ -41,7 +34,6 @@ $(document).ready(function () {
             }
         });
     });
-
 
 })
 ;

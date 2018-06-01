@@ -46,6 +46,7 @@ def slider():
     # return render_template("slider.html", form=form)
 
 
+# TODO write test.
 def split_train_test(request):
     dataset_file = config['train']
     removed_ext = os.path.splitext(dataset_file)[0]
@@ -58,29 +59,6 @@ def split_train_test(request):
     train_df.to_csv(train_file)
     test_df.to_csv(test_file)
     config['df'] = train_df
-
-
-# @app.route('/split', methods=['GET', 'POST'])
-# def split():
-#     dataset_file = config['train']
-#     removed_ext = os.path.splitext(dataset_file)[0]
-#
-#     train_file = "{}-train.csv".format(removed_ext)
-#     test_file = "{}-test.csv".format(removed_ext)
-#
-#     percent = int(request.form['percent'])
-#     dataset = pd.read_csv(dataset_file)
-#     test_size = (dataset.shape[0] * percent) // 100
-#
-#     train_df, test_df = train_test_split(dataset, test_size=test_size)
-#
-#     train_df.to_csv(train_file)
-#     test_df.to_csv(test_file)
-#
-#     config['df'] = train_df
-#
-#     return jsonify({'done': True})
-
 
 @app.route('/feature', methods=['GET', 'POST'])
 def feature():
@@ -98,15 +76,14 @@ def feature():
     config['data'] = data
 
     form = SliderSubmit()
-
-    # if request.method == 'POST':
     if form.validate_on_submit():
-        print(request.form)
-        # category_list = json.loads(request.form['cat_column'])
-        # print(category_list, type(category_list))
+        category_list = json.loads(request.form['cat_column'])
+        pprint(category_list)
+        config['data'].Category = category_list
+        pprint(config['fs'].create_tf_features(category_list))
         return redirect(url_for('target'))
 
-    return render_template("feature_selection.html", name='Dataset features selection', data=data, cat=categories, form=form)
+    return render_template("feature_selection.html", name='Dataset features selection', data=config['data'], cat=categories, form=form)
 
 
 @app.route('/target')
@@ -120,6 +97,7 @@ def target():
 
 def assign_category(df):
     fs = FeatureSelection(df)
+    config['fs'] = fs
     feature_dict = fs.feature_dict()
     unique_vlaues = [fs.unique_value_size_dict.get(key, -1) for key in df.columns]
     category_list = [feature_dict[key] for key in df.columns]
@@ -129,7 +107,8 @@ def assign_category(df):
 @app.route('/cat_col', methods=['GET', 'POST'])
 def cat_col():
     category_list = json.loads(request.form['cat_column'])
-    print(category_list, type(category_list))
+    config['data'].category = category_list
+    pprint(config['data'])
     return jsonify({'category_list': 2})
 
 

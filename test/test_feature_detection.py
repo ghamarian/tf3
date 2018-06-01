@@ -1,5 +1,6 @@
 import pandas as pd
 from pprint import pprint
+import pytest
 
 from feature_selection import FeatureSelection
 
@@ -15,10 +16,21 @@ hash_col = ['hash_col']
 
 unique_values = {'species': ['setosa', 'versicolor', 'virginica']}
 
+features_datatypes = ['numerical', 'numerical', 'numerical', 'numerical', 'categorical', 'range', 'categorical', 'hash',
+                      'hash']
 
-def test_populate_features():
-    df = pd.read_csv('data/test.csv')
-    fs = FeatureSelection(df)
+
+@pytest.fixture
+def df():
+    return pd.read_csv('data/test.csv')
+
+
+@pytest.fixture
+def fs(df):
+    return FeatureSelection(df)
+
+
+def test_populate_features(df, fs):
     assert numerical_col == fs.numerical_columns
     assert categorical_col == fs.categorical_columns
     assert hash_col == fs.hash_columns
@@ -38,3 +50,10 @@ def test_populate_features():
                                          'int_col': 5,
                                          'species': 3}
     pprint(fs.feature_dict())
+
+
+def test_group_by(fs):
+    assert fs.group_by(features_datatypes) == {'categorical': ['species', 'bool_col'],
+                                               'hash': ['int_big_variance', 'hash_col'],
+                                               'numerical': ['sepal_length', 'sepal_width', 'petal_length', 'petal_width'],
+                                               'range': ['int_col']}

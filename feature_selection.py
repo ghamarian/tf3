@@ -3,6 +3,7 @@ import tensorflow as tf
 import itertools
 import utils
 from pprint import pprint
+from collections import defaultdict
 
 
 class FeatureSelection:
@@ -49,7 +50,17 @@ class FeatureSelection:
                 self.hash_columns.append(col)
             self.unique_value_size_dict[col] = len(unique)
 
-    def create_tf_features(self, feature_types):
+    def group_by(self, datatypes):
+        columns_types_dict = dict(zip(self.df.columns, datatypes))
+
+        v = defaultdict(list)
+        for col, datatype in columns_types_dict.items():
+            v[datatype].append(col)
+
+        return dict(v)
+
+    def create_tf_features(self, datatypes):
+        feature_types = self.group_by(datatypes)
         numerical_features = [tf.feature_column.numeric_column(key) for key in feature_types['numerical']]
         range_features = [tf.feature_column.categorical_column_with_identity(key, self.unique_value_size_dict[key]) for
                           key in feature_types['range']]
@@ -57,7 +68,7 @@ class FeatureSelection:
         categorical_features = []
         for feature in feature_types['categorical']:
             if feature in self.bool_columns:
-                vocab_list = [True, False]
+                vocab_list = ['True', 'False']
             else:
                 vocab_list = self.cat_unique_values_dict.get(feature, self.df[feature].unique().tolist())
             categorical_features.append(tf.feature_column.categorical_column_with_vocabulary_list(feature, vocab_list))
@@ -67,6 +78,8 @@ class FeatureSelection:
 
         self.feature_columns = itertools.chain.from_iterable(
             [numerical_features, categorical_features, hash_features, range_features])
+        
+        return self.feature_columns
 
     def select_columns_with_type(self, *dftype):
         return self.df.select_dtypes(include=dftype).columns.tolist()

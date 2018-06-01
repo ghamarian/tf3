@@ -38,7 +38,7 @@ def analysis():
 def slider():
     form = SliderSubmit(id="form")
     if form.validate_on_submit():
-    # if request.method == 'POST':
+        # if request.method == 'POST':
         split_train_test(request)
         # return render_template('feature_selection.html', name='Dataset features', data=config['df'])
         return redirect(url_for('feature'))
@@ -95,13 +95,27 @@ def feature():
     sample_column_names = ["Sample {}".format(i) for i in range(1, SAMPLE_DATA_SIZE + 1)]
     data.columns = list(itertools.chain(['Category', '#Unique Values'], sample_column_names))
 
+    config['data'] = data
+
     form = SliderSubmit()
 
     # if request.method == 'POST':
     if form.validate_on_submit():
-        return render_template('target_selection.html', data=data)
+        print(request.form)
+        # category_list = json.loads(request.form['cat_column'])
+        # print(category_list, type(category_list))
+        return redirect(url_for('target'))
 
     return render_template("feature_selection.html", name='Dataset features selection', data=data, cat=categories, form=form)
+
+
+@app.route('/target')
+def target():
+    form = SliderSubmit()
+    data = config['data']
+    if form.validate_on_submit():
+        return jsonify({'result': True})
+    return render_template('target_selection.html', name="Dataset target selection", form=form, data=data)
 
 
 def assign_category(df):

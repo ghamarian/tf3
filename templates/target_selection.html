@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
 
 {% block styles %}
     {{ super() }}
@@ -13,11 +14,7 @@
 
     {{ data.to_html(classes="table table-striped display", table_id="target") | safe }}
 
-    <button type="button" id="select">Select</button>
-
-    <form action="{{ url_for('target') }}">
-        <button type="submit" formmethod="post" id="next" class="btn btn-primary" disabled>Next</button>
-    </form>
+    {{ wtf.quick_form(form, button_map={'submit': 'primary'}) }}
 
 
 {% endblock %}

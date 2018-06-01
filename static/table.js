@@ -1,26 +1,3 @@
-// $(document).ready(function () {
-//     var table = $('#amir').DataTable({
-//         'select': 'api'
-//     });
-//
-//     $('#amir').on('click', 'tbody td', function(){
-//        // If this column is selected
-//        if(table.column(this, { selected: true }).length){
-//           table.column(this).deselect();
-//
-//        // Otherwise, if this column is not selected
-//        } else {
-//           table.column(this).select();
-//        }
-//     });
-//     // table.on('select', function (e, dt, type, indexes) {
-//     //     var data = table.columns(col).data().pluck('id');
-//     //     console.log(data)
-//     //     // }
-//     // });
-// })
-// ;
-
 var CATEGORIES = CATEGORIES || (function () {
     let _args = {}; // private
 
@@ -38,14 +15,38 @@ var CATEGORIES = CATEGORIES || (function () {
 
 $(document).ready(function () {
 
+    let categorical = 'categorical';
+    let hash = 'hash';
+    let none = 'none';
+    let range = 'range';
+    let numerical = 'numerical';
+
+    let options = {
+        numerical: () => $('<option>').attr('value', numerical).text('Numerical'),
+        categorical: () => $('<option>').attr('value', categorical).text('Categorical'),
+        hash: () => $('<option>').attr('value', hash).text('Hash'),
+        none: () => $('<option>').attr('value', none).text('None'),
+        range: () => $('<option>').attr('value', range).text('Range')
+    };
+
+    function createMenu(selected, ...items) {
+        let result = $("<select>");
+        for (let i = 0; i < items.length; i++) {
+            result.append(options[items[i]]());
+        }
+        result.find('option[value=' + selected + ']').attr('selected', true);
+        return result.prop('outerHTML');
+    }
+
+
     var category = {
-        'categorical': '<select> <option value = "categorical" selected> Categorical </option> <option value = "hash"> Hash </option><option value = "none"> Not used </option></select>',
-        'hash': '<select> <option value = "categorical"> Categorical </option> <option value = "hash" selected> Hash </option><option value = "none"> Not used </option></select>',
-        'int-range': '<select> <option value = "hash"> Hash </option> <option value = "range" selected> Range </option> <option value = "categorical" > Categorical </option>  <option value = "numerical"> Numerical </option><option value = "none"> Not used </option></select>',
-        'int-hash': '<select> <option value = "hash" selected> Hash </option> <option value = "range"> Range </option> <option value = "categorical" > Categorical </option>  <option value = "numerical"> Numerical </option><option value = "none"> Not used </option></select>',
-        'int-category': '<select> <option value = "hash"> Hash </option> <option value = "range"> Range </option> <option value = "categorical" selected> Categorical </option>  <option value = "numerical"> Numerical </option><option value = "none"> Not used </option></select>',
-        'bool': '<select> <option value = "categorical" selected> Categorical </option><option value = "none"> Not used </option></select>',
-        'numerical': '<select> <option value = "numerical" selected> Numerical </option><option value = "none"> Not used </option></select>'
+        'categorical': createMenu(categorical, categorical, hash, none),
+        'hash': createMenu(hash, hash, categorical, none),
+        'int-range': createMenu(range, range, hash, categorical, numerical, none),
+        'int-hash': createMenu(hash, hash, categorical, numerical, none),
+        'int-category': createMenu(hash, hash, range, categorical, numerical, none),
+        'bool': createMenu(categorical, categorical, none),
+        'numerical': createMenu(numerical, numerical, none)
     };
 
     table_tag = $('#amir');
@@ -69,55 +70,13 @@ $(document).ready(function () {
         // "pageLength": 2
     });
 
-
     // console.log($('#category-data').data());
 
-
-    table_tag.on('page.dt', function () {
-        let info = table.page.info();
-        $('#pageInfo').html('Showing page: ' + info.page + ' of ' + info.pages);
-        let data = table.$('select option:selected').text();
-    });
-
-    // $('#send').click(function () {
-    //     // var data = table.$('select').serialize();
-    //     var data = table.$('select option:selected').text();
-    //     alert('Data source: ' + table.columns([0, 1]).dataSrc().join(' '));
-    //     alert(
-    //         "The following data would have been submitted to the server: \n\n" +
-    //         data.substr(0, 120) + '...'
-    //     );
-    //     return false;
-    // });
-
-    $('#select').click(function (event) {
-        event.preventDefault();
-        // var cat_column = table.columns(1).data()[0]
+    $('form').submit(function () {
         let cat_column = table.$('select option:selected').text().split();
-
-
-        $.ajax('/cat_col', {
-            data: {'cat_column': JSON.stringify(cat_column)},
-            dataType: 'json',
-            type: "POST",
-            // contentType: "application/json; charset=utf-8",
-            cache: false,
-            // data: {"a": "b"},
-            success: function (data) {
-                $('#next').prop('disabled', false);
-            }
-        });
+        var input = $("<input>")
+            .attr("type", "hidden")
+            .attr("name", "cat_column").val(JSON.stringify(cat_column));
+        $('form').append($(input));
     });
-
-
-    // var table = $('#amir').DataTable({
-    //     'select': 'row'
-    // });
-
-    // table.on('select', function (e, dt, type, indexes) {
-    //     var data = table.columns(col).data().pluck('id');
-    //     console.log(data)
-    //     // }
-    // });
-})
-;
+});

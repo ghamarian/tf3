@@ -14,13 +14,6 @@
 
     {{ data.to_html(classes="table table-striped display", table_id="amir") | safe }}
 
-    <!--<button type="button" id="select">Select</button>-->
-
-    <!--<form action="{{ url_for('feature') }}" method="post">-->
-<!--{#        <button type="submit" formmethod="post" id="next" class="btn btn-primary" disabled>Next</button>#}-->
-        <!--<button type="submit" formmethod="post" id="next" class="btn btn-primary" disabled>Next</button>-->
-    <!--</form>-->
-
     {{ wtf.quick_form(form, button_map={'submit': 'primary'}) }}
 
     <meta id="category-data" data-name='{{ cat | tojson }}'>

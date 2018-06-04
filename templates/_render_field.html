@@ -1,0 +1,62 @@
+{% macro render_single_field(field) %}
+    <div class="form-group">
+        <label for="{{ field.name }}" class="col-lg-2 control-label">{{ field.label.text }}</label>
+        <div class="col-lg-3">
+            {{ field(class_='form-control', **kwargs)|safe }}
+            <ul>
+                {% for error in field.errors %}
+                    <li style="color:red;">{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+{% endmacro %}
+
+
+{% macro render_field(field) %}
+    <legend>{{ field.label.text }}</legend>
+    {% set vars = {'count': 0} %}
+
+    {%- for subfield in field %}
+        {% if not bootstrap_is_hidden_field(subfield) %}
+            {% if loop.index0 is divisibleby 2 %}
+                <div class="form-row">
+            {% endif %}
+        <div class="form-group col-md-6">
+            <label for="{{ subfield.name }}"
+                   class="control-label">{{ subfield.label.text }}</label>
+            {{ subfield(class_='form-control', **kwargs)|safe }}
+            <ul>
+                {% for error in subfield.errors %}
+                    <li style="color:red;">{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% if loop.index is divisibleby 2 %}
+            </div>
+        {% endif %}
+        {% endif %}
+        {% if vars.update({'count': loop.length}) %} {% endif %}
+    {%- endfor %}
+    {% if vars.count is divisibleby 2 %} {# one extra is for csrf, hence even #}
+        <div class="clearfix"></div>
+        </div>
+    {% endif %}
+{% endmacro %}
+
+
+{% macro render_radio_fields(field) %}
+    <div class="form-group">
+        <label class="col-lg-2 control-label">{{ field.label.text }}</label>
+        <div class="col-lg-10">
+            {% for subfield in field %}
+                <div class="radio">
+                    <label>
+                        {{ subfield }}
+                        {{ subfield.label.text }}
+                    </label>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endmacro %}

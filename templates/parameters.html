@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import 'bootstrap/wtf.html' as wtf %}
+{% from '_render_field.html' import render_field %}
 
 {% block styles %}
     {{ super() }}
@@ -12,7 +13,15 @@
 {% block app_content %}
     <h1>{{ name }}</h1>
 
-    {{ wtf.quick_form(form, button_map={'submit': 'primary'}) }}
+{#    {{ wtf.quick_form(form, form_type="horizontal", horizontal_columns=('lg', 2, 4)) }}#}
+    <form action="/">
+        {{ render_field(form.experiment) }}
+        {{ render_field(form.network) }}
+        {{ render_field(form.checkpoints) }}
+        {{ render_field(form.parameters) }}
+        {{ render_field(form.amir) }}
+    </form>
+
 
 {% endblock %}
 

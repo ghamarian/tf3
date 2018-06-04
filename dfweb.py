@@ -31,7 +31,7 @@ config = {}
 
 @app.route('/')
 def analysis():
-    return redirect(url_for('upload'))
+    return redirect(url_for('parameters'))
 
 
 @app.route('/slider', methods=['GET', 'POST'])

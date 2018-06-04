@@ -8,7 +8,7 @@ import os
 from sklearn.model_selection import train_test_split
 
 from feature_selection import FeatureSelection
-from forms.parameters_form import ParametersForm
+from forms.parameters_form import ParametersForm, GeneralForm
 from forms.submit_form import Submit
 import itertools
 
@@ -84,6 +84,13 @@ def feature():
     return render_template("feature_selection.html", name='Dataset features selection', data=config['data'], cat=categories, form=form)
 
 
+@app.route('/parameters', methods=['GET', 'POST'])
+def parameters():
+    form = GeneralForm()
+    if form.validate_on_submit():
+      return jsonify({'submit': True})
+    return render_template('parameters.html', form=form)
+
 @app.route('/target', methods=['POST', 'GET'])
 def target():
     form = Submit()
@@ -91,7 +98,7 @@ def target():
     if form.validate_on_submit():
         target = json.loads(request.form['selected_row'])[0]
         pprint(target)
-        return jsonify({'result': True})
+        return redirect(url_for('parameter'))
     return render_template('target_selection.html', name="Dataset target selection", form=form, data=data)
 
 
@@ -119,14 +126,14 @@ def flash_errors(form):
             # flash(u"Error in the %s field - %s" % (getattr(form, field).label.text, error))
 
 
-@app.route('/parameters')
-def parameters():
-    form = ParametersForm()
-
-    if form.validate_on_submit():
-        return jsonify({'submit': True})
-
-    return render_template("parameters.html", form=form)
+# @app.route('/parameters')
+# def parameters():
+#     form = ParametersForm()
+#
+#     if form.validate_on_submit():
+#         return jsonify({'submit': True})
+#
+#     return render_template("parameters.html", form=form)
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():

@@ -14,6 +14,6 @@ from wtforms.widgets import HTMLString, html_params, Input
 # class DisabledSubmit(BooleanField):
 #     widget = DisabledSubmitInput()
 
-class SliderSubmit(FlaskForm):
+class Submit(FlaskForm):
     # submit = DisabledSubmit("Next")
     submit = SubmitField("Next")

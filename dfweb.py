@@ -3,18 +3,18 @@ from pprint import pprint
 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 import pandas as pd
-import numpy as np
 from flask_bootstrap import Bootstrap
 import os
 from sklearn.model_selection import train_test_split
 
 from feature_selection import FeatureSelection
-from slider_action import SliderSubmit
+from forms.parameters_form import ParametersForm
+from forms.submit_form import Submit
 import itertools
 
 from werkzeug.utils import secure_filename
 
-from file_upload import DatasetFileForm
+from forms.upload_form import DatasetFileForm
 
 SAMPLE_DATA_SIZE = 6
 
@@ -36,7 +36,7 @@ def analysis():
 
 @app.route('/slider', methods=['GET', 'POST'])
 def slider():
-    form = SliderSubmit(id="form")
+    form = Submit(id="form")
     if form.validate_on_submit():
         # if request.method == 'POST':
         split_train_test(request)
@@ -75,7 +75,7 @@ def feature():
 
     config['data'] = data
 
-    form = SliderSubmit()
+    form = Submit()
     if form.validate_on_submit():
         category_list = json.loads(request.form['cat_column'])
         pprint(category_list)
@@ -88,7 +88,7 @@ def feature():
 
 @app.route('/target')
 def target():
-    form = SliderSubmit()
+    form = Submit()
     data = config['data']
     if form.validate_on_submit():
         return jsonify({'result': True})
@@ -118,6 +118,15 @@ def flash_errors(form):
             flash(u"%s" % error)
             # flash(u"Error in the %s field - %s" % (getattr(form, field).label.text, error))
 
+
+@app.route('/parameters')
+def parameters():
+    form = ParametersForm()
+
+    if form.validate_on_submit():
+        return jsonify({'submit': True})
+
+    return render_template("parameters.html", form=form)
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():

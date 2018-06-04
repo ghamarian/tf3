@@ -78,7 +78,7 @@ class FeatureSelection:
 
         self.feature_columns = itertools.chain.from_iterable(
             [numerical_features, categorical_features, hash_features, range_features])
-        
+
         return self.feature_columns
 
     def select_columns_with_type(self, *dftype):

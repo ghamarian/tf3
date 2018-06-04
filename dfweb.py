@@ -16,7 +16,7 @@ from werkzeug.utils import secure_filename
 
 from forms.upload_form import DatasetFileForm
 
-SAMPLE_DATA_SIZE = 6
+SAMPLE_DATA_SIZE = 5
 
 WTF_CSRF_SECRET_KEY = 'a random string'
 
@@ -38,14 +38,12 @@ def analysis():
 def slider():
     form = Submit(id="form")
     if form.validate_on_submit():
-        # if request.method == 'POST':
         split_train_test(request)
-        # return render_template('feature_selection.html', name='Dataset features', data=config['df'])
         return redirect(url_for('feature'))
     return render_template("slider.html", form=form)
-    # return render_template("slider.html", form=form)
 
 
+# TODO Perhaps to handle big files you can change this, to work with the filename instead
 # TODO write test.
 def split_train_test(request):
     dataset_file = config['train']
@@ -66,7 +64,7 @@ def feature():
     x = config['df']
     x.reset_index(inplace=True, drop=True)
     categories, unique_values = assign_category(x)
-    data = (x.iloc[:SAMPLE_DATA_SIZE, :]).T
+    data = (x.head(SAMPLE_DATA_SIZE).T)
     data.insert(0, 'Unique Values', unique_values)
     data.insert(0, 'Category', categories)
 
@@ -86,11 +84,13 @@ def feature():
     return render_template("feature_selection.html", name='Dataset features selection', data=config['data'], cat=categories, form=form)
 
 
-@app.route('/target')
+@app.route('/target', methods=['POST', 'GET'])
 def target():
     form = Submit()
     data = config['data']
     if form.validate_on_submit():
+        target = json.loads(request.form['selected_row'])[0]
+        pprint(target)
         return jsonify({'result': True})
     return render_template('target_selection.html', name="Dataset target selection", form=form, data=data)
 

@@ -36,6 +36,7 @@ class FeatureSelection:
         return dict(itertools.chain.from_iterable(
             [itertools.product(self.column_list[key], [key]) for key in self.column_list]))
 
+    # Just
     def populate_hash_and_categorical(self):
         self.cat_unique_values_dict = {}
         self.categorical_columns = []

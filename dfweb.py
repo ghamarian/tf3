@@ -10,6 +10,7 @@ from flask_wtf import csrf
 from sklearn.model_selection import train_test_split
 from flask_wtf.csrf import CSRFError
 
+from config.config_writer import ConfigWriter
 from feature_selection import FeatureSelection
 from forms.parameters_form import GeneralClassifierForm
 from forms.submit_form import Submit
@@ -28,7 +29,6 @@ APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__)
 Bootstrap(app)
 app.secret_key = WTF_CSRF_SECRET_KEY
-app.config['WTF_CSRF_CHECK_DEFAULTWTF_CSRF_CHECK_DEFAULT'] = False
 
 config = {}
 
@@ -40,7 +40,7 @@ def handle_csrf_error(e):
 
 @app.route('/')
 def analysis():
-    return redirect(url_for('parameters'))
+    return redirect(url_for('upload'))
 
 
 @app.route('/slider', methods=['GET', 'POST'])
@@ -99,6 +99,8 @@ def parameters():
     form = GeneralClassifierForm()
     if form.validate_on_submit():
         pprint(request.form)
+        config_writer = ConfigWriter(request.form)
+        config_writer.write_config('config/new_config.ini')
         return jsonify({'submit': True})
     flash_errors(form)
     return render_template('parameters.html', form=form)
@@ -122,14 +124,6 @@ def assign_category(df):
     unique_vlaues = [fs.unique_value_size_dict.get(key, -1) for key in df.columns]
     category_list = [feature_dict[key] for key in df.columns]
     return category_list, unique_vlaues
-
-
-@app.route('/cat_col', methods=['GET', 'POST'])
-def cat_col():
-    category_list = json.loads(request.form['cat_column'])
-    config['data'].category = category_list
-    pprint(config['data'])
-    return jsonify({'category_list': 2})
 
 
 def flash_errors(form):

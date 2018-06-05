@@ -1,4 +1,5 @@
 from configparser import ConfigParser
+from pprint import pprint
 
 
 class ConfigWriter:
@@ -10,8 +11,10 @@ class ConfigWriter:
     def items(self):
         result = []
         for k, value in self.form.items():
-            section, key = k.split('-', 1)
-            result.append((section.upper(), key, value))
+            print(k, value)
+            if 'csrf_token' not in k:
+                section, key = k.split('-', 1)
+                result.append((section.upper(), key, value))
         return result
 
     def populate_config(self):
@@ -20,3 +23,7 @@ class ConfigWriter:
                self.config.add_section(section)
             self.config.set(section, key, value)
 
+    def write_config(self, path):
+        with open(path, 'w') as f:
+            self.populate_config()
+            self.config.write(f)

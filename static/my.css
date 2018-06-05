@@ -30,11 +30,12 @@
 }
 #slider .rs-range-color  {
     /*background-color: #DB5959;*/
-    background-color: #8832cd;
+    background-color: #337ab7;
 }
 #slider .rs-path-color  {
     /*background-color: #F0C5C5;*/
-    background-color: #ddc5f0;
+    /*background-color: #4cb7ff;*/
+    background-color: #46a9fe;
 }
 
 #slider-div {

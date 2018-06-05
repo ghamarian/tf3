@@ -13,7 +13,6 @@ class CSVReader(metaclass=ABCMeta):
         self.num_epochs = None
         self.label_name = None
 
-
     def make_dataset_from_config(self, params: Dict[str, object] = None) -> tf.data.Dataset:
         self._set_params(params)
         return self._make_csv_dataset()
@@ -24,7 +23,8 @@ class CSVReader(metaclass=ABCMeta):
 
     def _make_csv_dataset(self):
         return tf.contrib.data.make_csv_dataset([self.filename], self.batch_size, num_epochs=self.num_epochs,
-                                                 label_name=self.label_name)
+                                                label_name=self.label_name)
+
     def _column_names(self) -> pd.DataFrame:
         return pd.read_csv(self.filename, nrows=2).columns
 

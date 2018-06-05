@@ -21,12 +21,13 @@ SAVE_CHECKPOINTS_STEPS = 'save_checkpoints_steps'
 
 class Classifier:
 
-    def __init__(self, params, train_csv_reader, validation_csv_reader):
+    def __init__(self, params, train_csv_reader, validation_csv_reader, feature_columns):
         self.params = params
         self.checkpoint_dir = params['checkpoint_dir']
         self.train_csv_reader = train_csv_reader
         self.validation_csv_reader = validation_csv_reader
-        self.feature_columns = [tf.feature_column.numeric_column(key) for key in self.train_csv_reader._feature_names()]
+        self.feature_columns = feature_columns
+        # self.feature_columns = [tf.feature_column.numeric_column(key) for key in self.train_csv_reader._feature_names()]
 
         tf.logging.set_verbosity(tf.logging.DEBUG)
         tf.reset_default_graph()
@@ -52,7 +53,7 @@ class Classifier:
         hidden_layers = self.params[HIDDEN_LAYERS][0]
         label_vocabulary = self.train_csv_reader.label_unique_values()
 
-        mb = ModelBuilder(self.feature_columns)
+        mb = ModelBuilder()
         # b = a.grab("tensorflow.python.estimator.canned.linear.LinearRegressor", self.feature_columns)
 
         self.params['n_classes'] = len(label_vocabulary)
@@ -90,6 +91,8 @@ config = config_reader.read_config(CONFIG_FILE)
 train_csv_reader = TrainCSVReader(config)
 validation_csv_reader = ValidationCSVReader(config)
 
+feature_columns = [tf.feature_column.numeric_column(key) for key in train_csv_reader._feature_names()]
+
 params = {'batch_size': 32,
           'max_steps': 5000,
           'save_checkpoints_steps': 100,
@@ -101,7 +104,7 @@ params = {'batch_size': 32,
 config_params = config.all()
 config_params.update(params)
 
-classifier = Classifier(config_params, train_csv_reader, validation_csv_reader)
+classifier = Classifier(config_params, train_csv_reader, validation_csv_reader, feature_columns)
 classifier.clear_checkpoint()
 classifier.run()
 

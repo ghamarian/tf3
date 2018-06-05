@@ -13,13 +13,13 @@ var CATEGORIES = CATEGORIES || (function () {
 }());
 
 $(document).ready(function () {
-    var categorical = 'categorical';
-    var hash = 'hash';
-    var none = 'none';
-    var range = 'range';
-    var numerical = 'numerical';
+    let categorical = 'categorical';
+    let hash = 'hash';
+    let none = 'none';
+    let range = 'range';
+    let numerical = 'numerical';
 
-    var options = {
+    let options = {
         numerical: () => $('<option>').attr('value', numerical).text('Numerical'),
         categorical: () => $('<option>').attr('value', categorical).text('Categorical'),
         hash: () => $('<option>').attr('value', hash).text('Hash'),
@@ -37,7 +37,7 @@ $(document).ready(function () {
     }
 
 
-    var category = {
+    let category = {
         'categorical': createMenu(categorical, categorical, hash, none),
         'hash': createMenu(hash, hash, categorical, none),
         'int-range': createMenu(range, range, hash, categorical, numerical, none),
@@ -75,7 +75,7 @@ $(document).ready(function () {
             return this.value;
         }).get();
 
-        var input = $("<input>")
+        let input = $("<input>")
             .attr("type", "hidden")
             .attr("name", "cat_column").val(JSON.stringify(cat_column));
         $('form').append($(input));

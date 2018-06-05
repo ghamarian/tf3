@@ -6,8 +6,8 @@ from collections import OrderedDict
 
 class ModelBuilder:
 
-    def __init__(self, features):
-        self.features = features
+    def __init__(self):
+        # self.features = features
         self.cls = tf.estimator.Estimator
         self.subclasses = self._all_subclasses(self.cls)
         self.subclasses_names = self.populate_subclasses_name_list()

@@ -111,7 +111,7 @@ def target():
     if form.validate_on_submit():
         target = json.loads(request.form['selected_row'])[0]
         pprint(target)
-        return redirect(url_for('parameter'))
+        return redirect(url_for('parameters'))
     return render_template('target_selection.html', name="Dataset target selection", form=form, data=data)
 
 
@@ -138,15 +138,6 @@ def flash_errors(form):
             flash(u"%s" % error)
             # flash(u"Error in the %s field - %s" % (getattr(form, field).label.text, error))
 
-
-# @app.route('/parameters')
-# def parameters():
-#     form = ParametersForm()
-#
-#     if form.validate_on_submit():
-#         return jsonify({'submit': True})
-#
-#     return render_template("parameters.html", form=form)
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():

@@ -9,7 +9,7 @@ from wtforms.widgets import HTMLString, html_params
 
 class CheckpointsForm(FlaskForm):
     checkpoint_dir = StringField("Checkpoints path", validators=[InputRequired()], default="checkpoints")
-    log_dir = StringField("Log directory", validators=[InputRequired()])
+    log_dir = StringField("Log directory", validators=[InputRequired()], default='checkpoints')
 
 
 class ProcessForm(FlaskForm):
@@ -36,7 +36,7 @@ class NetworkClassifierForm(FlaskForm):
                                 validators=[InputRequired(), Regexp(r'\d+(?:,\d+)*$'), sanity_check_number_of_layers],
                                 default="10,5,1")
 
-    model_name = SelectField('Model type', choices=['DNNClassifier', 'LinearClassifier'])
+    model_name = SelectField('Model type', choices=[('DNNClassifier', 'DNN Classifier'), ('LinearClassifier', 'Linear Classifier')], default='LinearClassifier')
 
 
 class NetworkRegressorForm(FlaskForm):
@@ -45,7 +45,7 @@ class NetworkRegressorForm(FlaskForm):
     hidden_layers = StringField("Hidden units in csv", validators=[InputRequired(), Regexp(r'\d+(?:,\d+)*$')],
                                 default="10,5,1")
 
-    model_name = SelectField('Model type', choices=[('', 'DNNRegressor'), ('', 'LinearRegressor')])
+    model_name = SelectField('Model type', choices=[('DNNRegressor', 'DNN Regressor'), ('LinearRegressor', 'Linear Regressor')])
 
 
 class TrainForm(FlaskForm):
@@ -57,7 +57,7 @@ class TrainForm(FlaskForm):
     learning_rate = FloatField("Learning rate", validators=[InputRequired()], default=0.01)
     l1_regularization = FloatField("L1 regularization factor", validators=[InputRequired()], default=0.002)
     l2_regularization = FloatField("L2 regularization factor", validators=[InputRequired()], default=0.002)
-    dropout_probability = FloatField("Dropout probability", validators=[InputRequired(), NumberRange(min=0.0, max=1.0)])
+    dropout_probability = FloatField("Dropout probability", validators=[InputRequired(), NumberRange(min=0.0, max=1.0)], default=0.0)
 
 
 class GeneralRegressorForm(FlaskForm):

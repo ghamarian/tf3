@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% import 'bootstrap/wtf.html' as wtf %}
-{% from '_render_field.html' import render_field %}
+{% from '_render_field.html' import render_field, render_single_field %}
 
 {% block styles %}
     {{ super() }}
@@ -13,13 +13,15 @@
 {% block app_content %}
     <h1>{{ name }}</h1>
 
-{#    {{ wtf.quick_form(form, form_type="horizontal", horizontal_columns=('lg', 2, 4)) }}#}
-    <form action="/">
+    {#    {{ wtf.quick_form(form, form_type="horizontal", horizontal_columns=('lg', 2, 4)) }}#}
+    <form action="/parameters" method="post">
+        {{ form.csrf_token }}
         {{ render_field(form.experiment) }}
         {{ render_field(form.network) }}
         {{ render_field(form.checkpoints) }}
-        {{ render_field(form.parameters) }}
-        {{ render_field(form.amir) }}
+        {{ render_field(form.train) }}
+        <button type="submit" formmethod="post" class="btn btn-primary">Submit</button>
+
     </form>
 
 
@@ -31,6 +33,5 @@
     {#    <script src="{{ url_for('.static', filename='jquery.dataTables.js') }}"></script>#}
     {#    <script src="{{ url_for('.static', filename='dataTables.select.js') }}"></script>#}
     <script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.16/sl-1.2.5/datatables.min.js"></script>
-    <script src="{{ url_for('.static', filename='target.js') }}"></script>
 
 {% endblock %}

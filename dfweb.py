@@ -5,10 +5,13 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 import pandas as pd
 from flask_bootstrap import Bootstrap
 import os
+
+from flask_wtf import csrf
 from sklearn.model_selection import train_test_split
+from flask_wtf.csrf import CSRFError
 
 from feature_selection import FeatureSelection
-from forms.parameters_form import ParametersForm, GeneralForm
+from forms.parameters_form import GeneralClassifierForm
 from forms.submit_form import Submit
 import itertools
 
@@ -25,8 +28,14 @@ APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__)
 Bootstrap(app)
 app.secret_key = WTF_CSRF_SECRET_KEY
+app.config['WTF_CSRF_CHECK_DEFAULTWTF_CSRF_CHECK_DEFAULT'] = False
 
 config = {}
+
+
+@app.errorhandler(CSRFError)
+def handle_csrf_error(e):
+    return render_template('csrf_error.html', reason=e.description), 400
 
 
 @app.route('/')
@@ -58,6 +67,7 @@ def split_train_test(request):
     test_df.to_csv(test_file)
     config['df'] = train_df
 
+
 @app.route('/feature', methods=['GET', 'POST'])
 def feature():
     # TODO do it once and test this.
@@ -81,15 +91,18 @@ def feature():
         pprint(config['fs'].create_tf_features(category_list))
         return redirect(url_for('target'))
 
-    return render_template("feature_selection.html", name='Dataset features selection', data=config['data'], cat=categories, form=form)
-
+    return render_template("feature_selection.html", name='Dataset features selection', data=config['data'],
+                           cat=categories, form=form)
 
 @app.route('/parameters', methods=['GET', 'POST'])
 def parameters():
-    form = GeneralForm()
+    form = GeneralClassifierForm()
     if form.validate_on_submit():
-      return jsonify({'submit': True})
+        pprint(request.form)
+        return jsonify({'submit': True})
+    flash_errors(form)
     return render_template('parameters.html', form=form)
+
 
 @app.route('/target', methods=['POST', 'GET'])
 def target():

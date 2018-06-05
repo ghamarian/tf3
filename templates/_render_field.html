@@ -14,17 +14,16 @@
 
 
 {% macro render_field(field) %}
-    <legend>{{ field.label.text }}</legend>
-    {% set vars = {'count': 0} %}
+    <legend><label> {{ field.label.text }} </label></legend>
+    {% set vars = {'count': 0} %} {# A bit strange, but this is how you change variable value inside loop #}
 
     {%- for subfield in field %}
         {% if not bootstrap_is_hidden_field(subfield) %}
             {% if loop.index0 is divisibleby 2 %}
                 <div class="form-row">
             {% endif %}
-        <div class="form-group col-md-6">
-            <label for="{{ subfield.name }}"
-                   class="control-label">{{ subfield.label.text }}</label>
+            <div class="form-group col-md-6">
+            <label for="{{ subfield.name }}" class="control-label">{{ subfield.label.text }}</label>
             {{ subfield(class_='form-control', **kwargs)|safe }}
             <ul>
                 {% for error in subfield.errors %}
@@ -32,9 +31,10 @@
                 {% endfor %}
             </ul>
         </div>
-        {% if loop.index is divisibleby 2 %}
+        {% if loop.index0 is not divisibleby 2 %}
             </div>
         {% endif %}
+            {% else  %}
         {% endif %}
         {% if vars.update({'count': loop.length}) %} {% endif %}
     {%- endfor %}
@@ -42,6 +42,7 @@
         <div class="clearfix"></div>
         </div>
     {% endif %}
+    {{ field.hidden_tag() }}
 {% endmacro %}
 
 

@@ -1,19 +1,15 @@
 from flask_wtf import FlaskForm
-from wtforms import SubmitField, TextField, FormField, FileField, IntegerField, FieldList
+from wtforms import SubmitField, TextField, FormField, FileField, IntegerField, FieldList, SelectField, FloatField
 from flask_uploads import UploadSet, DATA
-from wtforms.validators import InputRequired
+from wtforms.validators import InputRequired, ValidationError, StopValidation, AnyOf, Regexp, NumberRange
 
 from wtforms import StringField
 from wtforms.widgets import HTMLString, html_params
 
 
-class ParametersForm(FlaskForm):
-    type = StringField("type", validators=[InputRequired()])
-
-
 class CheckpointsForm(FlaskForm):
     checkpoint_dir = StringField("Checkpoints path", validators=[InputRequired()], default="checkpoints")
-    log_dir = StringField("Log directory", validators=[InputRequired])
+    log_dir = StringField("Log directory", validators=[InputRequired()])
 
 
 class ProcessForm(FlaskForm):
@@ -28,18 +24,53 @@ class LayerForm(FlaskForm):
     layer = IntegerField("Layer")
 
 
-class NetworkForm(FlaskForm):
-    num_layers = IntegerField("Number of layers", validators=[IntegerField()], default=1)
-    # hidden_layers = FieldList(FormField(LayerForm), min_entries=3, default=(10, 5, 1))
+def sanity_check_number_of_layers(form, field):
+    if form.num_layers.data != len(form.hidden_layers.data.split(',')):
+        field.errors[:] = []
+        raise StopValidation('The numbers do not match')
 
-class NetworkForm2(FlaskForm):
-    num_layers = IntegerField("Number of layers", validators=[IntegerField()], default=1)
-    # hidden_layers = FieldList(FormField(LayerForm), min_entries=3, default=(10, 5, 1))
 
-class GeneralForm(FlaskForm):
-    parameters = FormField(ParametersForm)
+class NetworkClassifierForm(FlaskForm):
+    num_layers = IntegerField("Number of layers", validators=[InputRequired()], default=3)
+    hidden_layers = StringField("Hidden units in csv",
+                                validators=[InputRequired(), Regexp(r'\d+(?:,\d+)*$'), sanity_check_number_of_layers],
+                                default="10,5,1")
+
+    model_name = SelectField('Model type', choices=['DNNClassifier', 'LinearClassifier'])
+
+
+class NetworkRegressorForm(FlaskForm):
+    # num_layers = IntegerField("Number of layers", validators=[InputRequired()], default=3)
+    # hidden_layers = StringField("Hidden units in csv", validators=[InputRequired(), Regexp(r'\d+(?:,\d+)*$'), sanity_check_number_of_layers], default="10,5,1")
+    hidden_layers = StringField("Hidden units in csv", validators=[InputRequired(), Regexp(r'\d+(?:,\d+)*$')],
+                                default="10,5,1")
+
+    model_name = SelectField('Model type', choices=[('', 'DNNRegressor'), ('', 'LinearRegressor')])
+
+
+class TrainForm(FlaskForm):
+    num_epochs = IntegerField("Number of epochs", validators=[InputRequired()], default=100)
+    batch_size = IntegerField("Batch size", validators=[InputRequired()], default=32)
+    optimizer = SelectField("Optimizer",
+                            choices=[('', 'Adagrad'), ('', 'Adam'), ('', 'Ftrl'), ('', 'RMSProp'), ('', 'SGD')])
+
+    learning_rate = FloatField("Learning rate", validators=[InputRequired()], default=0.01)
+    l1_regularization = FloatField("L1 regularization factor", validators=[InputRequired()], default=0.002)
+    l2_regularization = FloatField("L2 regularization factor", validators=[InputRequired()], default=0.002)
+    dropout_probability = FloatField("Dropout probability", validators=[InputRequired(), NumberRange(min=0.0, max=1.0)])
+
+
+class GeneralRegressorForm(FlaskForm):
     checkpoints = FormField(CheckpointsForm)
     experiment = FormField(ProcessForm)
-    network = FormField(NetworkForm)
-    amir = FormField(NetworkForm2)
+    network = FormField(NetworkClassifierForm)
+    train = FormField(TrainForm)
+    submit = SubmitField("Submit")
 
+
+class GeneralClassifierForm(FlaskForm):
+    checkpoints = FormField(CheckpointsForm)
+    experiment = FormField(ProcessForm)
+    network = FormField(NetworkRegressorForm)
+    train = FormField(TrainForm)
+    submit = SubmitField("Submit")

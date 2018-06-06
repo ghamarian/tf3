@@ -6,7 +6,7 @@ $(document).ready(function () {
         "columnDefs": [
             {
                 "render": function (data, type, row) {
-                    return data === -1 ? 'Not relevant' : data;
+                    return data == -1 ? 'Not relevant' : data;
                 },
                 "targets": 2
             }

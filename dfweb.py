@@ -113,6 +113,7 @@ def target():
     if form.validate_on_submit():
         target = json.loads(request.form['selected_row'])[0]
         pprint(target)
+        config['fs'].select_target(target)
         return redirect(url_for('parameters'))
     return render_template('target_selection.html', name="Dataset target selection", form=form, data=data)
 

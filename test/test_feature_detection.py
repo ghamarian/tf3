@@ -57,3 +57,12 @@ def test_group_by(fs):
                                                'hash': ['int_big_variance', 'hash_col'],
                                                'numerical': ['sepal_length', 'sepal_width', 'petal_length', 'petal_width'],
                                                'range': ['int_col']}
+
+def test_select_target(fs):
+
+    datatypes = ['numerical', 'numerical', 'numerical', 'numerical', 'categorical', 'range', 'categorical', 'hash', 'hash']
+    fs.create_tf_features(datatypes)
+    feature_len  = len(fs.feature_columns)
+    target = fs.select_target('species')
+    assert target.key == 'species'
+    assert feature_len - 1 == len(fs.feature_columns)

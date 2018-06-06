@@ -24,12 +24,13 @@ class FeatureSelection:
         self.cat_or_hash_columns = self.select_columns_with_type('flexible', 'object')
         self.populate_hash_and_categorical()
 
-
         self.column_list = {'numerical': self.numerical_columns,
                             'bool': self.bool_columns,
                             'categorical': self.categorical_columns,
-                            'int-range': [key for key in self.int_columns if self.unique_value_size_dict[key] < self.MAX_RANGE_SIZE],
-                            'int-hash': [key for key in self.int_columns if self.unique_value_size_dict[key] >= self.MAX_RANGE_SIZE],
+                            'int-range': [key for key in self.int_columns if
+                                          self.unique_value_size_dict[key] < self.MAX_RANGE_SIZE],
+                            'int-hash': [key for key in self.int_columns if
+                                         self.unique_value_size_dict[key] >= self.MAX_RANGE_SIZE],
                             'hash': self.hash_columns}
 
     def feature_dict(self):
@@ -77,10 +78,15 @@ class FeatureSelection:
         hash_features = [tf.feature_column.categorical_column_with_hash_bucket(key, self.unique_value_size_dict[key])
                          for key in feature_types['hash']]
 
-        self.feature_columns = itertools.chain.from_iterable(
-            [numerical_features, categorical_features, hash_features, range_features])
+        self.feature_columns = list(itertools.chain.from_iterable(
+            [numerical_features, categorical_features, hash_features, range_features]))
 
         return self.feature_columns
 
     def select_columns_with_type(self, *dftype):
         return self.df.select_dtypes(include=dftype).columns.tolist()
+
+    def select_target(self, target):
+        self.target = next((x for x in self.feature_columns if x.key == target))
+        self.feature_columns = [x for x in self.feature_columns if x.key != target]
+        return self.target

@@ -16,6 +16,6 @@ l = nds.batch(10).make_one_shot_iterator()
 with tf.Session() as sess:
     # print(sess.run(b))
     for i in range(100):
-        # print(sess.run(k.get_next()))
-        print(sess.run(l.get_next()))
+        print(sess.run(k.get_next()))
+        # print(sess.run(l.get_next()))
 

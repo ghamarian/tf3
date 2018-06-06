@@ -1,7 +1,6 @@
 import utils
-import config_reader
+from config import config_reader
 import pytest
-from collections import OrderedDict
 
 CONFIG_FILE = "config/default.ini"
 

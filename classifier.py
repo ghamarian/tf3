@@ -1,8 +1,6 @@
 import tensorflow as tf
-import utils
-from tensorflow.python import debug as tf_debug
 import shutil
-import config_reader
+from config import config_reader
 from model_builder import ModelBuilder
 
 from train_csv_reader import TrainCSVReader

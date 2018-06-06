@@ -1,4 +1,4 @@
-import config_reader
+from config import config_reader
 
 
 def test_configreader():

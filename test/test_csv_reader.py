@@ -1,8 +1,7 @@
-import config_reader
+from config import config_reader
 from train_csv_reader import TrainCSVReader
 from validation_csv_reader import ValidationCSVReader
 import utils
-import sys
 import pytest
 import numpy as np
 

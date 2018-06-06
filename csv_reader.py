@@ -1,5 +1,4 @@
 import tensorflow as tf
-import config_reader
 from typing import Dict
 import pandas as pd
 from abc import ABCMeta, abstractmethod

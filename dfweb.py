@@ -88,7 +88,7 @@ def feature():
         category_list = json.loads(request.form['cat_column'])
         pprint(category_list)
         config['data'].Category = category_list
-        pprint(config['fs'].create_tf_features(category_list))
+        config['features'] = config['fs'].create_tf_features(category_list)
         return redirect(url_for('target'))
 
     return render_template("feature_selection.html", name='Dataset features selection', data=config['data'],

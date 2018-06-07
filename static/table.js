@@ -62,6 +62,12 @@ $(document).ready(function () {
                     return data == -1 ? 'Not relevant' : data;
                 },
                 "targets": 2
+            },
+            {
+                "render": function (data, type, row) {
+                    return '<input type="text" name=data value=' + data + '>'
+                },
+                "targets": 3
             }
         ],
         'ordering': false,
@@ -71,9 +77,15 @@ $(document).ready(function () {
     // console.log($('#category-data').data());
 
     $('form').submit(function () {
-        let cat_column = table.$('select option:selected').map(function () {
+        let cat_column = table.$('select option:selected').map(function() {
             return this.value;
         }).get();
+
+        let default_column = table.$('input').map(function() {
+            return this.value;
+        }).get();
+
+        console.log(default_column);
 
         let input = $("<input>")
             .attr("type", "hidden")

@@ -87,10 +87,16 @@ $(document).ready(function () {
 
         console.log(default_column);
 
-        let input = $("<input>")
+        let cat_input = $("<input>")
             .attr("type", "hidden")
             .attr("name", "cat_column").val(JSON.stringify(cat_column));
-        $('form').append($(input));
+
+        let default_input = $("<input>")
+            .attr("type", "hidden")
+            .attr("name", "default_column").val(JSON.stringify(default_column));
+
+        $('form').append(cat_input);
+        $('form').append(default_input);
     });
 
 });

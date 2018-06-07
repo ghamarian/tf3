@@ -87,6 +87,7 @@ def feature():
     form = Submit()
     if form.validate_on_submit():
         config['category_list'] = json.loads(request.form['cat_column'])
+        print(json.loads(request.form['default_column']))
         config['data'].Category = config['category_list']
         return redirect(url_for('target'))
 

@@ -4,26 +4,28 @@ from pprint import pprint
 
 class ConfigWriter:
 
-    def __init__(self, form):
-        self.form = form
+    def __init__(self):
         self.config = ConfigParser()
 
-    def items(self):
+    def itemize(self, form):
         result = []
-        for k, value in self.form.items():
+        for k, value in form.items():
             print(k, value)
             if 'csrf_token' not in k:
                 section, key = k.split('-', 1)
                 result.append((section.upper(), key, value))
         return result
 
-    def populate_config(self):
-        for section, key, value in self.items():
-            if section not in self.config.sections():
-               self.config.add_section(section)
-            self.config.set(section, key, value)
+    def populate_config(self, form):
+        for section, key, value in self.itemize(form):
+            self.add_item(section, key, value)
+
+    def add_item(self, section, key, value):
+        if section not in self.config.sections():
+            self.config.add_section(section)
+        self.config.set(section, key, value)
 
     def write_config(self, path):
         with open(path, 'w') as f:
-            self.populate_config()
             self.config.write(f)
+

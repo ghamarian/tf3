@@ -7,12 +7,12 @@ from wtforms import StringField
 from wtforms.widgets import HTMLString, html_params
 
 
-class CheckpointsForm(FlaskForm):
+class PathsForm(FlaskForm):
     checkpoint_dir = StringField("Checkpoints path", validators=[InputRequired()], default="checkpoints")
     log_dir = StringField("Log directory", validators=[InputRequired()], default='checkpoints')
 
 
-class ProcessForm(FlaskForm):
+class ExperimentForm(FlaskForm):
     keep_checkpoint_max = IntegerField("Maximum # of checkpoints", validators=[InputRequired()], default=50)
     save_checkpoints_steps = IntegerField("Save checkpoints after", validators=[InputRequired()], default=200)
     initialize_with_checkpoint = FileField("Initialize with checkpoints")
@@ -66,16 +66,16 @@ class TrainForm(FlaskForm):
 
 
 class GeneralRegressorForm(FlaskForm):
-    checkpoints = FormField(CheckpointsForm)
-    experiment = FormField(ProcessForm)
+    checkpoints = FormField(PathsForm)
+    experiment = FormField(ExperimentForm)
     network = FormField(NetworkClassifierForm)
     train = FormField(TrainForm)
     submit = SubmitField("Submit")
 
 
 class GeneralClassifierForm(FlaskForm):
-    checkpoints = FormField(CheckpointsForm)
-    experiment = FormField(ProcessForm)
+    paths = FormField(PathsForm)
+    experiment = FormField(ExperimentForm)
     network = FormField(NetworkRegressorForm)
     train = FormField(TrainForm)
     submit = SubmitField("Submit")

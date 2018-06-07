@@ -11,7 +11,7 @@ TASK0 = 'TASK0'
 
 FEATURES = 'FEATURES'
 
-PROCESS = 'PROCESS'
+EXPERIMENT = 'EXPERIMENT'
 
 TRAINING = 'TRAINING'
 
@@ -42,10 +42,10 @@ class CustomConfigParser(configparser.ConfigParser):
         return self.get(TRAINING, param)
 
     def _from_network(self, param):
-        return self.get('NETWORK', param)
+        return self.get(NETWORK, param)
 
-    def _from_process(self):
-        return dict(self.items(TRAINING))
+    def _from_process(self, param):
+        return dict(self.items(EXPERIMENT, param))
 
     def _from_paths(self, param):
         return self[PATHS][param]
@@ -54,8 +54,8 @@ class CustomConfigParser(configparser.ConfigParser):
         print(self.items(TRAINING))
         return dict(self.items(TRAINING))
 
-    def process(self) -> Dict[str, str]:
-        return dict(self.items(PROCESS))
+    def experiment(self) -> Dict[str, str]:
+        return dict(self.items(EXPERIMENT))
 
     def path(self):
         return dict(self.items(PATHS))
@@ -105,7 +105,7 @@ class CustomConfigParser(configparser.ConfigParser):
 
     def all(self):
         result = dict(self.items(TRAINING))
-        result.update(self.items(PROCESS))
+        result.update(self.items(EXPERIMENT))
         result.update(self.items(TASK0))
         result.update(self.items(NETWORK))
         result.update(self.items(PATHS))

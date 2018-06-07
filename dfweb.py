@@ -31,11 +31,7 @@ Bootstrap(app)
 app.secret_key = WTF_CSRF_SECRET_KEY
 
 config = {}
-
-
-@app.errorhandler(CSRFError)
-def handle_csrf_error(e):
-    return render_template('csrf_error.html', reason=e.description), 400
+config_writer = ConfigWriter()
 
 
 @app.route('/')
@@ -58,13 +54,16 @@ def split_train_test(request):
     dataset_file = config['train']
     removed_ext = os.path.splitext(dataset_file)[0]
     train_file = "{}-train.csv".format(removed_ext)
-    test_file = "{}-test.csv".format(removed_ext)
+    validation_file = "{}-test.csv".format(removed_ext)
     percent = int(request.form['percent'])
     dataset = pd.read_csv(dataset_file)
     test_size = (dataset.shape[0] * percent) // 100
     train_df, test_df = train_test_split(dataset, test_size=test_size)
     train_df.to_csv(train_file)
-    test_df.to_csv(test_file)
+    test_df.to_csv(validation_file)
+
+    config_writer.add_item('PATHS', 'training_file', train_file)
+    config_writer.add_item('PATHS', 'validation_file', validation_file)
     config['df'] = train_df
 
 
@@ -94,12 +93,13 @@ def feature():
     return render_template("feature_selection.html", name='Dataset features selection', data=config['data'],
                            cat=categories, form=form)
 
+
 @app.route('/parameters', methods=['GET', 'POST'])
 def parameters():
     form = GeneralClassifierForm()
     if form.validate_on_submit():
         pprint(request.form)
-        config_writer = ConfigWriter(request.form)
+        config_writer.populate_config(request.form)
         config_writer.write_config('config/new_config.ini')
         return jsonify({'submit': True})
     flash_errors(form)
@@ -112,7 +112,6 @@ def target():
     data = config['data']
     if form.validate_on_submit():
         target = json.loads(request.form['selected_row'])[0]
-        pprint(target)
         config['fs'].select_target(target)
         return redirect(url_for('parameters'))
     return render_template('target_selection.html', name="Dataset target selection", form=form, data=data)

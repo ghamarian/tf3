@@ -11,7 +11,7 @@ def config():
 
 
 def test_from_process(config: config_reader.CustomConfigParser):
-    print(config._from_process())
+    print(config.training())
 
 
 def test_hidden_layers(config: config_reader.CustomConfigParser):

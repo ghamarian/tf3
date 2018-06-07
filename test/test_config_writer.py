@@ -27,11 +27,11 @@ form = {'checkpoints-checkpoint_dir': 'checkpoints',
 
 @pytest.fixture
 def config_writer():
-    return ConfigWriter(form)
+    return ConfigWriter()
 
 
 def test_populate_config(config_writer):
-    config_writer.populate_config()
+    config_writer.populate_config(form)
     from io import StringIO
     a = StringIO()
     config_writer.config.write(a)

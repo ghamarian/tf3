@@ -10,6 +10,7 @@ from flask_wtf import csrf
 from sklearn.model_selection import train_test_split
 from flask_wtf.csrf import CSRFError
 
+from config import config_reader
 from config.config_writer import ConfigWriter
 from feature_selection import FeatureSelection
 from forms.parameters_form import GeneralClassifierForm
@@ -19,6 +20,7 @@ import itertools
 from werkzeug.utils import secure_filename
 
 from forms.upload_form import DatasetFileForm
+from runner import Runner
 
 SAMPLE_DATA_SIZE = 5
 
@@ -84,10 +86,8 @@ def feature():
 
     form = Submit()
     if form.validate_on_submit():
-        category_list = json.loads(request.form['cat_column'])
-        pprint(category_list)
-        config['data'].Category = category_list
-        config['features'] = config['fs'].create_tf_features(category_list)
+        config['category_list'] = json.loads(request.form['cat_column'])
+        config['data'].Category = config['category_list']
         return redirect(url_for('target'))
 
     return render_template("feature_selection.html", name='Dataset features selection', data=config['data'],
@@ -101,6 +101,10 @@ def parameters():
         pprint(request.form)
         config_writer.populate_config(request.form)
         config_writer.write_config('config/new_config.ini')
+        CONFIG_FILE = "config/new_config.ini"
+        all_params_config = config_reader.read_config(CONFIG_FILE)
+        runner = Runner(all_params_config, config['features'], config['target'], config['fs'].cat_unique_values_dict[config['target']])
+        runner.run()
         return jsonify({'submit': True})
     flash_errors(form)
     return render_template('parameters.html', form=form)
@@ -112,7 +116,10 @@ def target():
     data = config['data']
     if form.validate_on_submit():
         target = json.loads(request.form['selected_row'])[0]
-        config['fs'].select_target(target)
+        config['features'] = config['fs'].create_tf_features(config['category_list'], target)
+        config['target'] = target
+        # config['fs'].select_target(target)
+        # config['features'] = config['fs'].feature_columns
         return redirect(url_for('parameters'))
     return render_template('target_selection.html', name="Dataset target selection", form=form, data=data)
 

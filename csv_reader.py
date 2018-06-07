@@ -2,6 +2,12 @@ import tensorflow as tf
 from typing import Dict
 import pandas as pd
 from abc import ABCMeta, abstractmethod
+import functools
+
+
+def parser(record, second, key):
+    record.update({key: tf.as_string(record[key])})
+    return record, second
 
 
 class CSVReader(metaclass=ABCMeta):
@@ -21,8 +27,11 @@ class CSVReader(metaclass=ABCMeta):
         pass
 
     def _make_csv_dataset(self):
-        return tf.contrib.data.make_csv_dataset([self.filename], self.batch_size, num_epochs=self.num_epochs,
-                                                label_name=self.label_name)
+        dataset = tf.contrib.data.make_csv_dataset([self.filename], self.batch_size, num_epochs=self.num_epochs,
+                                                   label_name=self.label_name)
+
+        dataset = dataset.map(functools.partial(parser, key='int_big_variance'))
+        return dataset
 
     def _column_names(self) -> pd.DataFrame:
         return pd.read_csv(self.filename, nrows=2).columns

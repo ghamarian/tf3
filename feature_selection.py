@@ -37,7 +37,6 @@ class FeatureSelection:
         return dict(itertools.chain.from_iterable(
             [itertools.product(self.column_list[key], [key]) for key in self.column_list]))
 
-    # Just
     def populate_hash_and_categorical(self):
         self.cat_unique_values_dict = {}
         self.categorical_columns = []
@@ -59,24 +58,34 @@ class FeatureSelection:
         for col, datatype in columns_types_dict.items():
             v[datatype].append(col)
 
-        return dict(v)
+        return v
 
-    def create_tf_features(self, datatypes):
+    def remove_label(self, datatypes, target):
+        for _, v in datatypes.items():
+            if target in v:
+                v.remove(target)
+
+    def create_tf_features(self, datatypes, target):
         feature_types = self.group_by(datatypes)
+        self.remove_label(feature_types, target)
         numerical_features = [tf.feature_column.numeric_column(key) for key in feature_types['numerical']]
-        range_features = [tf.feature_column.categorical_column_with_identity(key, self.unique_value_size_dict[key]) for
-                          key in feature_types['range']]
+
+        range_features = [tf.feature_column.indicator_column(
+            tf.feature_column.categorical_column_with_identity(key, self.df[key].max() + 1)) for key in
+                          feature_types['range']]
 
         categorical_features = []
         for feature in feature_types['categorical']:
             if feature in self.bool_columns:
                 vocab_list = ['True', 'False']
             else:
-                vocab_list = self.cat_unique_values_dict.get(feature, self.df[feature].unique().tolist())
-            categorical_features.append(tf.feature_column.categorical_column_with_vocabulary_list(feature, vocab_list))
+                vocab_list = self.stringify(self.cat_unique_values_dict.get(feature, self.df[feature].unique().tolist()))
+            categorical_features.append(tf.feature_column.indicator_column(
+                tf.feature_column.categorical_column_with_vocabulary_list(feature, vocab_list)))
 
-        hash_features = [tf.feature_column.categorical_column_with_hash_bucket(key, self.unique_value_size_dict[key])
-                         for key in feature_types['hash']]
+        hash_features = [tf.feature_column.indicator_column(
+            tf.feature_column.categorical_column_with_hash_bucket(key, 2 * self.unique_value_size_dict[key])) for key in
+            feature_types['hash']]
 
         self.feature_columns = list(itertools.chain.from_iterable(
             [numerical_features, categorical_features, hash_features, range_features]))
@@ -90,3 +99,6 @@ class FeatureSelection:
         self.target = next((x for x in self.feature_columns if x.key == target))
         self.feature_columns = [x for x in self.feature_columns if x.key != target]
         return self.target
+
+    def stringify(self, list_param):
+        return [str(k) for k in list_param]

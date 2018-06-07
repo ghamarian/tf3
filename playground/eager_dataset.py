@@ -1,10 +1,21 @@
 import tensorflow as tf
+import functools
 
 tf.enable_eager_execution()
 
 tf.logging.set_verbosity(tf.logging.DEBUG)
 
-dataset = tf.contrib.data.make_csv_dataset("data/iris.csv", 2, num_epochs=10, label_name="species")
+
+dataset = tf.contrib.data.make_csv_dataset("data/test.csv", 2, num_epochs=10, label_name="species")
+
+
+def parser(record, second, key):
+    record.update({key: tf.as_string(record[key])})
+    return record, second
+
+# lambda x: tf.cast(x['int_big_variance'], tf.string)
+dataset = dataset.map(functools.partial(parser, key='int_big_variance'))
+
 
 for batch in dataset:
     print(batch)

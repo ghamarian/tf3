@@ -55,3 +55,4 @@ def test_update(config: config_reader.CustomConfigParser):
 
 def test_checkpoint_dir(config: config_reader.CustomConfigParser):
     print(config.checkpoint_dir())
+

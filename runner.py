@@ -5,15 +5,16 @@ from validation_csv_reader import ValidationCSVReader
 import tensorflow as tf
 
 
-# CONFIG_FILE = "config/default.ini"
-# config = config_reader.read_config(CONFIG_FILE)
+
 
 class Runner:
-    def __init__(self, config, feature_columns):
+    def __init__(self, config, feature_columns, label_name, label_unique_values):
         self.config = config
-        self.train_csv_reader = TrainCSVReader(self.config)
-        self.validation_csv_reader = ValidationCSVReader(self.config)
+        self.train_csv_reader = TrainCSVReader(self.config, label_name)
+        self.validation_csv_reader = ValidationCSVReader(self.config, label_name)
         self.feature_columns = feature_columns
+        self.label_unique_values = label_unique_values
+        self.create_classifier()
 
     def create_classifier(self):
         params = {'batch_size': 32,
@@ -27,8 +28,9 @@ class Runner:
         config_params = self.config.all()
         config_params.update(params)
         self.classifier = Classifier(config_params, self.train_csv_reader, self.validation_csv_reader,
-                                     self.feature_columns)
+                                     self.feature_columns, self.label_unique_values)
 
     def run(self):
         self.classifier.clear_checkpoint()
         self.classifier.run()
+

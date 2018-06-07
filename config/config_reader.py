@@ -106,7 +106,7 @@ class CustomConfigParser(configparser.ConfigParser):
     def all(self):
         result = dict(self.items(TRAINING))
         result.update(self.items(EXPERIMENT))
-        result.update(self.items(TASK0))
+        # result.update(self.items(TASK0))
         result.update(self.items(NETWORK))
         result.update(self.items(PATHS))
 
@@ -115,11 +115,14 @@ class CustomConfigParser(configparser.ConfigParser):
 
         float_columns = ["learning_rate", "l1_regularization", "l2_regularization", "dropout_keep_probability"]
 
+
         for key in int_columns:
-            result[key] = int(result[key])
+            if key in result:
+                result[key] = int(result[key])
 
         for key in float_columns:
-            result[key] = float(result[key])
+            if key in result:
+                result[key] = float(result[key])
 
         result.update({'hidden_layers': self.hidden_layers()})
 

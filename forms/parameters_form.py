@@ -18,6 +18,7 @@ class ExperimentForm(FlaskForm):
     initialize_with_checkpoint = FileField("Initialize with checkpoints")
     save_summary_steps = IntegerField("Save summary after", validators=[InputRequired()], default=10)
     throttle = IntegerField("Evaluate after (s)", validators=[InputRequired()], default=1)
+    validation_batch_size = IntegerField("Validation batch size", validators=[InputRequired()], default=1)
 
 
 class LayerForm(FlaskForm):
@@ -68,7 +69,7 @@ class TrainForm(FlaskForm):
 class GeneralRegressorForm(FlaskForm):
     checkpoints = FormField(PathsForm)
     experiment = FormField(ExperimentForm)
-    network = FormField(NetworkClassifierForm)
+    network = FormField(NetworkRegressorForm)
     train = FormField(TrainForm)
     submit = SubmitField("Submit")
 
@@ -76,6 +77,6 @@ class GeneralRegressorForm(FlaskForm):
 class GeneralClassifierForm(FlaskForm):
     paths = FormField(PathsForm)
     experiment = FormField(ExperimentForm)
-    network = FormField(NetworkRegressorForm)
-    train = FormField(TrainForm)
+    network = FormField(NetworkClassifierForm)
+    training = FormField(TrainForm)
     submit = SubmitField("Submit")

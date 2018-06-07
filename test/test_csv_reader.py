@@ -52,5 +52,3 @@ def test_feature_columns(train_reader):
 
 def test_unique_values(train_reader):
     np.testing.assert_array_equal(train_reader.label_unique_values(), ['setosa', 'versicolor', 'virginica'])
-
-

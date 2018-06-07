@@ -21,9 +21,9 @@ class Runner:
                   'max_steps': 5000,
                   'save_checkpoints_steps': 100,
                   'save_summary_steps': 100,
-                  'keep_checkpoint_max': 5,
-                  'num_epochs': 200,
-                  'validation_batch_size': 300
+                  # 'keep_checkpoint_max': 5,
+                  # 'num_epochs': 200,
+                  # 'validation_batch_size': 300
                   }
         config_params = self.config.all()
         config_params.update(params)

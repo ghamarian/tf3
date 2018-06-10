@@ -66,3 +66,25 @@ def test_select_target(fs):
     target = fs.select_target('species')
     assert target.key == 'species'
     assert feature_len - 1 == len(fs.feature_columns)
+
+def test_defaults(fs):
+    fs.populate_defaults()
+
+    # pprint(fs.means)
+    pprint(fs.modes)
+    pprint(fs.frequent_values)
+    # pprint(fs.defaults)
+
+
+
+    # def populate_defaults(self):
+    #     self.means = self.df.mean().to_dict()
+    #     self.modes = self.df.mode().iloc[0,:].to_dict()
+    #     frequent_values = {}
+    #     for col in self.df.columns:
+    #         frequent_values.update(self.df[col].value_counts.head(1).to_dict())
+    #
+    #     self.frequent_values = frequent_values
+    #
+    #     self.defaults = self.means
+    #     self.defaults.update(self.modes)

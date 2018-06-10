@@ -32,6 +32,17 @@ class FeatureSelection:
                             'int-hash': [key for key in self.int_columns if
                                          self.unique_value_size_dict[key] >= self.MAX_RANGE_SIZE],
                             'hash': self.hash_columns}
+        self.populate_defaults()
+
+    def populate_defaults(self):
+        self.means = self.df.mean().to_dict()
+        self.modes = self.df.mode().iloc[0, :].to_dict()
+        self.frequent_values = {}
+        for col in self.df.columns:
+            val2freq = self.df[col].value_counts().head(1).to_dict()
+            self.frequent_values.update({col: (next(iter(val2freq.items())))})
+
+        self.defaults = self.means
 
     def feature_dict(self):
         return dict(itertools.chain.from_iterable(
@@ -72,14 +83,15 @@ class FeatureSelection:
 
         range_features = [tf.feature_column.indicator_column(
             tf.feature_column.categorical_column_with_identity(key, self.df[key].max() + 1)) for key in
-                          feature_types['range']]
+            feature_types['range']]
 
         categorical_features = []
         for feature in feature_types['categorical']:
             if feature in self.bool_columns:
                 vocab_list = ['True', 'False']
             else:
-                vocab_list = self.stringify(self.cat_unique_values_dict.get(feature, self.df[feature].unique().tolist()))
+                vocab_list = self.stringify(
+                    self.cat_unique_values_dict.get(feature, self.df[feature].unique().tolist()))
             categorical_features.append(tf.feature_column.indicator_column(
                 tf.feature_column.categorical_column_with_vocabulary_list(feature, vocab_list)))
 

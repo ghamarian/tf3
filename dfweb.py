@@ -101,11 +101,11 @@ def slider():
 def feature():
     if 'df' not in get_config():
         update_config('df', pd.read_csv(get('train')))
-    x = get('df')
-    x.reset_index(inplace=True, drop=True)
-    categories, unique_values, default_list, frequent_values2frequency = assign_category(x)
+    df = get('df')
+    df.reset_index(inplace=True, drop=True)
+    categories, unique_values, default_list, frequent_values2frequency = assign_category(df)
 
-    data = (x.head(SAMPLE_DATA_SIZE).T)
+    data = (df.head(SAMPLE_DATA_SIZE).T)
     data.insert(0, 'Defaults', default_list.values())
     data.insert(0, '(most frequent, frequency)', frequent_values2frequency.values())
     data.insert(0, 'Unique Values', unique_values)
@@ -139,8 +139,6 @@ def target():
         target = json.loads(request.form['selected_row'])[0]
         update_config('features', get('fs').create_tf_features(get('category_list'), target))
         update_config('target', target)
-        # config['fs'].select_target(target)
-        # config['features'] = config['fs'].feature_columns
         return redirect(url_for('parameters'))
     return render_template('target_selection.html', name="Dataset target selection", form=form, data=data)
 

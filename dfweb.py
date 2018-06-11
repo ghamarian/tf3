@@ -74,6 +74,8 @@ def upload():
             test_file_name = form.exisiting_files.data['test_file']
             update_config('train', os.path.join(target, train_file_name))
             update_config('test', os.path.join(target, test_file_name))
+            config_writer.add_item('PATHS', 'training_file', os.path.join(target, train_file_name))
+            config_writer.add_item('PATHS', 'validation_file', os.path.join(target, test_file_name))
         else:
             save_file(target, form.new_files.train_file, 'train')
             save_file(target, form.new_files.test_file, 'test')

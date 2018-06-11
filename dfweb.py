@@ -52,6 +52,10 @@ def get_config():
         config[user] = {}
     return config[user]
 
+def update_config(key, value):
+    config = get_config()
+    config[key] = value
+
 @app.route('/')
 def analysis():
     return redirect(url_for('upload'))
@@ -82,7 +86,7 @@ def split_train_test(request):
 
     config_writer.add_item('PATHS', 'training_file', train_file)
     config_writer.add_item('PATHS', 'validation_file', validation_file)
-    get_config()['df'] = train_df
+    update_config('df', train_df)
 
 
 @app.route('/feature', methods=['GET', 'POST'])
@@ -102,14 +106,14 @@ def feature():
     data.columns = list(
         itertools.chain(['Category', '#Unique Values', '(Most frequent, Frequency)', 'Defaults'], sample_column_names))
 
-    get_config()['data'] = data
+    update_config('data', data)
 
     form = Submit()
     if form.validate_on_submit():
-        get_config()['category_list'] = json.loads(request.form['cat_column'])
+        update_config('category_list', json.loads(request.form['cat_column']))
         default_values = json.loads(request.form['default_column'])
         get_config()['data'].Category = get_config()['category_list']
-        get_config()['defaults'] = dict(zip(get_config()['data'].index.tolist(), default_values))
+        update_config('defaults', dict(zip(get_config()['data'].index.tolist(), default_values)))
         print(get_config()['defaults'])
         return redirect(url_for('target'))
 
@@ -143,9 +147,8 @@ def target():
     data = get_config()['data']
     if form.validate_on_submit():
         target = json.loads(request.form['selected_row'])[0]
-        get_config()['features'] = get_config()['fs'].create_tf_features(
-            get_config()['category_list'], target)
-        get_config()['target'] = target
+        update_config('features', get_config()['fs'].create_tf_features(get_config()['category_list'], target))
+        update_config('target', target)
         # config['fs'].select_target(target)
         # config['features'] = config['fs'].feature_columns
         return redirect(url_for('parameters'))
@@ -154,7 +157,7 @@ def target():
 
 def assign_category(df):
     fs = FeatureSelection(df)
-    get_config()['fs'] = fs
+    update_config('fs', fs)
     feature_dict = fs.feature_dict()
     unique_vlaues = [fs.unique_value_size_dict.get(key, -1) for key in df.columns]
     category_list = [feature_dict[key] for key in df.columns]
@@ -198,7 +201,7 @@ def save_file(target, dataset_form_field):
         destination = os.path.join(target, dataset_filename)
         dataset_file.save(destination)
         # TODO it uses the lables of the form field for extracting the name
-        get_config()[dataset_form_field.label.text.split()[0].lower()] = destination
+        update_config(dataset_form_field.label.text.split()[0].lower(),  destination)
 
 
 if __name__ == '__main__':

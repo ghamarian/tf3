@@ -1,6 +1,6 @@
 {% macro render_single_field(field) %}
     <div class="form-group">
-        <label for="{{ field.name }}" class="col-lg-2 control-label">{{ field.label.text }}</label>
+        <label for="{{ field.name }}" class="control-label">{{ field.label.text }}</label>
         <div class="col-lg-3">
             {{ field(class_='form-control', **kwargs)|safe }}
             <ul>
@@ -10,8 +10,21 @@
             </ul>
         </div>
     </div>
+    <div class="clearfix"></div>
 {% endmacro %}
 
+{% macro render_checkbox(field) %}
+<div class="form-group">
+    <label for="{{ field.name }}" class="control-label">{{ field.label.text }}</label>
+    {{ field(class_='form-control', **kwargs)|safe }}
+    <ul>
+        {% for error in field.errors %}
+        <li style="color:red;">{{ error }}</li>
+        {% endfor %}
+    </ul>
+</div>
+<div class="clearfix"></div>
+{% endmacro %}
 
 {% macro render_field(field) %}
     <legend><label> {{ field.label.text }} </label></legend>

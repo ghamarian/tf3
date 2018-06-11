@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
+{% from '_render_field.html' import render_checkbox, render_field, render_single_field %}
+
+{% block styles %}
+{{ super() }}
+{% endblock %}
+
+{% block app_content %}
+<h1>{{ name }}</h1>
+{#        {{ wtf.quick_form(form, form_type='inline', enctype="multipart/form-data", button_map={'submit': 'primary'}) }}#}
+<div class="row">
+    <!--{{ wtf.quick_form(form, id='new_dataset', enctype="multipart/form-data", button_map={'submit': 'primary'}) }}-->
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        {{ form.csrf_token }}
+        {{ render_checkbox(form.old_or_new) }}
+        <div id="newfiles">
+            {{ render_field(form.new_files) }}
+        </div>
+        <div id="existingfiles">
+            {{ render_field(form.exisiting_files) }}
+        </div>
+        <button type="submit" formmethod="post" class="btn btn-primary">Submit</button>
+
+    </form>
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('.static', filename='choose.js') }}"></script>
+{% endblock %}

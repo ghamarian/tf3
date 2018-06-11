@@ -19,12 +19,14 @@ import itertools
 
 from werkzeug.utils import secure_filename
 
-from forms.upload_form import DatasetFileForm
+from forms.upload_form import UploadForm
 from runner import Runner
+
+DATASETS = "datasets"
 
 SAMPLE_DATA_SIZE = 5
 
-WTF_CSRF_SECRET_KEY = 'a random string'
+WTF_CSRF_SECRET_KEY = os.urandom(42)
 
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 
@@ -49,6 +51,7 @@ def get_config():
         config[user] = {}
     return config[user]
 
+
 def get(key):
     return get_config()[key]
 
@@ -58,9 +61,23 @@ def update_config(key, value):
     config[key] = value
 
 
-@app.route('/')
-def analysis():
-    return redirect(url_for('upload'))
+@app.route('/upload', methods=['GET', 'POST'])
+def upload():
+    form = UploadForm()
+    if form.validate_on_submit():
+        target = os.path.join(APP_ROOT, DATASETS)
+        if not os.path.isdir(target):
+            os.mkdir(target)
+
+        save_file(target, form.train_file)
+        save_file(target, form.test_file)
+
+        if not 'test' in get_config():
+            return redirect(url_for('slider'))
+        else:
+            return redirect(url_for('feature'))
+    flash_errors(form)
+    return render_template('upload_file_form.html', form=form)
 
 
 @app.route('/slider', methods=['GET', 'POST'])
@@ -70,25 +87,6 @@ def slider():
         split_train_test(request)
         return redirect(url_for('feature'))
     return render_template("slider.html", form=form)
-
-
-# TODO Perhaps to handle big files you can change this, to work with the filename instead
-# TODO write test.
-def split_train_test(request):
-    dataset_file = get('train')
-    removed_ext = os.path.splitext(dataset_file)[0]
-    train_file = "{}-train.csv".format(removed_ext)
-    validation_file = "{}-test.csv".format(removed_ext)
-    percent = int(request.form['percent'])
-    dataset = pd.read_csv(dataset_file)
-    test_size = (dataset.shape[0] * percent) // 100
-    train_df, test_df = train_test_split(dataset, test_size=test_size)
-    train_df.to_csv(train_file, index=False)
-    test_df.to_csv(validation_file, index=False)
-
-    config_writer.add_item('PATHS', 'training_file', train_file)
-    config_writer.add_item('PATHS', 'validation_file', validation_file)
-    update_config('df', train_df)
 
 
 @app.route('/feature', methods=['GET', 'POST'])
@@ -124,6 +122,20 @@ def feature():
                            cat=categories, form=form)
 
 
+@app.route('/target', methods=['POST', 'GET'])
+def target():
+    form = Submit()
+    data = get('data')
+    if form.validate_on_submit():
+        target = json.loads(request.form['selected_row'])[0]
+        update_config('features', get('fs').create_tf_features(get('category_list'), target))
+        update_config('target', target)
+        # config['fs'].select_target(target)
+        # config['features'] = config['fs'].feature_columns
+        return redirect(url_for('parameters'))
+    return render_template('target_selection.html', name="Dataset target selection", form=form, data=data)
+
+
 @app.route('/parameters', methods=['GET', 'POST'])
 def parameters():
     form = GeneralClassifierForm()
@@ -143,18 +155,28 @@ def parameters():
     return render_template('parameters.html', form=form)
 
 
-@app.route('/target', methods=['POST', 'GET'])
-def target():
-    form = Submit()
-    data = get('data')
-    if form.validate_on_submit():
-        target = json.loads(request.form['selected_row'])[0]
-        update_config('features', get('fs').create_tf_features(get('category_list'), target))
-        update_config('target', target)
-        # config['fs'].select_target(target)
-        # config['features'] = config['fs'].feature_columns
-        return redirect(url_for('parameters'))
-    return render_template('target_selection.html', name="Dataset target selection", form=form, data=data)
+@app.route('/')
+def main():
+    return redirect(url_for('upload'))
+
+
+# TODO Perhaps to handle big files you can change this, to work with the filename instead
+# TODO write test.
+def split_train_test(request):
+    dataset_file = get('train')
+    removed_ext = os.path.splitext(dataset_file)[0]
+    train_file = "{}-train.csv".format(removed_ext)
+    validation_file = "{}-test.csv".format(removed_ext)
+    percent = int(request.form['percent'])
+    dataset = pd.read_csv(dataset_file)
+    test_size = (dataset.shape[0] * percent) // 100
+    train_df, test_df = train_test_split(dataset, test_size=test_size)
+    train_df.to_csv(train_file, index=False)
+    test_df.to_csv(validation_file, index=False)
+
+    config_writer.add_item('PATHS', 'training_file', train_file)
+    config_writer.add_item('PATHS', 'validation_file', validation_file)
+    update_config('df', train_df)
 
 
 def assign_category(df):
@@ -174,26 +196,6 @@ def flash_errors(form):
         for error in errors:
             flash(u"%s" % error)
             # flash(u"Error in the %s field - %s" % (getattr(form, field).label.text, error))
-
-
-@app.route('/upload', methods=['GET', 'POST'])
-def upload():
-    form = DatasetFileForm()
-    form.train_file()
-    if form.validate_on_submit():
-        target = os.path.join(APP_ROOT, "datasets")
-        if not os.path.isdir(target):
-            os.mkdir(target)
-
-        save_file(target, form.train_file)
-        save_file(target, form.test_file)
-
-        if not 'test' in get_config():
-            return redirect(url_for('slider'))
-        else:
-            return redirect(url_for('feature'))
-    flash_errors(form)
-    return render_template('upload_file_wtf.html', form=form)
 
 
 def save_file(target, dataset_form_field):

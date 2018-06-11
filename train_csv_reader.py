@@ -3,8 +3,8 @@ from typing import Dict
 
 class TrainCSVReader(CSVReader):
 
-    def __init__(self, config: str, label_name: None):
-        super().__init__(config)
+    def __init__(self, config: str, column_defaults, dtypes, label_name: None):
+        super().__init__(config, column_defaults, dtypes)
         self.filename = self.config.training_path()
         if label_name is None:
             self.label_name = self._get_label_name()

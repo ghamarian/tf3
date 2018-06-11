@@ -1,3 +1,5 @@
+from pprint import pprint
+
 import tensorflow as tf
 from typing import Dict
 import pandas as pd
@@ -5,22 +7,32 @@ from abc import ABCMeta, abstractmethod
 import functools
 
 
+#TODO perhaps not needed anymore
 def parser(record, second, key):
     record.update({key: tf.as_string(record[key])})
     return record, second
 
 
 class CSVReader(metaclass=ABCMeta):
-    def __init__(self, config):
+
+    def __init__(self, config, column_defaults, dtypes):
         self.config = config
         self.filename = None
         self.batch_size = None
         self.num_epochs = None
         self.label_name = None
+        self.column_defaults = None
+        self.convert_defaults(dtypes, column_defaults)
 
     def make_dataset_from_config(self, params: Dict[str, object] = None) -> tf.data.Dataset:
         self._set_params(params)
         return self._make_csv_dataset()
+
+    def convert_defaults(self, dtypes, column_defaults):
+        defaults = column_defaults.copy()
+        defaults.update({key: float(defaults[key]) for key in dtypes['numerical']})
+        defaults.update({key: int(defaults[key]) for key in dtypes['range']})
+        self.column_defaults = [[key] for key in defaults.values()]
 
     @abstractmethod
     def _set_params(self, params: Dict[str, object]) -> None:
@@ -28,9 +40,10 @@ class CSVReader(metaclass=ABCMeta):
 
     def _make_csv_dataset(self):
         dataset = tf.contrib.data.make_csv_dataset([self.filename], self.batch_size, num_epochs=self.num_epochs,
-                                                   label_name=self.label_name)
+                                                   label_name=self.label_name, column_defaults=self.column_defaults)
 
-        dataset = dataset.map(functools.partial(parser, key='int_big_variance'))
+        # TODO perhaps no need to cast
+        # dataset = dataset.map(functools.partial(parser, key='int_big_variance'))
         return dataset
 
     def _column_names(self) -> pd.DataFrame:

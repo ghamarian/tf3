@@ -34,7 +34,7 @@ def sanity_check_number_of_layers(form, field):
 class NetworkClassifierForm(FlaskForm):
     # num_layers = IntegerField("Number of layers", validators=[InputRequired()], default=3)
     hidden_layers = StringField("Hidden units in csv",
-                                validators=[InputRequired(), Regexp(r'\d+(?:,\d+)*$'), sanity_check_number_of_layers],
+                                validators=[InputRequired(), Regexp(r'\d+(?:,\d+)*$')],
                                 default="10,5,1")
 
     model_name = SelectField('Model type',

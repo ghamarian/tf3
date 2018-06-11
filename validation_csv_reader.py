@@ -4,8 +4,8 @@ from typing import Dict
 
 class ValidationCSVReader(CSVReader):
 
-    def __init__(self, config: str, label_name: str = None):
-        super().__init__(config)
+    def __init__(self, config: str, column_defaults: list, dtypes, label_name: str = None):
+        super().__init__(config, column_defaults, dtypes)
         self.filename = self.config.validation_path()
         if label_name is None:
             self.label_name = self._get_label_name()

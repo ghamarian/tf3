@@ -61,8 +61,8 @@ def split_train_test(request):
     dataset = pd.read_csv(dataset_file)
     test_size = (dataset.shape[0] * percent) // 100
     train_df, test_df = train_test_split(dataset, test_size=test_size)
-    train_df.to_csv(train_file)
-    test_df.to_csv(validation_file)
+    train_df.to_csv(train_file, index=False)
+    test_df.to_csv(validation_file, index=False)
 
     config_writer.add_item('PATHS', 'training_file', train_file)
     config_writer.add_item('PATHS', 'validation_file', validation_file)
@@ -91,10 +91,10 @@ def feature():
     form = Submit()
     if form.validate_on_submit():
         config['category_list'] = json.loads(request.form['cat_column'])
-        config['default_column'] = json.loads(request.form['default_column'])
+        default_values = json.loads(request.form['default_column'])
         config['data'].Category = config['category_list']
-        config['data'].Defaults = config['default_column']
-        print(config['data'].Defaults)
+        config['defaults'] = dict(zip(config['data'].index.tolist(), default_values))
+        print(config['defaults'])
         return redirect(url_for('target'))
 
     return render_template("feature_selection.html", name='Dataset features selection', data=config['data'],
@@ -109,9 +109,10 @@ def parameters():
         config_writer.populate_config(request.form)
         config_writer.write_config('config/new_config.ini')
         CONFIG_FILE = "config/new_config.ini"
+        dtypes = config['fs'].group_by(config['category_list'])
         all_params_config = config_reader.read_config(CONFIG_FILE)
         runner = Runner(all_params_config, config['features'], config['target'],
-                        config['fs'].cat_unique_values_dict[config['target']])
+                        config['fs'].cat_unique_values_dict[config['target']], config['defaults'], dtypes)
         runner.run()
         return jsonify({'submit': True})
     flash_errors(form)

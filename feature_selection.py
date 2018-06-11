@@ -43,7 +43,8 @@ class FeatureSelection:
             self.frequent_values2frequency.update({col: (next(iter(val2freq.items())))})
 
         self.defaults = self.modes
-        self.defaults.update(self.means)
+        for col in self.numerical_columns:
+            self.defaults[col] = self.means[col]
 
     def feature_dict(self):
         return dict(itertools.chain.from_iterable(

@@ -28,26 +28,19 @@ dataset = UploadSet(extensions=DATA)
 
 class NewFileForm(FlaskForm):
     train_file = FileFieldWithAccept(label='Train dataset in CSV format',
-                                     validators=[FileRequired(),
-                                                 FileAllowed(['csv'], message="Please enter csv file.")])
+                                     validators=[FileAllowed(['csv'], message="Please enter csv file.")])
 
     test_file = FileFieldWithAccept(label='Test dataset in CSV format',
                                     validators=[FileAllowed(['csv'], message="Please enter csv file.")])
 
-    # submit = SubmitField("Submit")
-
 
 class ExisitingDatasetForm(FlaskForm):
-    train_file = SelectField(u'Field name', choices=list(zip(files, files)), validators=[InputRequired()])
-    test_file = SelectField(u'Field name', choices=list(zip(files, files)), validators=[InputRequired()])
-
-
-# class ExistingTestDatasetForm(FlaskForm):
-#     test_file = SelectField(u'Field name', choices=list(zip(files, files)), validators=[InputRequired()])
+    train_file = SelectField(u'Train dataset', choices=list(zip(files, files)))
+    test_file = SelectField(u'Test dataset', choices=list(zip(files, files)))
 
 
 class UploadForm(FlaskForm):
-    old_or_new = BooleanField('Existing dataset', validators=[InputRequired()])
+    is_existing = BooleanField('Existing dataset')
     new_files = FormField(NewFileForm)
     exisiting_files = FormField(ExisitingDatasetForm)
     # exisiting_test_file = FormField(ExistingTestDatasetForm)

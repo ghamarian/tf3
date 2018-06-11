@@ -1,16 +1,20 @@
 $(document).ready(function () {
-    $('#old_or_new').change(function () {
+    $('#is_existing').change(function () {
         if (this.checked) {
-            $("#newfiles :input").prop("disabled", true);
-            $("#existingfiles :input").prop("disabled", false);
+
+            $("#newfiles").hide();
+            $("#existingfiles").show();
         }
         else {
-            $("#existingfiles :input").prop("disabled", true);
-            $("#newfiles :input").prop("disabled", false);
+            // $("#existingfiles").find(":input").prop("disabled", true);
+            // $("#newfiles").find(":input").prop("disabled", false);
+            $("#newfiles").show();
+            $("#existingfiles").hide();
         }
     });
 
-    $("#existingfiles :input").prop("disabled", true);
+    // $("#existingfiles").find(":input").prop("disabled", true);
+    $("#existingfiles").hide();
 
 })
 ;

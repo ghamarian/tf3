@@ -69,8 +69,14 @@ def upload():
         if not os.path.isdir(target):
             os.mkdir(target)
 
-        save_file(target, form.train_file)
-        save_file(target, form.test_file)
+        if form.is_existing.data:
+            train_file_name = form.exisiting_files.data['train_file']
+            test_file_name = form.exisiting_files.data['test_file']
+            update_config('train', os.path.join(target, train_file_name))
+            update_config('test', os.path.join(target, test_file_name))
+        else:
+            save_file(target, form.new_files.train_file, 'train')
+            save_file(target, form.new_files.test_file, 'test')
 
         if not 'test' in get_config():
             return redirect(url_for('slider'))
@@ -91,7 +97,8 @@ def slider():
 
 @app.route('/feature', methods=['GET', 'POST'])
 def feature():
-    # TODO do it once and test this.
+    if 'df' not in get_config():
+        update_config('df', pd.read_csv(get('train')))
     x = get('df')
     x.reset_index(inplace=True, drop=True)
     categories, unique_values, default_list, frequent_values2frequency = assign_category(x)
@@ -174,6 +181,9 @@ def split_train_test(request):
     train_df.to_csv(train_file, index=False)
     test_df.to_csv(validation_file, index=False)
 
+    update_config('train', train_file)
+    update_config('test', validation_file)
+
     config_writer.add_item('PATHS', 'training_file', train_file)
     config_writer.add_item('PATHS', 'validation_file', validation_file)
     update_config('df', train_df)
@@ -198,14 +208,13 @@ def flash_errors(form):
             # flash(u"Error in the %s field - %s" % (getattr(form, field).label.text, error))
 
 
-def save_file(target, dataset_form_field):
+def save_file(target, dataset_form_field, dataset_type):
     dataset_file = dataset_form_field.data
     if dataset_file:
         dataset_filename = secure_filename(dataset_file.filename)
         destination = os.path.join(target, dataset_filename)
         dataset_file.save(destination)
-        # TODO it uses the lables of the form field for extracting the name
-        update_config(dataset_form_field.label.text.split()[0].lower(), destination)
+        update_config(dataset_type, destination)
 
 
 if __name__ == '__main__':

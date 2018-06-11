@@ -74,21 +74,27 @@ def feature():
     # TODO do it once and test this.
     x = config['df']
     x.reset_index(inplace=True, drop=True)
-    categories, unique_values = assign_category(x)
+    categories, unique_values, default_list, frequent_values2frequency = assign_category(x)
+
     data = (x.head(SAMPLE_DATA_SIZE).T)
+    data.insert(0, 'Defaults', default_list.values())
+    data.insert(0, '(most frequent, frequency)', frequent_values2frequency.values())
     data.insert(0, 'Unique Values', unique_values)
     data.insert(0, 'Category', categories)
 
     sample_column_names = ["Sample {}".format(i) for i in range(1, SAMPLE_DATA_SIZE + 1)]
-    data.columns = list(itertools.chain(['Category', '#Unique Values'], sample_column_names))
+    data.columns = list(
+        itertools.chain(['Category', '#Unique Values', '(Most frequent, Frequency)', 'Defaults'], sample_column_names))
 
     config['data'] = data
 
     form = Submit()
     if form.validate_on_submit():
         config['category_list'] = json.loads(request.form['cat_column'])
-        print(json.loads(request.form['default_column']))
+        config['default_column'] = json.loads(request.form['default_column'])
         config['data'].Category = config['category_list']
+        config['data'].Defaults = config['default_column']
+        print(config['data'].Defaults)
         return redirect(url_for('target'))
 
     return render_template("feature_selection.html", name='Dataset features selection', data=config['data'],
@@ -104,7 +110,8 @@ def parameters():
         config_writer.write_config('config/new_config.ini')
         CONFIG_FILE = "config/new_config.ini"
         all_params_config = config_reader.read_config(CONFIG_FILE)
-        runner = Runner(all_params_config, config['features'], config['target'], config['fs'].cat_unique_values_dict[config['target']])
+        runner = Runner(all_params_config, config['features'], config['target'],
+                        config['fs'].cat_unique_values_dict[config['target']])
         runner.run()
         return jsonify({'submit': True})
     flash_errors(form)
@@ -131,7 +138,10 @@ def assign_category(df):
     feature_dict = fs.feature_dict()
     unique_vlaues = [fs.unique_value_size_dict.get(key, -1) for key in df.columns]
     category_list = [feature_dict[key] for key in df.columns]
-    return category_list, unique_vlaues
+    default_list = fs.defaults
+    frequent_values2frequency = fs.frequent_values2frequency
+
+    return category_list, unique_vlaues, default_list, frequent_values2frequency
 
 
 def flash_errors(form):

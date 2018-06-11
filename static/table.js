@@ -65,9 +65,9 @@ $(document).ready(function () {
             },
             {
                 "render": function (data, type, row) {
-                    return '<input type="text" name=data value=' + data + '>'
+                    return `<input type="text" name=data value=${data} >`
                 },
-                "targets": 3
+                "targets": 4
             }
         ],
         'ordering': false,

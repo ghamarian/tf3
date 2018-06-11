@@ -1,4 +1,4 @@
-from dest import addressbook_pb2
+from playground.dest import addressbook_pb2
 
 addressbook = addressbook_pb2.AddressBook()
 person = addressbook.people.add()

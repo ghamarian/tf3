@@ -32,7 +32,7 @@ def sanity_check_number_of_layers(form, field):
 
 
 class NetworkClassifierForm(FlaskForm):
-    num_layers = IntegerField("Number of layers", validators=[InputRequired()], default=3)
+    # num_layers = IntegerField("Number of layers", validators=[InputRequired()], default=3)
     hidden_layers = StringField("Hidden units in csv",
                                 validators=[InputRequired(), Regexp(r'\d+(?:,\d+)*$'), sanity_check_number_of_layers],
                                 default="10,5,1")
@@ -57,7 +57,7 @@ class TrainForm(FlaskForm):
     batch_size = IntegerField("Batch size", validators=[InputRequired()], default=32)
     optimizer = SelectField("Optimizer",
                             choices=[('Adagrad', 'Adagrad'), ('Adam', 'Adam'), ('Ftrl', 'Ftrl'), ('RMSProp', 'RMSProp'),
-                                     ('SGD', 'SGD')])
+                                     ('SGD', 'SGD')], default='Adam')
 
     learning_rate = FloatField("Learning rate", validators=[InputRequired()], default=0.01)
     l1_regularization = FloatField("L1 regularization factor", validators=[InputRequired()], default=0.002)

@@ -32,9 +32,6 @@ app = Flask(__name__)
 Bootstrap(app)
 app.secret_key = WTF_CSRF_SECRET_KEY
 
-# session['myconfig'] = {}
-# myconfig = session['myconfig']
-
 config_writer = ConfigWriter()
 config = {}
 
@@ -52,9 +49,11 @@ def get_config():
         config[user] = {}
     return config[user]
 
+
 def update_config(key, value):
     config = get_config()
     config[key] = value
+
 
 @app.route('/')
 def analysis():
@@ -201,7 +200,7 @@ def save_file(target, dataset_form_field):
         destination = os.path.join(target, dataset_filename)
         dataset_file.save(destination)
         # TODO it uses the lables of the form field for extracting the name
-        update_config(dataset_form_field.label.text.split()[0].lower(),  destination)
+        update_config(dataset_form_field.label.text.split()[0].lower(), destination)
 
 
 if __name__ == '__main__':

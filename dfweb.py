@@ -1,7 +1,7 @@
 import json
 from pprint import pprint
 
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 import pandas as pd
 from flask_bootstrap import Bootstrap
 import os
@@ -32,9 +32,25 @@ app = Flask(__name__)
 Bootstrap(app)
 app.secret_key = WTF_CSRF_SECRET_KEY
 
-config = {}
-config_writer = ConfigWriter()
+# session['myconfig'] = {}
+# myconfig = session['myconfig']
 
+config_writer = ConfigWriter()
+config = {}
+
+
+def get_session():
+    with app.app_context():
+        if 'user' not in session:
+            session['user'] = os.urandom(12)
+        return session['user']
+
+
+def get_config():
+    user = get_session()
+    if user not in config:
+        config[user] = {}
+    return config[user]
 
 @app.route('/')
 def analysis():
@@ -53,7 +69,7 @@ def slider():
 # TODO Perhaps to handle big files you can change this, to work with the filename instead
 # TODO write test.
 def split_train_test(request):
-    dataset_file = config['train']
+    dataset_file = get_config()['train']
     removed_ext = os.path.splitext(dataset_file)[0]
     train_file = "{}-train.csv".format(removed_ext)
     validation_file = "{}-test.csv".format(removed_ext)
@@ -66,13 +82,13 @@ def split_train_test(request):
 
     config_writer.add_item('PATHS', 'training_file', train_file)
     config_writer.add_item('PATHS', 'validation_file', validation_file)
-    config['df'] = train_df
+    get_config()['df'] = train_df
 
 
 @app.route('/feature', methods=['GET', 'POST'])
 def feature():
     # TODO do it once and test this.
-    x = config['df']
+    x = get_config()['df']
     x.reset_index(inplace=True, drop=True)
     categories, unique_values, default_list, frequent_values2frequency = assign_category(x)
 
@@ -86,18 +102,19 @@ def feature():
     data.columns = list(
         itertools.chain(['Category', '#Unique Values', '(Most frequent, Frequency)', 'Defaults'], sample_column_names))
 
-    config['data'] = data
+    get_config()['data'] = data
 
     form = Submit()
     if form.validate_on_submit():
-        config['category_list'] = json.loads(request.form['cat_column'])
+        get_config()['category_list'] = json.loads(request.form['cat_column'])
         default_values = json.loads(request.form['default_column'])
-        config['data'].Category = config['category_list']
-        config['defaults'] = dict(zip(config['data'].index.tolist(), default_values))
-        print(config['defaults'])
+        get_config()['data'].Category = get_config()['category_list']
+        get_config()['defaults'] = dict(zip(get_config()['data'].index.tolist(), default_values))
+        print(get_config()['defaults'])
         return redirect(url_for('target'))
 
-    return render_template("feature_selection.html", name='Dataset features selection', data=config['data'],
+    return render_template("feature_selection.html", name='Dataset features selection',
+                           data=get_config()['data'],
                            cat=categories, form=form)
 
 
@@ -109,10 +126,11 @@ def parameters():
         config_writer.populate_config(request.form)
         config_writer.write_config('config/new_config.ini')
         CONFIG_FILE = "config/new_config.ini"
-        dtypes = config['fs'].group_by(config['category_list'])
+        dtypes = get_config()['fs'].group_by(get_config()['category_list'])
         all_params_config = config_reader.read_config(CONFIG_FILE)
-        runner = Runner(all_params_config, config['features'], config['target'],
-                        config['fs'].cat_unique_values_dict[config['target']], config['defaults'], dtypes)
+        runner = Runner(all_params_config, get_config()['features'], get_config()['target'],
+                        get_config()['fs'].cat_unique_values_dict[get_config()['target']],
+                        get_config()['defaults'], dtypes)
         runner.run()
         return jsonify({'submit': True})
     flash_errors(form)
@@ -122,11 +140,12 @@ def parameters():
 @app.route('/target', methods=['POST', 'GET'])
 def target():
     form = Submit()
-    data = config['data']
+    data = get_config()['data']
     if form.validate_on_submit():
         target = json.loads(request.form['selected_row'])[0]
-        config['features'] = config['fs'].create_tf_features(config['category_list'], target)
-        config['target'] = target
+        get_config()['features'] = get_config()['fs'].create_tf_features(
+            get_config()['category_list'], target)
+        get_config()['target'] = target
         # config['fs'].select_target(target)
         # config['features'] = config['fs'].feature_columns
         return redirect(url_for('parameters'))
@@ -135,7 +154,7 @@ def target():
 
 def assign_category(df):
     fs = FeatureSelection(df)
-    config['fs'] = fs
+    get_config()['fs'] = fs
     feature_dict = fs.feature_dict()
     unique_vlaues = [fs.unique_value_size_dict.get(key, -1) for key in df.columns]
     category_list = [feature_dict[key] for key in df.columns]
@@ -164,7 +183,7 @@ def upload():
         save_file(target, form.train_file)
         save_file(target, form.test_file)
 
-        if not 'test' in config:
+        if not 'test' in get_config():
             return redirect(url_for('slider'))
         else:
             return redirect(url_for('feature'))
@@ -179,7 +198,7 @@ def save_file(target, dataset_form_field):
         destination = os.path.join(target, dataset_filename)
         dataset_file.save(destination)
         # TODO it uses the lables of the form field for extracting the name
-        config[dataset_form_field.label.text.split()[0].lower()] = destination
+        get_config()[dataset_form_field.label.text.split()[0].lower()] = destination
 
 
 if __name__ == '__main__':

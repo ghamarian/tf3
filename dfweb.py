@@ -49,6 +49,9 @@ def get_config():
         config[user] = {}
     return config[user]
 
+def get(key):
+    return get_config()[key]
+
 
 def update_config(key, value):
     config = get_config()
@@ -72,7 +75,7 @@ def slider():
 # TODO Perhaps to handle big files you can change this, to work with the filename instead
 # TODO write test.
 def split_train_test(request):
-    dataset_file = get_config()['train']
+    dataset_file = get('train')
     removed_ext = os.path.splitext(dataset_file)[0]
     train_file = "{}-train.csv".format(removed_ext)
     validation_file = "{}-test.csv".format(removed_ext)
@@ -91,7 +94,7 @@ def split_train_test(request):
 @app.route('/feature', methods=['GET', 'POST'])
 def feature():
     # TODO do it once and test this.
-    x = get_config()['df']
+    x = get('df')
     x.reset_index(inplace=True, drop=True)
     categories, unique_values, default_list, frequent_values2frequency = assign_category(x)
 
@@ -111,13 +114,13 @@ def feature():
     if form.validate_on_submit():
         update_config('category_list', json.loads(request.form['cat_column']))
         default_values = json.loads(request.form['default_column'])
-        get_config()['data'].Category = get_config()['category_list']
-        update_config('defaults', dict(zip(get_config()['data'].index.tolist(), default_values)))
-        print(get_config()['defaults'])
+        get('data').Category = get('category_list')
+        update_config('defaults', dict(zip(get('data').index.tolist(), default_values)))
+        print(get('defaults'))
         return redirect(url_for('target'))
 
     return render_template("feature_selection.html", name='Dataset features selection',
-                           data=get_config()['data'],
+                           data=get('data'),
                            cat=categories, form=form)
 
 
@@ -129,11 +132,11 @@ def parameters():
         config_writer.populate_config(request.form)
         config_writer.write_config('config/new_config.ini')
         CONFIG_FILE = "config/new_config.ini"
-        dtypes = get_config()['fs'].group_by(get_config()['category_list'])
+        dtypes = get('fs').group_by(get('category_list'))
         all_params_config = config_reader.read_config(CONFIG_FILE)
-        runner = Runner(all_params_config, get_config()['features'], get_config()['target'],
-                        get_config()['fs'].cat_unique_values_dict[get_config()['target']],
-                        get_config()['defaults'], dtypes)
+        runner = Runner(all_params_config, get('features'), get('target'),
+                        get('fs').cat_unique_values_dict[get('target')],
+                        get('defaults'), dtypes)
         runner.run()
         return jsonify({'submit': True})
     flash_errors(form)
@@ -143,10 +146,10 @@ def parameters():
 @app.route('/target', methods=['POST', 'GET'])
 def target():
     form = Submit()
-    data = get_config()['data']
+    data = get('data')
     if form.validate_on_submit():
         target = json.loads(request.form['selected_row'])[0]
-        update_config('features', get_config()['fs'].create_tf_features(get_config()['category_list'], target))
+        update_config('features', get('fs').create_tf_features(get('category_list'), target))
         update_config('target', target)
         # config['fs'].select_target(target)
         # config['features'] = config['fs'].feature_columns

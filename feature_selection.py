@@ -35,7 +35,7 @@ class FeatureSelection:
         self.populate_defaults()
 
     def populate_defaults(self):
-        self.means = self.df.mean().to_dict()
+        self.medians = self.df.median().to_dict()
         self.modes = self.df.mode().iloc[0, :].to_dict()
         self.frequent_values2frequency = {}
         for col in self.df.columns:
@@ -44,7 +44,7 @@ class FeatureSelection:
 
         self.defaults = self.modes
         for col in self.numerical_columns:
-            self.defaults[col] = self.means[col]
+            self.defaults[col] = self.medians[col]
 
     def feature_dict(self):
         return dict(itertools.chain.from_iterable(

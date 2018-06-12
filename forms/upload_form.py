@@ -8,7 +8,7 @@ from wtforms.validators import InputRequired
 from wtforms.widgets import HTMLString, html_params
 import os
 
-files = os.listdir('datasets')
+files = sorted(os.listdir('datasets'))
 
 
 # To avoid the limitation of FormField of wtforms
@@ -30,13 +30,13 @@ class NewFileForm(FlaskForm):
     train_file = FileFieldWithAccept(label='Train dataset in CSV format',
                                      validators=[FileAllowed(['csv'], message="Please enter csv file.")])
 
-    test_file = FileFieldWithAccept(label='Test dataset in CSV format',
+    test_file = FileFieldWithAccept(label='Validation dataset in CSV format',
                                     validators=[FileAllowed(['csv'], message="Please enter csv file.")])
 
 
 class ExisitingDatasetForm(FlaskForm):
     train_file = SelectField(u'Train dataset', choices=list(zip(files, files)))
-    test_file = SelectField(u'Test dataset', choices=list(zip(files, files)))
+    validation_file = SelectField(u'Validation dataset', choices=list(zip(files, files)))
 
 
 class UploadForm(FlaskForm):

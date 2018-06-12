@@ -94,7 +94,7 @@ class CustomConfigParser(configparser.ConfigParser):
         return self.get_rel_path(PATHS, 'checkpoint_dir')
 
     def training_path(self):
-        return utils.abs_path_of(self._from_paths('training_file'))
+        return utils.abs_path_of(self._from_paths('train_file'))
 
     def validation_path(self):
         return utils.abs_path_of(self._from_paths('validation_file'))

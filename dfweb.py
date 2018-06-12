@@ -65,22 +65,24 @@ def update_config(key, value):
 def upload():
     form = UploadForm()
     if form.validate_on_submit():
+
         target = os.path.join(APP_ROOT, DATASETS)
         if not os.path.isdir(target):
             os.mkdir(target)
 
         if form.is_existing.data:
             train_file_name = form.exisiting_files.data['train_file']
-            test_file_name = form.exisiting_files.data['test_file']
-            update_config('train', os.path.join(target, train_file_name))
-            update_config('test', os.path.join(target, test_file_name))
-            config_writer.add_item('PATHS', 'training_file', os.path.join(target, train_file_name))
+            update_config('train_file', os.path.join(target, train_file_name))
+            config_writer.add_item('PATHS', 'train_file', os.path.join(target, train_file_name))
+
+            test_file_name = form.exisiting_files.data['validation_file']
+            update_config('validation_file', os.path.join(target, test_file_name))
             config_writer.add_item('PATHS', 'validation_file', os.path.join(target, test_file_name))
         else:
-            save_file(target, form.new_files.train_file, 'train')
-            save_file(target, form.new_files.test_file, 'test')
+            save_file(target, form.new_files.train_file, 'train_file')
+            save_file(target, form.new_files.test_file, 'validation_file')
 
-        if not 'test' in get_config():
+        if not 'validation_file' in get_config():
             return redirect(url_for('slider'))
         else:
             return redirect(url_for('feature'))
@@ -100,7 +102,7 @@ def slider():
 @app.route('/feature', methods=['GET', 'POST'])
 def feature():
     if 'df' not in get_config():
-        update_config('df', pd.read_csv(get('train')))
+        update_config('df', pd.read_csv(get('train_file')))
     df = get('df')
     df.reset_index(inplace=True, drop=True)
     categories, unique_values, default_list, frequent_values2frequency = assign_category(df)
@@ -170,10 +172,10 @@ def main():
 # TODO Perhaps to handle big files you can change this, to work with the filename instead
 # TODO write test.
 def split_train_test(request):
-    dataset_file = get('train')
+    dataset_file = get('train_file')
     removed_ext = os.path.splitext(dataset_file)[0]
     train_file = "{}-train.csv".format(removed_ext)
-    validation_file = "{}-test.csv".format(removed_ext)
+    validation_file = "{}-validation.csv".format(removed_ext)
     percent = int(request.form['percent'])
     dataset = pd.read_csv(dataset_file)
     test_size = (dataset.shape[0] * percent) // 100
@@ -181,10 +183,10 @@ def split_train_test(request):
     train_df.to_csv(train_file, index=False)
     test_df.to_csv(validation_file, index=False)
 
-    update_config('train', train_file)
-    update_config('test', validation_file)
+    update_config('train_file', train_file)
+    update_config('validation_file', validation_file)
 
-    config_writer.add_item('PATHS', 'training_file', train_file)
+    config_writer.add_item('PATHS', 'train_file', train_file)
     config_writer.add_item('PATHS', 'validation_file', validation_file)
     update_config('df', train_df)
 

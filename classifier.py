@@ -49,7 +49,7 @@ class Classifier:
         return self.validation_csv_reader.make_dataset_from_config(self.params)
 
     def _create_model(self):
-        # TODO hidden_layers to be fixed
+        # TODO hidden_layers to be fixed (it is already fixed?)
         # hidden_layers = self.params[HIDDEN_LAYERS][0]
         hidden_layers = self.params[HIDDEN_LAYERS]
 

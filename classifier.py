@@ -1,5 +1,6 @@
 import tensorflow as tf
 import shutil
+import numpy as np
 from config import config_reader
 from model_builder import ModelBuilder
 
@@ -56,14 +57,31 @@ class Classifier:
         mb = ModelBuilder()
         # b = a.grab("tensorflow.python.estimator.canned.linear.LinearRegressor", self.feature_columns)
 
-        self.params['n_classes'] = len(self.label_unique_values)
+        self.params['n_classes'] = len(self.label_unique_values) if self.label_unique_values is not None else 0
         self.params['label_vocabulary'] = self.label_unique_values
         self.params['config'] = self.runConfig
         self.params['hidden_units'] = hidden_layers
+        self.params['dnn_hidden_units'] = hidden_layers
+        self.params['dnn_dropout'] = self.params['dropout']
+        self.params['dnn_optimizer'] = self.params['optimizer']
+        self.params['linear_optimizer'] = self.params['optimizer']
+        self.params['activation_fn'] = getattr(tf.nn, self.params['activation_fn'])
+
+
+
 
         self.model = mb.create_from_model_name(self.params['model_name'], self.feature_columns, self.params)
+        #dataset, labels = self.train_csv_reader._make_numpy_array('line')
 
-        # self.model = tf.estimator.DNNClassifier(hidden_layers, self.feature_columns, n_classes=len(label_vocabulary), label_vocabulary=label_vocabulary.tolist(), config=self.runConfig)
+
+        # self.input_fn = tf.estimator.inputs.numpy_input_fn(
+        #     x={'input_2': dataset},
+        #     y=labels,
+        #     num_epochs=1,
+        #     shuffle=True)
+        # self.model = tf.keras.estimator.model_to_estimator(keras_model_path='models/test.h5')
+
+
 
     def _create_specs(self):
         max_steps = self.params[MAX_STEPS]

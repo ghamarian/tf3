@@ -38,7 +38,9 @@ class NetworkClassifierForm(FlaskForm):
                                 default="10,5,1")
 
     model_name = SelectField('Model type',
-                             choices=[('DNNClassifier', 'DNN Classifier'), ('LinearClassifier', 'Linear Classifier')],
+                             choices=[('DNNClassifier', 'DNN Classifier'),
+                                      ('LinearClassifier', 'Linear Classifier'),
+                                      ('DNNLinearCombinedClassifier', 'DNN Linear Combined Classifier')],
                              default='LinearClassifier')
 
 
@@ -49,7 +51,9 @@ class NetworkRegressorForm(FlaskForm):
                                 default="10,5,1")
 
     model_name = SelectField('Model type',
-                             choices=[('DNNRegressor', 'DNN Regressor'), ('LinearRegressor', 'Linear Regressor')])
+                             choices=[('DNNRegressor', 'DNN Regressor'),
+                                      ('LinearRegressor', 'Linear Regressor'),
+                                      ('DNNLinearCombinedRegressor', 'DNN Linear Combined Regressor')])
 
 
 class TrainForm(FlaskForm):
@@ -62,15 +66,19 @@ class TrainForm(FlaskForm):
     learning_rate = FloatField("Learning rate", validators=[InputRequired()], default=0.01)
     l1_regularization = FloatField("L1 regularization factor", validators=[InputRequired()], default=0.002)
     l2_regularization = FloatField("L2 regularization factor", validators=[InputRequired()], default=0.002)
-    dropout_probability = FloatField("Dropout probability", validators=[InputRequired(), NumberRange(min=0.0, max=1.0)],
+    dropout = FloatField("Dropout probability", validators=[InputRequired(), NumberRange(min=0.0, max=1.0)],
                                      default=0.0)
+
+    activation_fn = SelectField("Activation function",
+                                choices=[('relu', 'ReLU'), ('tanh', 'Hyperbolic Tangent'),
+                                         ('sigmoid', 'Sigmoid')], default='relu')
 
 
 class GeneralRegressorForm(FlaskForm):
-    checkpoints = FormField(PathsForm)
+    paths = FormField(PathsForm)
     experiment = FormField(ExperimentForm)
     network = FormField(NetworkRegressorForm)
-    train = FormField(TrainForm)
+    training = FormField(TrainForm)
     submit = SubmitField("Submit")
 
 

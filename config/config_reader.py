@@ -113,7 +113,7 @@ class CustomConfigParser(configparser.ConfigParser):
         int_columns = ["num_epochs", "batch_size", "validation_batch_size", "save_summary_steps",
                        "keep_checkpoint_max", "throttle", "validation_interval", "save_checkpoints_steps"]
 
-        float_columns = ["learning_rate", "l1_regularization", "l2_regularization", "dropout_keep_probability"]
+        float_columns = ["learning_rate", "l1_regularization", "l2_regularization", "dropout"]
 
 
         for key in int_columns:

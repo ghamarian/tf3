@@ -38,6 +38,9 @@ class ModelBuilder:
     def create_from_model_name(self, model_name, feature_columns, params):
         featured_params = params
         featured_params['feature_columns'] = feature_columns
+        featured_params['dnn_feature_columns'] = feature_columns
+        featured_params['linear_feature_columns'] = feature_columns
+
         positional = self.positional_args_of(model_name)
 
         args = [featured_params.pop(key) for key in positional]

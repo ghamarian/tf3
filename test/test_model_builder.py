@@ -11,7 +11,7 @@ DNNREGRESSOR = 'DNNRegressor'
 
 @pytest.fixture
 def model_builder():
-    return ModelBuilder([])
+    return ModelBuilder()
 
 
 def output(a):

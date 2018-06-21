@@ -13,7 +13,7 @@ from flask_wtf.csrf import CSRFError
 from config import config_reader
 from config.config_writer import ConfigWriter
 from feature_selection import FeatureSelection
-from forms.parameters_form import GeneralClassifierForm
+from forms.parameters_form import GeneralClassifierForm, GeneralRegressorForm
 from forms.submit_form import Submit
 import itertools
 
@@ -21,7 +21,6 @@ from werkzeug.utils import secure_filename
 
 from forms.upload_form import UploadForm
 from runner import Runner
-
 DATASETS = "datasets"
 
 SAMPLE_DATA_SIZE = 5
@@ -147,7 +146,14 @@ def target():
 
 @app.route('/parameters', methods=['GET', 'POST'])
 def parameters():
-    form = GeneralClassifierForm()
+    target_type = get('data').Category[get('target')]
+
+    if target_type == 'numerical':
+        form = GeneralRegressorForm()
+        labels = None
+    else:
+        form = GeneralClassifierForm()
+        labels = get('fs').cat_unique_values_dict[get('target')]
     if form.validate_on_submit():
         pprint(request.form)
         config_writer.populate_config(request.form)
@@ -156,7 +162,7 @@ def parameters():
         dtypes = get('fs').group_by(get('category_list'))
         all_params_config = config_reader.read_config(CONFIG_FILE)
         runner = Runner(all_params_config, get('features'), get('target'),
-                        get('fs').cat_unique_values_dict[get('target')],
+                        labels,
                         get('defaults'), dtypes)
         runner.run()
         return jsonify({'submit': True})

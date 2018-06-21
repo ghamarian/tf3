@@ -4,6 +4,7 @@ import tensorflow as tf
 from typing import Dict
 import pandas as pd
 from abc import ABCMeta, abstractmethod
+import numpy as np
 import functools
 
 
@@ -45,6 +46,24 @@ class CSVReader(metaclass=ABCMeta):
         # TODO perhaps no need to cast
         # dataset = dataset.map(functools.partial(parser, key='int_big_variance'))
         return dataset
+
+    def _make_numpy_array(self, target):
+        df = pd.read_csv(self.filename)
+        y = df[target].values
+        del df[target]
+        for c in df.columns:
+            if df[c].dtype == 'object':
+                df[c] = df[c].astype('category')
+
+        cat_columns = df.select_dtypes(['category']).columns
+        df[cat_columns] = df[cat_columns].apply(lambda x: x.cat.codes)
+        unique = np.unique(y).tolist()
+        labels = np.zeros((len(y),len(unique)))
+        for i in range(len(y)):
+            labels[i][unique.index(y[i])] = 1
+
+        return df.values, np.array(labels)
+
 
     def _column_names(self) -> pd.DataFrame:
         return pd.read_csv(self.filename, nrows=2).columns

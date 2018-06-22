@@ -31,3 +31,6 @@ class Runner:
     def run(self):
         self.classifier.clear_checkpoint()
         self.classifier.run()
+
+    def predict(self, predict_input_fn):
+        return self.classifier.predict(predict_input_fn)

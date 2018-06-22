@@ -7,8 +7,8 @@ from collections import defaultdict
 
 
 class FeatureSelection:
-    MAX_CATEGORICAL_SIZE = 5
-    MAX_RANGE_SIZE = 10
+    MAX_CATEGORICAL_SIZE = 70
+    MAX_RANGE_SIZE = 100
 
     def __init__(self, df):
         self.features = {}

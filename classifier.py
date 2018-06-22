@@ -43,6 +43,9 @@ class Classifier:
     def run(self):
         tf.estimator.train_and_evaluate(self.model, self.train_spec, self.eval_spec)
 
+    def predict(self, predict_input_fn):
+        return self.model.predict(input_fn=predict_input_fn)
+
     def _train_input_fn(self):
         return self.train_csv_reader.make_dataset_from_config(self.params)
 
@@ -80,7 +83,6 @@ class Classifier:
         #     num_epochs=1,
         #     shuffle=True)
         # self.model = tf.keras.estimator.model_to_estimator(keras_model_path='models/test.h5')
-
 
 
     def _create_specs(self):

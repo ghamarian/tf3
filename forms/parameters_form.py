@@ -13,8 +13,8 @@ class PathsForm(FlaskForm):
 
 
 class ExperimentForm(FlaskForm):
-    keep_checkpoint_max = IntegerField("Maximum # of checkpoints", validators=[InputRequired()], default=50)
-    save_checkpoints_steps = IntegerField("Save checkpoints after", validators=[InputRequired()], default=200)
+    keep_checkpoint_max = IntegerField("Maximum # of checkpoints", validators=[InputRequired()], default=5)
+    save_checkpoints_steps = IntegerField("Save checkpoints after", validators=[InputRequired()], default=2)
     initialize_with_checkpoint = FileField("Initialize with checkpoints")
     save_summary_steps = IntegerField("Save summary after", validators=[InputRequired()], default=10)
     throttle = IntegerField("Evaluate after (s)", validators=[InputRequired()], default=1)

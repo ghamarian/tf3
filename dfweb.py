@@ -1,5 +1,7 @@
 import json
+import tensorflow as tf
 from pprint import pprint
+import numpy as np
 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 import pandas as pd
@@ -15,12 +17,23 @@ from config.config_writer import ConfigWriter
 from feature_selection import FeatureSelection
 from forms.parameters_form import GeneralClassifierForm, GeneralRegressorForm
 from forms.submit_form import Submit
+from forms.run_form import RunForm
+from forms.predict_form import PredictForm
 import itertools
 
 from werkzeug.utils import secure_filename
 
 from forms.upload_form import UploadForm
 from runner import Runner
+import logging
+import threading
+import time
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='[%(levelname)s] (%(threadName)-10s) %(message)s',
+                    )
+
+
 DATASETS = "datasets"
 
 SAMPLE_DATA_SIZE = 5
@@ -147,27 +160,75 @@ def target():
 @app.route('/parameters', methods=['GET', 'POST'])
 def parameters():
     target_type = get('data').Category[get('target')]
-
     if target_type == 'numerical':
         form = GeneralRegressorForm()
-        labels = None
     else:
         form = GeneralClassifierForm()
-        labels = get('fs').cat_unique_values_dict[get('target')]
     if form.validate_on_submit():
         pprint(request.form)
         config_writer.populate_config(request.form)
         config_writer.write_config('config/new_config.ini')
+        return redirect(url_for('run'))
+    flash_errors(form)
+    return render_template('parameters.html', form=form)
+
+
+@app.route('/run', methods=['GET', 'POST'])
+def run():
+    form = RunForm()
+    target_type = get('data').Category[get('target')]
+    if target_type == 'numerical':
+        labels = None
+    else:
+        labels = get('fs').cat_unique_values_dict[get('target')]
+
+    if form.validate_on_submit():
+        tboard_thread = threading.Thread(name='tensor_board', target=tensor_board_thread)
+        tboard_thread.setDaemon(True)
+        tboard_thread.start()
+
         CONFIG_FILE = "config/new_config.ini"
         dtypes = get('fs').group_by(get('category_list'))
         all_params_config = config_reader.read_config(CONFIG_FILE)
         runner = Runner(all_params_config, get('features'), get('target'),
                         labels,
                         get('defaults'), dtypes)
-        runner.run()
-        return jsonify({'submit': True})
-    flash_errors(form)
-    return render_template('parameters.html', form=form)
+        # runner.run()
+
+        #return jsonify({'submit': True})
+        return redirect(url_for('predict'))
+    return render_template('run.html', form=form)
+
+
+@app.route('/predict', methods=['GET', 'POST'])
+def predict():
+    features= get('defaults')
+    target= get('target')
+    dict_types, categoricals = get_dictionaries()
+    if request.method == 'POST':
+        new_features ={}
+        for k, v in features.items():
+            if k != target:
+                new_features[k] = request.form[k]
+            else:
+                new_features[k] = features[k]
+        all_params_config = config_reader.read_config( "config/new_config.ini")
+        runner = Runner(all_params_config, get('features'), get('target'),
+                        get('fs').cat_unique_values_dict[get('target')],
+                        get('defaults'), get('fs').group_by(get('category_list')))
+        predict_input_fn = tf.estimator.inputs.numpy_input_fn(x=input_predict_fn(new_features, dict_types),
+                                                              y=None, num_epochs=1, shuffle=False)
+        predictions = list(runner.predict(predict_input_fn))
+        final_pred = predictions[0]['classes'][0]
+        new_features.pop(target)
+        return render_template('predict.html', features=new_features, target=get('target'),
+                               types=get_html_types(dict_types), categoricals=categoricals,
+                               prediction=final_pred.decode("utf-8"))
+    sfeatures = features.copy()
+    sfeatures.pop(target)
+    return render_template('predict.html', features=sfeatures, target=get('target'),
+                           types=get_html_types(dict_types), categoricals=categoricals)
+
 
 
 @app.route('/')
@@ -223,6 +284,47 @@ def save_file(target, dataset_form_field, dataset_type):
         destination = os.path.join(target, dataset_filename)
         dataset_file.save(destination)
         update_config(dataset_type, destination)
+
+
+def tensor_board_thread():
+    logging.debug('Starting tensor board')
+    time.sleep(3)
+    os.system("tensorboard --logdir=checkpoints")
+    logging.debug('Exiting tensor board')
+
+
+def input_predict_fn(features, dict_types):
+    input_predict = {}
+    for k, v in features.items():
+        if dict_types[k] == 'numerical' or dict_types[k] == 'range':
+            input_predict[k] = np.array([int(float(v))])
+        else:
+            input_predict[k] = np.array([v])
+    input_predict.pop(get('target'), None)
+    return input_predict
+
+
+def get_html_types(dict_types):
+    dict_html_types = {}
+    for k, v in dict_types.items():
+        if v == 'categorical':
+            dict_html_types[k] = "text"
+        else: dict_html_types[k] = "number"
+    return dict_html_types
+
+
+def get_dictionaries():
+    features= get('defaults')
+    dict_types = {}
+    categoricals = {}
+    cont = 0
+    for k, v in features.items():
+        dict_types[k] = get('category_list')[cont]
+        if get('category_list')[cont] == 'categorical':
+            categoricals[k] = get('fs').cat_unique_values_dict[k]
+        cont += 1
+    categoricals.pop(get('target'))
+    return dict_types, categoricals
 
 
 if __name__ == '__main__':

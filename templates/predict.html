@@ -13,25 +13,84 @@
          handle_key.features = {{ features | tojson | safe }};
          handle_key.types = {{ types | tojson | safe }};
          handle_key.categoricals = {{ categoricals | tojson | safe }};
+         handle_key.checkpoints = {{ checkpoints | tojson | safe }};
 
-           $.each( handle_key.features, function( key, value ) {
-               if (handle_key.types[key] =="number") {
-                   $('#maindiv').append('<tr> <th>' + key + ' </th> <th> <input type="' + handle_key.types[key] + '" name ="' +
-                       key + '" value="' + value + '"  step="0.001"> </th></tr> ');
-               };
-               });
 
-           $.each( handle_key.categoricals, function( key, value ) {
-                var i;
-                var len = handle_key.categoricals[key].length;
-                   $('#maindiv').append( '<tr> <th>' + key + ' </th> <th>  <select id="' + key + '" name="' + key + '"> </select>  </th></tr>');
-                        for (i = 0; i < len ; i++) {
-                            $('#'+key).append(new Option(handle_key.categoricals[key][i], handle_key.categoricals[key][i]));
-                        }
-               });
+        $.each( handle_key.features, function( key, value ) {
+           if (handle_key.types[key] =="number") {
+               $('#maindiv').append('<tr> <th>' + key + ' </th> <th>')
+               $('#maindiv').append('<input type="' + handle_key.types[key] + '" name ="' +
+                   key + '" value="' + value + '"  step="0.001"> </th></tr> ');
+           };
+           });
+
+        $.each( handle_key.categoricals, function( key, value ) {
+            var i;
+            var len = handle_key.categoricals[key].length;
+               $('#maindiv').append('<tr> <th>' + key + ' </th> <th>');
+               $('#maindiv').append('<select id="' + key + '" name="' + key + '"> </select>');
+               $('#maindiv').append('</th></tr>');
+               for (i = 0; i < len ; i++) {
+                        $('#'+key).append(new Option(handle_key.categoricals[key][i], handle_key.categoricals[key][i]));
+                    }
+           });
+
+        {#$.each( handle_key.checkpoints, function( key, value ) {#}
+        {#        $('#loadModel').append($('<option>', {value:key, text:'Model-'+key+ '   Accu: '+ value['accuracy'] + '  Loss: '+  value['loss'] }));#}
+        {#   });#}
+
+         $.each( handle_key.checkpoints, function( key, value ) {
+                $('#tablediv').append('<tr>')
+                 $('#tablediv').append('<td> <input type="radio" id="radiob" name="radiob" value="' +key +'">' + key  );
+                 $('#tablediv').append('<td> ' + value['accuracy'] );
+                 $('#tablediv').append('<td> ' + value['loss'] + ' </tr>');
+           });
+         $('input:radio[name="radiob"]').change(function(){
+              $('#predict').prop('disabled', false);
+        });
     </script>
+{% endblock %}
+
+
+{% block app_content %}
+    <a role="button"  class="previous" name="back" target="_blank" href="/run"> &laquo; Previous </a>
+    <h1>Prediction</h1>
+    <form action="/predict" method="post">
+        <div class="container">
+         <div class="row">
+            <div class="col-md-5">
+                <h3>  Features </h3>
+                <table>
+                      <div id="maindiv"> </div>
+                </table>
+            </div>
+
+            <div class="col-md-5">
+                <h3> Checkpoints </h3>
+               <div align="right"> <a href="/predict"><span class="glyphicon glyphicon-refresh"></span> </a></div>
+{#                <select multiple class="form-control" id="loadModel" name="loadModel" size="7"> </select>#}
+                <table class="table table-striped">
+                    <thead>
+                    <tr>
+                      <th scope="col">Model</th>
+                      <th scope="col">Accuracy</th>
+                      <th scope="col">Loss</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tablediv">
+                  </tbody>
+                </table>
+
+            </div>
+         </div>
+         </div>
+      <hr>
+      <h4>{{ target }}  :  <b>{{ prediction }}</b></h4>
+     <button type="submit" formmethod="post" id="predict" class="btn btn-primary" disabled>Predict </button>
+    </form>
 
 {% endblock %}
+
 
 {% block styles %}
     {{ super() }}
@@ -40,18 +99,3 @@
     <link rel="stylesheet" type="text/css"
           href="https://cdn.datatables.net/v/dt/dt-1.10.16/sl-1.2.5/datatables.min.css"/>
 {% endblock %}
-
-{% block app_content %}
-    <h1>Prediction</h1>
-{#   {{ wtf.quick_form(form, form_type="horizontal", horizontal_columns=('lg', 2, 4)) }}#}
-    <form action="/predict" method="post">
-        <table>
-              <div id="maindiv"> </div>
-        </table>
-        <hr>
-       <h3>{{ target }}</h3>  <h3>{{ prediction }}</h3>
-        <button type="submit" formmethod="post" class="btn btn-primary">Predict </button>
-    </form>
-
-{% endblock %}
-

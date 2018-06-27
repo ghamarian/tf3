@@ -15,13 +15,8 @@ class Runner:
         self.create_classifier()
 
     def create_classifier(self):
-        params = {'batch_size': 32,
-                  'max_steps': 5000,
-                  'save_checkpoints_steps': 100,
-                  'save_summary_steps': 100,
-                  # 'keep_checkpoint_max': 5,
-                  # 'num_epochs': 200,
-                  # 'validation_batch_size': 300
+        params = {
+                  'max_steps': 5000
                   }
         config_params = self.config.all()
         config_params.update(params)
@@ -31,6 +26,7 @@ class Runner:
     def run(self):
         self.classifier.clear_checkpoint()
         self.classifier.run()
+
 
     def predict(self, predict_input_fn):
         return self.classifier.predict(predict_input_fn)

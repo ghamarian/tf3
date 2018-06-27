@@ -91,9 +91,16 @@ class Classifier:
             input_fn=self._train_input_fn, max_steps=max_steps)
 
         # TODO throttle and start_delay and steps?
+        # summary_hook = tf.train.SummarySaverHook(
+        #     save_steps=1,
+        #     output_dir='./tmp/rnnStats',
+        #     scaffold=tf.train.Scaffold(),
+        #     summary_op=tf.summary.merge_all())
+        #
+
         self.eval_spec = tf.estimator.EvalSpec(
             input_fn=self._validation_input_fn,
-            steps=1,  # How many batches of test data
+            # steps=None,  # How many batches of test data
             start_delay_secs=0, throttle_secs=1)
 
     def _create_run_config(self):

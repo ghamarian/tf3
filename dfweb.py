@@ -8,9 +8,7 @@ import pandas as pd
 from flask_bootstrap import Bootstrap
 import os
 
-from flask_wtf import csrf
 from sklearn.model_selection import train_test_split
-from flask_wtf.csrf import CSRFError
 
 from config import config_reader
 from config.config_writer import ConfigWriter
@@ -18,7 +16,6 @@ from feature_selection import FeatureSelection
 from forms.parameters_form import GeneralClassifierForm, GeneralRegressorForm
 from forms.submit_form import Submit
 from forms.run_form import RunForm
-from forms.predict_form import PredictForm
 import itertools
 
 from werkzeug.utils import secure_filename
@@ -28,11 +25,13 @@ from runner import Runner
 import logging
 import threading
 import time
+from utils import copyfile
+from multiprocessing import Process
+import uuid
 
 logging.basicConfig(level=logging.DEBUG,
                     format='[%(levelname)s] (%(threadName)-10s) %(message)s',
                     )
-
 
 DATASETS = "datasets"
 
@@ -49,11 +48,15 @@ app.secret_key = WTF_CSRF_SECRET_KEY
 config_writer = ConfigWriter()
 config = {}
 
+user_model = {}
+stop_event = threading.Event()
+processes = {}
+
 
 def get_session():
     with app.app_context():
         if 'user' not in session:
-            session['user'] = os.urandom(12)
+            session['user'] = uuid.uuid4()
         return session['user']
 
 
@@ -61,6 +64,8 @@ def get_config():
     user = get_session()
     if user not in config:
         config[user] = {}
+        copyfile('config/default_config.ini', 'config/' + str(user) + '.ini')
+        config[user]['config_file'] = 'config/' + str(user) + '.ini'
     return config[user]
 
 
@@ -77,7 +82,6 @@ def update_config(key, value):
 def upload():
     form = UploadForm()
     if form.validate_on_submit():
-
         target = os.path.join(APP_ROOT, DATASETS)
         if not os.path.isdir(target):
             os.mkdir(target)
@@ -93,7 +97,15 @@ def upload():
         else:
             save_file(target, form.new_files.train_file, 'train_file')
             save_file(target, form.new_files.test_file, 'validation_file')
-
+            # TODO check if files exists
+            if not 'validation_file' in get_config() and not isinstance(form.new_files.train_file.data,
+                                                                        str) and not isinstance(
+                    form.new_files.test_file.data, str):
+                config_writer.add_item('PATHS', 'train_file',
+                                       os.path.join(target, form.new_files.train_file.data.filename))
+                config_writer.add_item('PATHS', 'validation_file',
+                                       os.path.join(target, form.new_files.test_file.data.filename))
+                return redirect(url_for('feature'))
         if not 'validation_file' in get_config():
             return redirect(url_for('slider'))
         else:
@@ -106,7 +118,7 @@ def upload():
 def slider():
     form = Submit(id="form")
     if form.validate_on_submit():
-        split_train_test(request)
+        update_config('split_df', request.form['percent'])
         return redirect(url_for('feature'))
     return render_template("slider.html", form=form)
 
@@ -136,8 +148,10 @@ def feature():
         update_config('category_list', json.loads(request.form['cat_column']))
         default_values = json.loads(request.form['default_column'])
         get('data').Category = get('category_list')
+        get('data').Defaults = default_values
         update_config('defaults', dict(zip(get('data').index.tolist(), default_values)))
-        print(get('defaults'))
+        get('fs').update(get('category_list'), dict(zip(get('data').index.tolist(), default_values)))
+        # categories, unique_values, default_list, frequent_values2frequency = assign_category(get('data'))
         return redirect(url_for('target'))
 
     return render_template("feature_selection.html", name='Dataset features selection',
@@ -153,6 +167,8 @@ def target():
         target = json.loads(request.form['selected_row'])[0]
         update_config('features', get('fs').create_tf_features(get('category_list'), target))
         update_config('target', target)
+        if 'split_df' in get_config():
+            split_train_test(get('split_df'))
         return redirect(url_for('parameters'))
     return render_template('target_selection.html', name="Dataset target selection", form=form, data=data)
 
@@ -160,6 +176,8 @@ def target():
 @app.route('/parameters', methods=['GET', 'POST'])
 def parameters():
     target_type = get('data').Category[get('target')]
+    # CONFIG_FILE = 'config/new_config.ini'
+    CONFIG_FILE = config[get_session()]['config_file']
     if target_type == 'numerical':
         form = GeneralRegressorForm()
     else:
@@ -167,7 +185,7 @@ def parameters():
     if form.validate_on_submit():
         pprint(request.form)
         config_writer.populate_config(request.form)
-        config_writer.write_config('config/new_config.ini')
+        config_writer.write_config(CONFIG_FILE)
         return redirect(url_for('run'))
     flash_errors(form)
     return render_template('parameters.html', form=form)
@@ -177,45 +195,62 @@ def parameters():
 def run():
     form = RunForm()
     target_type = get('data').Category[get('target')]
-    if target_type == 'numerical':
-        labels = None
-    else:
-        labels = get('fs').cat_unique_values_dict[get('target')]
-
+    labels = None if target_type == 'numerical' else get('fs').cat_unique_values_dict[get('target')]
+    # CONFIG_FILE = "config/new_config.ini"
+    CONFIG_FILE = config[get_session()]['config_file']
     if form.validate_on_submit():
-        tboard_thread = threading.Thread(name='tensor_board', target=tensor_board_thread)
+        tboard_thread = threading.Thread(name='tensor_board', target=lambda: tensor_board_thread(CONFIG_FILE))
         tboard_thread.setDaemon(True)
         tboard_thread.start()
 
-        CONFIG_FILE = "config/new_config.ini"
         dtypes = get('fs').group_by(get('category_list'))
         all_params_config = config_reader.read_config(CONFIG_FILE)
-        runner = Runner(all_params_config, get('features'), get('target'),
-                        labels,
-                        get('defaults'), dtypes)
-        # runner.run()
+        r_thread = Process(target=lambda: run_thread(all_params_config, get('features'), get('target'),
+                                                     labels, get('defaults'), dtypes), name='run')
+        r_thread.daemon = True
+        r_thread.start()
+        processes[get_session()] = r_thread
 
-        #return jsonify({'submit': True})
-        return redirect(url_for('predict'))
-    return render_template('run.html', form=form)
+        return render_template('run.html', form=form, running=1)
+    return render_template('run.html', form=form, running=0)
+
+
+@app.route('/pause', methods=['GET', 'POST'])
+def pause():
+    import psutil
+    p = processes[get_session()] if get_session() in processes.keys() else None
+    if not isinstance(p, str):
+        pid = p.pid
+        parent = psutil.Process(pid)
+        for child in parent.children(recursive=True):
+            print
+            "child", child
+            child.kill()
+        parent.kill()
+        processes[get_session()] = ''
+    return redirect(url_for('run'))
 
 
 @app.route('/predict', methods=['GET', 'POST'])
 def predict():
-    features= get('defaults')
-    target= get('target')
+    features = get('defaults')
+    target = get('target')
     dict_types, categoricals = get_dictionaries()
+    # CONFIG_FILE = "config/new_config.ini"
+    CONFIG_FILE = config[get_session()]['config_file']
+    directory = config_reader.read_config(CONFIG_FILE).all()['checkpoint_dir']
+    checkpoints = get_acc(directory)
     if request.method == 'POST':
-        new_features ={}
+        change_model_default(request.form['radiob'], CONFIG_FILE)
+        new_features = {}
         for k, v in features.items():
-            if k != target:
-                new_features[k] = request.form[k]
-            else:
-                new_features[k] = features[k]
-        all_params_config = config_reader.read_config( "config/new_config.ini")
+            new_features[k] = request.form[k] if k != target else features[k]
+
+        all_params_config = config_reader.read_config(CONFIG_FILE)
         runner = Runner(all_params_config, get('features'), get('target'),
                         get('fs').cat_unique_values_dict[get('target')],
                         get('defaults'), get('fs').group_by(get('category_list')))
+
         predict_input_fn = tf.estimator.inputs.numpy_input_fn(x=input_predict_fn(new_features, dict_types),
                                                               y=None, num_epochs=1, shuffle=False)
         predictions = list(runner.predict(predict_input_fn))
@@ -223,12 +258,11 @@ def predict():
         new_features.pop(target)
         return render_template('predict.html', features=new_features, target=get('target'),
                                types=get_html_types(dict_types), categoricals=categoricals,
-                               prediction=final_pred.decode("utf-8"))
+                               prediction=final_pred.decode("utf-8"), checkpoints=checkpoints)
     sfeatures = features.copy()
     sfeatures.pop(target)
     return render_template('predict.html', features=sfeatures, target=get('target'),
-                           types=get_html_types(dict_types), categoricals=categoricals)
-
+                           types=get_html_types(dict_types), categoricals=categoricals, checkpoints=checkpoints)
 
 
 @app.route('/')
@@ -238,15 +272,18 @@ def main():
 
 # TODO Perhaps to handle big files you can change this, to work with the filename instead
 # TODO write test.
-def split_train_test(request):
+def split_train_test(percent):
     dataset_file = get('train_file')
     removed_ext = os.path.splitext(dataset_file)[0]
     train_file = "{}-train.csv".format(removed_ext)
     validation_file = "{}-validation.csv".format(removed_ext)
-    percent = int(request.form['percent'])
-    dataset = pd.read_csv(dataset_file)
+    percent = int(percent)
+    dataset = get('df')
+    counts = dataset[get('target')].value_counts()
+    dataset = dataset[dataset[get('target')].isin(counts[counts > 1].index)]
+    target = dataset[[get('target')]]
     test_size = (dataset.shape[0] * percent) // 100
-    train_df, test_df = train_test_split(dataset, test_size=test_size)
+    train_df, test_df = train_test_split(dataset, test_size=test_size, stratify=target)
     train_df.to_csv(train_file, index=False)
     test_df.to_csv(validation_file, index=False)
 
@@ -255,7 +292,6 @@ def split_train_test(request):
 
     config_writer.add_item('PATHS', 'train_file', train_file)
     config_writer.add_item('PATHS', 'validation_file', validation_file)
-    update_config('df', train_df)
 
 
 def assign_category(df):
@@ -266,8 +302,12 @@ def assign_category(df):
     category_list = [feature_dict[key] for key in df.columns]
     default_list = fs.defaults
     frequent_values2frequency = fs.frequent_values2frequency
-
     return category_list, unique_vlaues, default_list, frequent_values2frequency
+
+
+def update_fs(df):
+    fs = FeatureSelection(df)
+    update_config('fs', fs)
 
 
 def flash_errors(form):
@@ -286,11 +326,17 @@ def save_file(target, dataset_form_field, dataset_type):
         update_config(dataset_type, destination)
 
 
-def tensor_board_thread():
+def tensor_board_thread(CONFIG_FILE):
+    config_path = config_reader.read_config(CONFIG_FILE).all()['checkpoint_dir']
     logging.debug('Starting tensor board')
     time.sleep(3)
-    os.system("tensorboard --logdir=checkpoints")
+    os.system("tensorboard --logdir=" + config_path)
     logging.debug('Exiting tensor board')
+
+
+def run_thread(all_params_config, features, target, labels, defaults, dtypes):
+    runner = Runner(all_params_config, features, target, labels, defaults, dtypes)
+    runner.run()
 
 
 def input_predict_fn(features, dict_types):
@@ -307,14 +353,12 @@ def input_predict_fn(features, dict_types):
 def get_html_types(dict_types):
     dict_html_types = {}
     for k, v in dict_types.items():
-        if v == 'categorical':
-            dict_html_types[k] = "text"
-        else: dict_html_types[k] = "number"
+        dict_html_types[k] = "text" if v == 'categorical' else "number"
     return dict_html_types
 
 
 def get_dictionaries():
-    features= get('defaults')
+    features = get('defaults')
     dict_types = {}
     categoricals = {}
     cont = 0
@@ -327,5 +371,37 @@ def get_dictionaries():
     return dict_types, categoricals
 
 
+def change_model_default(new_model, CONFIG_FILE):
+    text = 'model_checkpoint_path: "model.ckpt-number"\n'.replace('number', new_model)
+    path = config_reader.read_config(CONFIG_FILE).all()['checkpoint_dir']
+    with open(path + '/checkpoint') as f:
+        content = f.readlines()
+    content[0] = text
+    file = open(path + '/checkpoint', 'w')
+    file.write(''.join(content))
+    file.close()
+
+
+def get_acc(directory):
+    checkpoints = []
+    accuras = {}
+    eval_dir = os.path.join(directory, 'eval')
+    if os.path.exists(eval_dir):
+        files_checkpoints = os.listdir(directory)
+        for file in files_checkpoints:
+            if '.meta' in file:
+                checkpoints.append(file.split('.')[1].split('-')[-1])
+        path_to_events_file = os.path.join(eval_dir, os.listdir(eval_dir)[0])
+        for e in tf.train.summary_iterator(path_to_events_file):
+            if str(e.step) in checkpoints:
+                accuras[e.step] = {}
+                for v in e.summary.value:
+                    if v.tag == 'loss':
+                        accuras[e.step]['loss'] = v.simple_value
+                    elif v.tag == 'accuracy':
+                        accuras[e.step]['accuracy'] = v.simple_value
+    return accuras
+
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, threaded=True)

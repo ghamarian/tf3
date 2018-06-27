@@ -7,6 +7,18 @@
     {#    <script src="{{ url_for('.static', filename='jquery.dataTables.js') }}"></script>#}
     {#    <script src="{{ url_for('.static', filename='dataTables.select.js') }}"></script>#}
     <script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.16/sl-1.2.5/datatables.min.js"></script>
+     <script type="text/javascript">
+     var run = {{ running }}
+        $( document ).ready(function() {
+        if (Boolean(run)){
+            $('#run').prop('disabled', true);
+            $('#gif_animated').append('<div class="loader"></div>');
+        }else {
+             $('#stop').prop('disabled', true);
+        }
+    });
+
+    </script>
 {% endblock %}
 
 {% block styles %}
@@ -18,14 +30,40 @@
 {% endblock %}
 
 {% block app_content %}
-    <h1>{{ name }}</h1>
 
-{#   {{ wtf.quick_form(form, form_type="horizontal", horizontal_columns=('lg', 2, 4)) }}#}
-    <form action="/run" method="post">
-        {{ form.csrf_token }}
-        <button type="submit" formmethod="post" class="btn btn-primary">Run</button>
-    </form>
-    <a role="button" name="tensor" class="btn btn-warning" target="_blank" href="http://localhost:6006"> TensorBoard</a>
+    <h2> Train </h2>
+    <div class="row">
+            <div class="col-md-5">
+                 <form action="/run" method="post">
+                {{ form.csrf_token }}
+                <button type="submit" formmethod="post" id="run" name="run" class="btn btn-primary"> <span class="glyphicon glyphicon-play"></span> Run</button>
+                     <div id="gif_animated" name="gif_animated"> </div>
+                 </form>
+                <br>
+                    <a role="button" name="stop" id="stop" class="btn btn-danger" href="/pause"> <span class="glyphicon glyphicon-stop"></span> STOP </a>
+            </div>
 
+            <div class="col-md-5">
+              <a role="button" name="tensor" class="btn btn-warning" target="_blank" href="http://localhost:6006"><span class="glyphicon glyphicon-blackboard"></span>  TensorBoard</a>
+            </div>
+    </div>
+{#   {{ wtf.quick_form(form, form_type="horizontsal", horizontal_columns=('lg', 2, 4)) }}#}
+
+
+     <br>
+
+    <h2> Predict </h2>
+{#    <form action="/predict" method="post">#}
+{#        <div class="form-group">#}
+{#            <label for="exampleFormControlSelect2"> Checkpoints </label>#}
+{#            <select multiple class="form-control" id="loadModel" name="loadModel" size="7" >#}
+{#                {% for i in checkpoints %}#}
+{#                    <option>{{ i }}   </option>#}
+{#                {% endfor %}#}
+{#             </select>#}
+{#        </div>#}
+{#        <button type="submit" class="btn btn-primary">Predict</button>#}
+{#    </form>#}
+     <a role="button" name="predict" class="btn btn-primary" href="/predict"> Predict</a>
 {% endblock %}
 

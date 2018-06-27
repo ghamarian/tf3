@@ -5,7 +5,6 @@ import utils
 from pprint import pprint
 from collections import defaultdict
 
-
 class FeatureSelection:
     MAX_CATEGORICAL_SIZE = 70
     MAX_RANGE_SIZE = 100
@@ -45,6 +44,7 @@ class FeatureSelection:
         self.defaults = self.modes
         for col in self.numerical_columns:
             self.defaults[col] = self.medians[col]
+
 
     def feature_dict(self):
         return dict(itertools.chain.from_iterable(
@@ -116,3 +116,31 @@ class FeatureSelection:
 
     def stringify(self, list_param):
         return [str(k) for k in list_param]
+
+    def update(self, categories, defaults):
+        for i, c in enumerate(self.df.columns):
+            if categories[i] == 'categorical' or categories[i] == 'hash':
+                self.df[c] = self.df[c].astype('object')
+                if categories[i] == 'categorical':
+                    self.df[c] = self.df[c].values.astype('str')
+        self.numerical_columns = self.select_columns_with_type('floating')
+
+        self.int_columns = self.select_columns_with_type('integer')
+        self.unique_value_size_dict = {key: self.df[key].unique().shape[0] for key in self.int_columns}
+
+        self.bool_columns = self.select_columns_with_type('bool')
+        self.unique_value_size_dict.update(dict(itertools.product(self.bool_columns, [2])))
+
+        self.cat_or_hash_columns = self.select_columns_with_type('flexible', 'object')
+        self.populate_hash_and_categorical()
+
+        self.column_list = {'numerical': self.numerical_columns,
+                            'bool': self.bool_columns,
+                            'categorical': self.categorical_columns,
+                            'int-range': [key for key in self.int_columns if
+                                          self.unique_value_size_dict[key] < self.MAX_RANGE_SIZE],
+                            'int-hash': [key for key in self.int_columns if
+                                         self.unique_value_size_dict[key] >= self.MAX_RANGE_SIZE],
+                            'hash': self.hash_columns}
+
+        self.defaults = defaults

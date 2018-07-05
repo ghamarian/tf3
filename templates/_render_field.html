@@ -15,7 +15,7 @@
 
 {% macro render_checkbox(field) %}
 <div class="form-group">
-    <label for="{{ field.name }}" class="control-label">{{ field.label.text }}</label>
+    <label for="{{ field.name }}" class="control-label"  >{{ field.label.text }}</label>
     {{ field(class_='form-control', **kwargs)|safe }}
     <ul>
         {% for error in field.errors %}
@@ -27,7 +27,7 @@
 {% endmacro %}
 
 {% macro render_field(field) %}
-    <legend><label> {{ field.label.text }} </label></legend>
+    <h3><label> {{ field.label.text }} </label></h3>
     {% set vars = {'count': 0} %} {# A bit strange, but this is how you change variable value inside loop #}
 
     {%- for subfield in field %}
@@ -36,7 +36,7 @@
                 <div class="form-row">
             {% endif %}
             <div class="form-group col-md-6">
-            <label for="{{ subfield.name }}" class="control-label">{{ subfield.label.text }}</label>
+                <label for="{{ subfield.name }}" class="control-label"  title="{{ subfield.description }}"  >{{ subfield.label.text }}</label>
             {{ subfield(class_='form-control', **kwargs)|safe }}
             <ul>
                 {% for error in subfield.errors %}
@@ -66,8 +66,7 @@
             {% for subfield in field %}
                 <div class="radio">
                     <label>
-                        {{ subfield }}
-                        {{ subfield.label.text }}
+                        {{ subfield.label.text }} {{ subfield }}
                     </label>
                 </div>
             {% endfor %}

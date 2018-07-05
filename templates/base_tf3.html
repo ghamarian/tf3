@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    <div class="container">
+    <div id="wizard" ALIGN="center">
+        <button type="button" id="0" class="btn btn-default btn-arrow-right" onclick="location.href='/upload';">1. Data
+            upload
+        </button>
+        <button type="button" id="1" class="btn btn-default btn-arrow-right" onclick="location.href='/slider';">2. Split
+            data
+        </button>
+        <button type="button" id="2" class="btn btn-default btn-arrow-right" onclick="location.href='/feature';">3.
+            Feature select
+        </button>
+        <button type="button" id="3" class="btn btn-default btn-arrow-right" onclick="location.href='/target';">4.
+            Target select
+        </button>
+        <button type="button" id="4" class="btn btn-default btn-arrow-right" onclick="location.href='/parameters';">5.
+            Parameters
+        </button>
+        <button type="button" id="5" class="btn btn-default btn-arrow-right" onclick="location.href='/run';">6. Run and
+            predict
+        </button>
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-info" role="alert">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    <div class="container-fluid">
+        {# application content needs to be provided in the app_content block #}
+        <div class="panel panel-default">
+            <div class="panel-body">
+                {% block app_content %}
+
+                {% endblock %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+
+{% block scripts %}
+    {{ super() }}
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var element = document.getElementById({{ page }});
+            element.className = element.className.replace("btn btn-default", "btn btn-primary");
+            var i;
+            for (i = {{ page }} +1; i < 6; i++) {
+                var nelement = document.getElementById(i);
+                nelement.classList.add('disabled');
+                nelement.disabled = true;
+            }
+        });
+
+    </script>
+{% endblock %}

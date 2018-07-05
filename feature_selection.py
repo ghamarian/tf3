@@ -6,7 +6,7 @@ from pprint import pprint
 from collections import defaultdict
 
 class FeatureSelection:
-    MAX_CATEGORICAL_SIZE = 70
+    MAX_CATEGORICAL_SIZE = 2000
     MAX_RANGE_SIZE = 100
 
     def __init__(self, df):

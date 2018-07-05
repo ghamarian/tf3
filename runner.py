@@ -1,4 +1,4 @@
-from classifier import Classifier
+from classifier import Classifier, KerasClassifier
 from config import config_reader
 from train_csv_reader import TrainCSVReader
 from validation_csv_reader import ValidationCSVReader
@@ -20,13 +20,16 @@ class Runner:
                   }
         config_params = self.config.all()
         config_params.update(params)
-        self.classifier = Classifier(config_params, self.train_csv_reader, self.validation_csv_reader,
+        classifier = Classifier
+        if config_params['custom_model_path'] !='None':
+            classifier = KerasClassifier
+
+        self.classifier = classifier(config_params, self.train_csv_reader, self.validation_csv_reader,
                                      self.feature_columns, self.label_unique_values)
 
     def run(self):
         self.classifier.clear_checkpoint()
         self.classifier.run()
 
-
-    def predict(self, predict_input_fn):
-        return self.classifier.predict(predict_input_fn)
+    def predict(self, features, target, df):
+        return self.classifier.predict(features, target, df)

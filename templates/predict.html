@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base_tf3.html" %}
 {% import 'bootstrap/wtf.html' as wtf %}
 {% from '_render_field.html' import render_field, render_single_field %}
 
@@ -53,8 +53,11 @@
 
 
 {% block app_content %}
-    <a role="button"  class="previous" name="back" target="_blank" href="/run"> &laquo; Previous </a>
-    <h1>Prediction</h1>
+    <div align="center">
+    <th1> Predict</th1>
+    </div>
+
+
     <form action="/predict" method="post">
         <div class="container">
          <div class="row">
@@ -88,6 +91,7 @@
       <h4>{{ target }}  :  <b>{{ prediction }}</b></h4>
      <button type="submit" formmethod="post" id="predict" class="btn btn-primary" disabled>Predict </button>
     </form>
+     <a role="button" class="previous" name="back" href="/run"> &laquo; Previous </a>
 
 {% endblock %}
 

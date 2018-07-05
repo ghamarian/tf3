@@ -1,33 +1,101 @@
-{% extends "base.html" %}
+{% extends "base_tf3.html" %}
 {% import 'bootstrap/wtf.html' as wtf %}
 {% from '_render_field.html' import render_checkbox, render_field, render_single_field %}
 
 {% block styles %}
-{{ super() }}
-{% endblock %}
-
-{% block app_content %}
-<h1>{{ name }}</h1>
-{#        {{ wtf.quick_form(form, form_type='inline', enctype="multipart/form-data", button_map={'submit': 'primary'}) }}#}
-<div class="row">
-    <!--{{ wtf.quick_form(form, id='new_dataset', enctype="multipart/form-data", button_map={'submit': 'primary'}) }}-->
-    <form action="/upload" method="post" enctype="multipart/form-data">
-        {{ form.csrf_token }}
-        {{ render_checkbox(form.is_existing) }}
-        <div id="newfiles">
-            {{ render_field(form.new_files) }}
-        </div>
-        <div id="existingfiles">
-            {{ render_field(form.exisiting_files) }}
-        </div>
-        <button type="submit" formmethod="post" class="btn btn-primary">Submit</button>
-
-    </form>
-</div>
+    {{ super() }}
 {% endblock %}
 
 
 {% block scripts %}
-{{ super() }}
-<script src="{{ url_for('.static', filename='choose.js') }}"></script>
+    {{ super() }}
+    <script src="{{ url_for('.static', filename='choose.js') }}"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var handle_key = {};
+            handle_key.configs = {{ user_configs | tojson | safe }};
+            handle_key.parameters = {{ parameters | tojson | safe }};
+            var dataset_selected = $('#exisiting_files-train_file_exist').find("option:selected").text();
+            var len = handle_key.configs[dataset_selected].length;
+            $('#exisiting_files-configuration').find('option').remove();
+            var i;
+            for (i = 0; i < len; i++) {
+                var data_and_conf = dataset_selected + '_' + handle_key.configs[dataset_selected][i];
+                $('#exisiting_files-configuration').append($('<option/>', {
+                    'value': handle_key.configs[dataset_selected][i],
+                    'text': handle_key.configs[dataset_selected][i] + " model = " + handle_key.parameters[data_and_conf]}));
+
+                $('#tablediv').append('<tr>');
+                $('#tablediv').append('<td> <input type="radio" id="radiob" name="radiob" value="' + handle_key.configs[dataset_selected][i]  + '">' + handle_key.configs[dataset_selected][i] );
+                $('#tablediv').append('<td> ' + handle_key.parameters[data_and_conf]);
+                $('#tablediv').append('<td>  acc  </tr>');
+
+
+            }
+            $('#exisiting_files-train_file_exist').change(function () {
+                var dataset_selected = $('#exisiting_files-train_file_exist').find("option:selected").text();
+                var len = handle_key.configs[dataset_selected].length;
+
+                $('#exisiting_files-configuration').find('option').remove();
+                $("#tablediv").empty();
+
+                var i;
+                for (i = 0; i < len; i++) {
+                    var data_and_conf = dataset_selected + '_' + handle_key.configs[dataset_selected][i];
+                    $('#exisiting_files-configuration').append($('<option/>', {
+                        'value': handle_key.configs[dataset_selected][i],
+                        'text': handle_key.configs[dataset_selected][i] + "  - model = " + handle_key.parameters[data_and_conf]
+                    }));
+
+                    $('#tablediv').append('<tr>');
+                    $('#tablediv').append('<td> <input type="radio" id="radiob" name="radiob" value="' + handle_key.configs[dataset_selected][i]  + '">' + handle_key.configs[dataset_selected][i] );
+                    $('#tablediv').append('<td> ' + handle_key.parameters[data_and_conf]);
+                    $('#tablediv').append('<td>  acc  </tr>');
+                }
+            });
+
+        });
+    </script>
+
+{% endblock %}
+
+{% block app_content %}
+    <div align="center">
+        <th1>Data Upload</th1>
+    </div>
+
+    <div class="row">
+        <!--{{ wtf.quick_form(form, id='new_dataset', enctype="multipart/form-data", button_map={'submit': 'primary'}) }}-->
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            {{ form.csrf_token }}
+
+            {{ render_checkbox(form.is_existing) }}
+            <div id="newfiles">
+                {{ render_field(form.new_files) }}
+            </div>
+            <div id="existingfiles">
+                {{ render_field(form.exisiting_files) }}
+                <label for="exisiting_files-configuration" class="control-label" title="">Configuration</label>
+                <select class="form-control" id="exisiting_files-configuration"
+                        name="exisiting_files-configuration"></select>
+
+                <h5> Configs </h5>
+                <table class="table table-striped" id="table_config">
+                    <thead>
+                    <tr>
+                        <th scope="col">Config name</th>
+                        <th scope="col">Model</th>
+                        <th scope="col">Accuracy</th>
+                    </tr>
+                    </thead>
+                    <tbody id="tablediv">
+                    </tbody>
+                </table>
+            </div>
+            <p align="right">
+                <button type="submit" align="right" formmethod="post" class="btn btn-primary">Next</button>
+            </p>
+
+        </form>
+    </div>
 {% endblock %}

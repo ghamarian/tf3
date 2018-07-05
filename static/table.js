@@ -44,7 +44,8 @@ $(document).ready(function () {
         'int-hash': createMenu(hash, hash, categorical, numerical, none),
         'int-category': createMenu(hash, hash, range, categorical, numerical, none),
         'bool': createMenu(categorical, categorical, none),
-        'numerical': createMenu(numerical, numerical, none)
+        'numerical': createMenu(numerical, numerical, none),
+        'none': createMenu(categorical, hash, range, numerical,none)
     };
 
     table_tag = $('#amir');

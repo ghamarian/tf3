@@ -29,9 +29,10 @@
             <div id="navbar" class="collapse navbar-collapse navbar-right">
                 <ul class="nav navbar-nav">
                     <li class="active"><a href="#">Home</a></li>
-                    <li><a href="#">Login</a></li>
+                    <li><a href="login">Login</a></li>
                     <li><a href="#">Sign Up</a></li>
                     <li><a href="#">Log Out</a></li>
+                    <li><a href="#"> <span class="glyphicon glyphicon-user"></span>{{ user }} </a></li>
                 </ul>
             </div><!--/.nav-collapse -->
         </div>
@@ -39,17 +40,23 @@
 {% endblock %}
 
 {% block content %}
-    <div class="container">
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-info" role="alert">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
 
-        {# application content needs to be provided in the app_content block #}
-        {% block app_content %}{% endblock %}
-    </div>
 {% endblock %}
 
+
+{% block scripts %}
+    {{ super() }}
+  <script type="text/javascript">
+        $( document ).ready(function() {
+            var element =  document.getElementById({{ page }});
+            element.className = element.className.replace("btn btn-default", "btn btn-primary");
+            var i;
+             for (i = {{ page }} +1 ; i < 6 ; i++) {
+                 var nelement =  document.getElementById(i);
+                 nelement.classList.add('disabled');
+                 nelement.disabled = true;
+                    }
+        });
+
+    </script>
+{% endblock %}

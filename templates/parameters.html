@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base_tf3.html" %}
 {% import 'bootstrap/wtf.html' as wtf %}
 {% from '_render_field.html' import render_field, render_single_field %}
 
@@ -11,14 +11,17 @@
 {% endblock %}
 
 {% block app_content %}
-    <h1>{{ name }}</h1>
+       <div align="center">
+    <th1> Model parameters</th1>
+    </div>
 
     {#    {{ wtf.quick_form(form, form_type="horizontal", horizontal_columns=('lg', 2, 4)) }}#}
     <form action="/parameters" method="post">
         {{ form.csrf_token }}
         {{ render_field(form.experiment) }}
         {{ render_field(form.network) }}
-        {{ render_field(form.paths) }}
+        {{ render_field(form.custom_model) }}
+{#        {{ render_field(form.paths) }}#}
         {{ render_field(form.training) }}
         <button type="submit" formmethod="post" class="btn btn-primary">Submit</button>
 

@@ -40,7 +40,7 @@ class CSVReader(metaclass=ABCMeta):
         pass
 
     def _make_csv_dataset(self):
-        dataset = tf.contrib.data.make_csv_dataset([self.filename], self.batch_size, num_epochs=self.num_epochs,
+        dataset = tf.contrib.data.make_csv_dataset([self.filename], self.batch_size, num_epochs=1,
                                                    label_name=self.label_name, column_defaults=self.column_defaults)
 
         # TODO perhaps no need to cast
@@ -64,7 +64,6 @@ class CSVReader(metaclass=ABCMeta):
 
         return df.values, np.array(labels)
 
-
     def _column_names(self) -> pd.DataFrame:
         return pd.read_csv(self.filename, nrows=2).columns
 
@@ -81,3 +80,18 @@ class CSVReader(metaclass=ABCMeta):
         label_column = self._get_label_name()
         df = pd.read_csv(self.filename, usecols=[label_column])
         return df[label_column].unique()
+
+    def make_numpy_array(self, target):
+        df = pd.read_csv(self.filename)
+        y = df[target].values
+        del df[target]
+        for c in df.columns:
+            if df[c].dtype == 'object':
+                df[c] = df[c].astype('category')
+        cat_columns = df.select_dtypes(['category']).columns
+        df[cat_columns] = df[cat_columns].apply(lambda x: x.cat.codes)
+        unique = np.unique(y).tolist()
+        labels = np.zeros((len(y), len(unique)))
+        for i in range(len(y)):
+            labels[i][unique.index(y[i])] = 1
+        return df.values, np.array(labels)

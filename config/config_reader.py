@@ -13,9 +13,17 @@ FEATURES = 'FEATURES'
 
 EXPERIMENT = 'EXPERIMENT'
 
+CUSTOM_MODEL = 'CUSTOM_MODEL'
+
 TRAINING = 'TRAINING'
 
 PATHS = 'PATHS'
+
+COLUMN_CHANGES = 'COLUMN_CHANGES'
+
+TARGET = 'TARGET'
+
+SPLIT_DF = 'SPLIT_DF'
 
 
 class CustomConfigParser(configparser.ConfigParser):
@@ -44,11 +52,17 @@ class CustomConfigParser(configparser.ConfigParser):
     def _from_network(self, param):
         return self.get(NETWORK, param)
 
+    def _from_custom(self, param):
+        return self.get(CUSTOM_MODEL, param)
+
     def _from_process(self, param):
         return dict(self.items(EXPERIMENT, param))
 
     def _from_paths(self, param):
         return self[PATHS][param]
+
+    def custom_model_path(self)-> Dict[str, str]:
+        return dict(self.items(CUSTOM_MODEL))
 
     def training(self) -> Dict[str, str]:
         print(self.items(TRAINING))
@@ -109,6 +123,7 @@ class CustomConfigParser(configparser.ConfigParser):
         # result.update(self.items(TASK0))
         result.update(self.items(NETWORK))
         result.update(self.items(PATHS))
+        result.update(self.items(CUSTOM_MODEL))
 
         int_columns = ["num_epochs", "batch_size", "validation_batch_size", "save_summary_steps",
                        "keep_checkpoint_max", "throttle", "validation_interval", "save_checkpoints_steps"]
@@ -132,7 +147,6 @@ class CustomConfigParser(configparser.ConfigParser):
 def read_config(path):
     config = CustomConfigParser(inline_comment_prefixes=['#'], interpolation=configparser.ExtendedInterpolation())
     config.read(path)
-
     return config
 
 

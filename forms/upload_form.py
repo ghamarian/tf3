@@ -35,13 +35,17 @@ class NewFileForm(FlaskForm):
 
 
 class ExisitingDatasetForm(FlaskForm):
-    train_file = SelectField(u'Train dataset', choices=list(zip(files, files)))
-    validation_file = SelectField(u'Validation dataset', choices=list(zip(files, files)))
-
+    train_file_exist = SelectField(u'Train dataset', choices=list(zip(files, files)))
+    # validation_file_exist = SelectField(u'Validation dataset', choices=list(zip(files, files)))
+    # configuration = SelectField(u'Configuration', choices=list())
 
 class UploadForm(FlaskForm):
     is_existing = BooleanField('Existing dataset')
     new_files = FormField(NewFileForm)
     exisiting_files = FormField(ExisitingDatasetForm)
     # exisiting_test_file = FormField(ExistingTestDatasetForm)
+    submit = SubmitField("Submit")
+
+class UploadNewForm(FlaskForm):
+    new_files = FormField(NewFileForm)
     submit = SubmitField("Submit")

@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base_tf3.html" %}
 {% import 'bootstrap/wtf.html' as wtf %}
 
 {% block styles %}
@@ -10,15 +10,22 @@
 
 
 {% block app_content %}
+
+<div align="center">
+<th1>Select the test dataset percentage</th1>
+
+
+
 <div class="row" id="slider-div">
-    <h1 class="col-md-12 col-lg-12 align-middle">Select the test dataset percentage </h1>
+{#    <h1 class="col-md-12 col-lg-12 align-middle">Select the test dataset percentage </h1>#}
     <div class="col-md-12 col-lg-12" id="slider"></div>
 </div>
 <div class="row">
-    <div class="col-md-2 col lg-2">
-         {{ wtf.quick_form(form, button_map={'submit': 'primary'}) }}
+    <div class="col-md-5 col lg-2">
+       {{ wtf.quick_form(form, button_map={'submit': 'primary'}) }}
     </div>
 
+</div>
 </div>
 {% endblock %}
 

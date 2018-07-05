@@ -29,3 +29,6 @@ class ConfigWriter:
         with open(path, 'w') as f:
             self.config.write(f)
 
+    def append_config(self, path):
+        with open(path, 'a') as f:
+            self.config.write(f)

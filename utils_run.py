@@ -48,9 +48,9 @@ def get_acc(directory, config_writer, CONFIG_FILE):
                             max_acc_index = str(e.step)
 
     # SAVE best model
-    config_writer.add_item('BEST_MODEL', 'max_acc', str(max_acc))
+    config_writer.add_item('BEST_MODEL', 'max_acc',str(float("{0:.3f}".format(max_acc))))
     config_writer.add_item('BEST_MODEL', 'max_acc_index', str(max_acc_index))
-    config_writer.add_item('BEST_MODEL', 'min_loss', str(min_loss))
+    config_writer.add_item('BEST_MODEL', 'min_loss', str(float("{0:.3f}".format(min_loss))))
     config_writer.add_item('BEST_MODEL', 'min_loss_index', str(min_loss_index))
     config_writer.write_config(CONFIG_FILE)
     return accuras

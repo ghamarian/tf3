@@ -41,11 +41,17 @@ $(document).ready(function () {
         'categorical': createMenu(categorical, categorical, hash, none),
         'hash': createMenu(hash, hash, categorical, none),
         'int-range': createMenu(range, range, hash, categorical, numerical, none),
+        'range': createMenu(range, range, hash, categorical, numerical, none),
         'int-hash': createMenu(hash, hash, categorical, numerical, none),
         'int-category': createMenu(hash, hash, range, categorical, numerical, none),
         'bool': createMenu(categorical, categorical, none),
         'numerical': createMenu(numerical, numerical, none),
-        'none': createMenu(categorical, hash, range, numerical,none)
+        'none': createMenu(none, none, categorical, hash, range, numerical),
+        'none-categorical': createMenu(none, none, categorical, hash),
+        'none-hash': createMenu(none, none, categorical, hash),
+        'none-range': createMenu(none, none, range, hash, categorical, numerical),
+        'none-numerical': createMenu(none, none, numerical),
+        'none-bool': createMenu(none, none, categorical)
     };
 
     table_tag = $('#amir');

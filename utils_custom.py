@@ -22,7 +22,7 @@ def get_html_types(dict_types):
     return dict_html_types
 
 
-def get_hidden_layers(INPUT_DIM, layers=4):
+def get_hidden_layers(INPUT_DIM, layers=2):
     hidden = [int(width) for width in np.exp(np.log(INPUT_DIM) * np.arange(layers - 1, 0, -1) / layers)]
     return ','.join(str(x) for x in hidden)
 
@@ -41,14 +41,57 @@ def get_configs_files(app_root, username):
                                       os.path.isdir(os.path.join(path, user_dataset, a))]
         # TODO parameters to show how information of configuration model
         for config_file in user_configs[user_dataset]:
+            parameters_configs[user_dataset + '_' + config_file] = {}
             connfig.read(os.path.join(path, user_dataset, config_file, 'config.ini'))
-            parameters_configs[user_dataset + '_' + config_file] = connfig.get('NETWORK', 'model_name')
+            parameters_configs[user_dataset + '_' + config_file]['model'] = connfig.get('NETWORK', 'model_name')
+            parameters_configs[user_dataset + '_' + config_file]['acc'] = connfig.get('BEST_MODEL', 'max_acc')
+            parameters_configs[user_dataset + '_' + config_file]['loss'] = connfig.get('BEST_MODEL', 'min_loss')
         dataset_form_exis.append((user_dataset, user_dataset))
     return dataset_form_exis, user_configs, parameters_configs
 
 
-def save_features_changes(CONFIG_FILE, data, config_writer):
-    for label in data.index:
+def save_features_changes(CONFIG_FILE, data, config_writer, categories):
+    for label, categories in zip(data.index, categories):
         cat = data.Category[label] if data.Category[label] != 'range' else 'int-range'
+        if 'none' in cat:
+            cat = 'none' + '-' + categories if 'none' not in categories else categories
         config_writer.add_item('COLUMN_CATEGORIES', label, cat)
     config_writer.write_config(CONFIG_FILE)
+
+
+def get_defaults_param_form(form, CONFIG_FILE, number_inputs, config_reader):
+    form.network.form.hidden_layers.default = get_hidden_layers(number_inputs, layers=4)
+    form.network.form.process()
+    if 'EXPERIMENT' in config_reader.read_config(CONFIG_FILE).keys():
+        form.experiment.form.keep_checkpoint_max.default = config_reader.read_config(CONFIG_FILE)['EXPERIMENT'][
+            'keep_checkpoint_max']
+        form.experiment.form.save_checkpoints_steps.default = config_reader.read_config(CONFIG_FILE)['EXPERIMENT'][
+            'save_checkpoints_steps']
+        form.experiment.form.initialize_with_checkpoint.default = config_reader.read_config(CONFIG_FILE)['EXPERIMENT'][
+            'initialize_with_checkpoint']
+        form.experiment.form.save_summary_steps.default = config_reader.read_config(CONFIG_FILE)['EXPERIMENT'][
+            'save_summary_steps']
+        form.experiment.form.throttle.default = config_reader.read_config(CONFIG_FILE)['EXPERIMENT']['throttle']
+        form.experiment.form.validation_batch_size.default = config_reader.read_config(CONFIG_FILE)['EXPERIMENT'][
+            'validation_batch_size']
+    if 'NETWORK' in config_reader.read_config(CONFIG_FILE).keys():
+        form.network.form.hidden_layers.default = config_reader.read_config(CONFIG_FILE)['NETWORK']['hidden_layers']
+        form.network.form.model_name.default = config_reader.read_config(CONFIG_FILE)['NETWORK']['model_name']
+    if 'CUSTOM_MODEL' in config_reader.read_config(CONFIG_FILE).keys():
+        form.custom_model.form.custom_model_path.default = config_reader.read_config(CONFIG_FILE)['CUSTOM_MODEL'][
+            'custom_model_path']
+    if 'TRAINING' in config_reader.read_config(CONFIG_FILE).keys():
+        form.training.form.num_epochs.default = config_reader.read_config(CONFIG_FILE)['TRAINING']['num_epochs']
+        form.training.form.batch_size.default = config_reader.read_config(CONFIG_FILE)['TRAINING']['batch_size']
+        form.training.form.optimizer.default = config_reader.read_config(CONFIG_FILE)['TRAINING']['optimizer']
+        form.training.form.learning_rate.default = config_reader.read_config(CONFIG_FILE)['TRAINING']['learning_rate']
+        form.training.form.l1_regularization.default = config_reader.read_config(CONFIG_FILE)['TRAINING'][
+            'l1_regularization']
+        form.training.form.l2_regularization.default = config_reader.read_config(CONFIG_FILE)['TRAINING'][
+            'l2_regularization']
+        form.training.form.dropout.default = config_reader.read_config(CONFIG_FILE)['TRAINING']['dropout']
+        form.training.form.activation_fn.default = config_reader.read_config(CONFIG_FILE)['TRAINING']['activation_fn']
+    form.network.form.process()
+    form.experiment.form.process()
+    form.training.form.process()
+    form.custom_model.form.process()

@@ -82,9 +82,9 @@ class TrainForm(FlaskForm):
                                     description="OPTIMIZER: provides methods to compute gradients for a loss and apply gradients to variables")
 
     learning_rate = FloatField("Learning rate", validators=[InputRequired()], default=0.01)
-    l1_regularization = FloatField("L1 regularization factor", validators=[InputRequired()], default=0.002,
+    l1_regularization = FloatField("L1 regularization factor", validators=[InputRequired()], default=0,
                                    description="L1 REGULARIZATION: ")
-    l2_regularization = FloatField("L2 regularization factor", validators=[InputRequired()], default=0.002,
+    l2_regularization = FloatField("L2 regularization factor", validators=[InputRequired()], default=0,
                                    description="L2 REGULARIZATION: ")
     dropout = FloatField("Dropout probability", validators=[InputRequired(), NumberRange(min=0.0, max=1.0)],
                                      default=0.0, description="DROPOUT: ")

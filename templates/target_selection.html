@@ -11,7 +11,7 @@
 
 {% block app_content %}
     <div align="center">
-    <th1> {{ name }}</th1>
+        <th1> {{ name }}</th1>
     </div>
 
     {{ data.to_html(classes="table table-striped display", table_id="target") | safe }}
@@ -27,6 +27,15 @@
     {#    <script src="{{ url_for('.static', filename='jquery.dataTables.js') }}"></script>#}
     {#    <script src="{{ url_for('.static', filename='dataTables.select.js') }}"></script>#}
     <script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.16/sl-1.2.5/datatables.min.js"></script>
+
     <script src="{{ url_for('.static', filename='target.js') }}"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('#target tr:contains({{ target_selected }})').addClass('selected');
+            {#if ({{ target_selected }} != "none"){#}
+            {#     $("input").prop('disabled', false);#}
+        });
+    </script>
+
 
 {% endblock %}

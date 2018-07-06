@@ -5,6 +5,7 @@ import utils
 from pprint import pprint
 from collections import defaultdict
 
+
 class FeatureSelection:
     MAX_CATEGORICAL_SIZE = 2000
     MAX_RANGE_SIZE = 100
@@ -44,7 +45,6 @@ class FeatureSelection:
         self.defaults = self.modes
         for col in self.numerical_columns:
             self.defaults[col] = self.medians[col]
-
 
     def feature_dict(self):
         return dict(itertools.chain.from_iterable(

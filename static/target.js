@@ -1,5 +1,4 @@
 $(document).ready(function () {
-
     table_tag = $('#target');
 
     table = table_tag.DataTable({
@@ -26,21 +25,17 @@ $(document).ready(function () {
             table.$('tr.selected').removeClass('selected');
             $(this).addClass('selected');
             $('#submit').prop('disabled', false);
-
         }
     });
 
 
     $('form').submit(function () {
         let selected_row = table.row('.selected').data();
-
         var input = $("<input>")
             .attr("type", "hidden")
             .attr("name", "selected_row").val(JSON.stringify(selected_row));
         $('form').append($(input));
     });
-
-
     // $('#select').click(function (event) {
     //     event.preventDefault();
     //     // var cat_column = table.columns(1).data()[0]

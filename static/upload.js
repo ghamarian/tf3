@@ -1,62 +1,9 @@
-{% extends "base_tf3.html" %}
-{% import 'bootstrap/wtf.html' as wtf %}
-{% from '_render_field.html' import render_checkbox, render_field, render_single_field %}
-
-{% block styles %}
-    {{ super() }}
-{% endblock %}
-
-{% block app_content %}
-    <div align="center">
-        <th1>Data Upload</th1>
-    </div>
-
-    <div class="row">
-        <!--{{ wtf.quick_form(form, id='new_dataset', enctype="multipart/form-data", button_map={'submit': 'primary'}) }}-->
-        <form action="/upload" method="post" enctype="multipart/form-data">
-            {{ form.csrf_token }}
-
-            {{ render_checkbox(form.is_existing) }}
-            <div id="newfiles">
-                {{ render_field(form.new_files) }}
-            </div>
-            <div id="existingfiles">
-                {{ render_field(form.exisiting_files) }}
-                <label for="exisiting_files-configuration" class="control-label" title="">Configuration</label>
-                <table class="table table-striped table-bordered" id="table_config">
-                    <thead class="thead-light">
-                    <tr>
-                        <th scope="col">Config name</th>
-                        <th scope="col">Model</th>
-                        <th scope="col">Accuracy</th>
-                        <th scope="col">Loss</th>
-                    </tr>
-                    </thead>
-                    <tbody id="tablediv">
-                    </tbody>
-                </table>
-            </div>
-            <p align="right">
-                <button type="submit" align="right" formmethod="post" class="btn btn-primary"> Next</button>
-            </p>
-
-        </form>
-    </div>
-{% endblock %}
-
-
-{% block scripts %}
-    {{ super() }}
-    <script src="{{ url_for('.static', filename='choose.js') }}"></script>
-    {#        <script src="{{ url_for('.static', filename='upload.js') }}"></script>#}
-    <script type="text/javascript">
-        $(document).ready(function () {
+  $(document).ready(function () {
             var handle_key = {};
             handle_key.configs = {{ user_configs | tojson | safe }};
             handle_key.parameters = {{ parameters | tojson | safe }};
             var dataset_selected = $('#exisiting_files-train_file_exist').find("option:selected").text();
             var len = handle_key.configs[dataset_selected].length;
-
             $('#exisiting_files-configuration').find('option').remove();
             var i;
             for (i = 0; i < len; i++) {
@@ -104,6 +51,3 @@
                 }
             });
         });
-    </script>
-
-{% endblock %}

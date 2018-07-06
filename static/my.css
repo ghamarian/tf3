@@ -186,3 +186,9 @@ th1{
     font-size: 1.875em; /* 30px/16=1.875em */
     color: #4e555b;
 }
+table.formatHTML5 tr.selected {
+    background-color: #d4e9e6 !important;
+    color:#fff;
+    vertical-align: middle;
+    padding: 1.5em;
+}

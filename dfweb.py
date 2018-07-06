@@ -158,7 +158,8 @@ def upload():
             config_writer.add_item('PATHS', 'checkpoint_dir', os.path.join(target, 'checkpoints/'))
             config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'checkpoints/'))
         else:
-            dataset_name = form.new_files.train_file.data.filename.split('.')[0]
+            ext = form.new_files.train_file.data.filename.split('.')[-1]
+            dataset_name = form.new_files.train_file.data.filename.split('.' + ext)[0]
             config_name = define_new_config_file(dataset_name, APP_ROOT, session['user'])
             target = os.path.join(APP_ROOT, 'user_data', session['user'], dataset_name, config_name)
 
@@ -200,7 +201,8 @@ def upload():
 def upload_new():
     form = UploadNewForm()
     if form.validate_on_submit():
-        dataset_name = form.new_files.train_file.data.filename.split('.')[0]
+        ext = form.new_files.train_file.data.filename.split('.')[-1]
+        dataset_name = form.new_files.train_file.data.filename.split('.' + ext)[0]
         config_name = define_new_config_file(dataset_name, APP_ROOT, session['user'])
         target_ds = os.path.join(APP_ROOT, 'user_data', session['user'], dataset_name)
         save_file(target_ds, form.new_files.train_file, 'train_file')

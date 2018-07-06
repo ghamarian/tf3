@@ -28,8 +28,11 @@ class Runner:
                                      self.feature_columns, self.label_unique_values)
 
     def run(self):
-        self.classifier.clear_checkpoint()
-        self.classifier.run()
+        try:
+            self.classifier.run()
+        except tf.errors.NotFoundError:
+            self.classifier.clear_checkpoint()
+            self.classifier.run()
 
     def predict(self, features, target, df):
         return self.classifier.predict(features, target, df)

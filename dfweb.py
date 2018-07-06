@@ -117,6 +117,17 @@ def login():
     return render_template('login.html', form=form)
 
 
+def define_new_config_file(dataset_name, APP_ROOT, username):
+    config_name = utils_custom.generate_config_name(APP_ROOT, username, dataset_name)
+    target = os.path.join(APP_ROOT, 'user_data', username, dataset_name, config_name)
+    config_writer.add_item('PATHS', 'checkpoint_dir', os.path.join(target, 'checkpoints/'))
+    config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'checkpoints/'))
+    if not os.path.isdir(target):
+        os.makedirs(target, exist_ok=True)
+    create_config(dataset_name, config_name)
+    return config_name
+
+
 @app.route('/upload', methods=['GET', 'POST'])
 @login_required
 def upload():
@@ -127,7 +138,10 @@ def upload():
     if form.validate_on_submit():
         if form.is_existing.data:
             dataset_name = request.form['exisiting_files-train_file_exist']
-            config_name = request.form['exisiting_files-configuration']
+            if 'exisiting_files-configuration' in request.form:
+                config_name = request.form['exisiting_files-configuration']
+            else:
+                config_name = define_new_config_file(dataset_name, APP_ROOT, session['user'])
             config[session['user']]['config_file'] = os.path.join('user_data', session['user'],
                                                                   dataset_name, config_name, 'config.ini')
             train_file_name = os.path.join('user_data', session['user'],
@@ -145,7 +159,7 @@ def upload():
             config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'checkpoints/'))
         else:
             dataset_name = form.new_files.train_file.data.filename.split('.')[0]
-            config_name = utils_custom.generate_config_name(APP_ROOT, session['user'], dataset_name)
+            config_name = define_new_config_file(dataset_name, APP_ROOT, session['user'])
             target = os.path.join(APP_ROOT, 'user_data', session['user'], dataset_name, config_name)
 
             config_writer.add_item('PATHS', 'checkpoint_dir', os.path.join(target, 'checkpoints/'))
@@ -187,14 +201,7 @@ def upload_new():
     form = UploadNewForm()
     if form.validate_on_submit():
         dataset_name = form.new_files.train_file.data.filename.split('.')[0]
-        config_name = utils_custom.generate_config_name(APP_ROOT, session['user'], dataset_name)
-        target = os.path.join(APP_ROOT, 'user_data', session['user'], dataset_name, config_name)
-        config_writer.add_item('PATHS', 'checkpoint_dir', os.path.join(target, 'checkpoints/'))
-        config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'checkpoints/'))
-
-        if not os.path.isdir(target):
-            os.makedirs(target, exist_ok=True)
-        create_config(dataset_name, config_name)
+        config_name = define_new_config_file(dataset_name, APP_ROOT, session['user'])
         target_ds = os.path.join(APP_ROOT, 'user_data', session['user'], dataset_name)
         save_file(target_ds, form.new_files.train_file, 'train_file')
         save_file(target_ds, form.new_files.test_file, 'validation_file')
@@ -254,13 +261,7 @@ def feature():
         update_config('defaults', dict(zip(get('data').index.tolist(), default_values)))
         get('fs').update(get('category_list'), dict(zip(get('data').index.tolist(), default_values)))
         CONFIG_FILE = config[get_session('user')]['config_file']
-        utils_custom.save_features_changes(CONFIG_FILE, get('data'), config_writer)
-        # SAVE CHANGES
-
-        for label in get('data').index:
-            cat = get('data').Category[label] if get('data').Category[label] != 'range' else 'int-range'
-            config_writer.add_item('COLUMN_CATEGORIES', label, cat)
-        config_writer.write_config(CONFIG_FILE)
+        utils_custom.save_features_changes(CONFIG_FILE, get('data'), config_writer, categories)
 
         return redirect(url_for('target'))
 
@@ -273,6 +274,7 @@ def feature():
 def target():
     form = Submit()
     data = get('data')
+    CONFIG_FILE = config[get_session('user')]['config_file']
     if form.validate_on_submit():
         target = json.loads(request.form['selected_row'])[0]
         update_config('features', get('fs').create_tf_features(get('category_list'), target))
@@ -281,8 +283,13 @@ def target():
         if 'split_df' in get_config():
             split_train_test(get('split_df'))
             config_writer.add_item('SPLIT_DF', 'split_df', get('split_df'))
+        config_writer.write_config(CONFIG_FILE)
         return redirect(url_for('parameters'))
-    return render_template('target_selection.html', name="Dataset target selection", form=form, data=data, page=3)
+    target_selected = 'None'
+    if 'TARGET' in config_reader.read_config(CONFIG_FILE).keys():
+        target_selected = config_reader.read_config(CONFIG_FILE)['TARGET']['target']
+
+    return render_template('target_selection.html', name="Dataset target selection", form=form, data=data, page=3, target_selected=target_selected)
 
 
 @app.route('/parameters', methods=['GET', 'POST'])
@@ -301,8 +308,7 @@ def parameters():
     flash_errors(form)
     number_inputs = len(
         [get('data').Category[i] for i in range(len(get('data').Category)) if get('data').Category[i] != 'none']) - 1
-    form.network.form.hidden_layers.default = utils_custom.get_hidden_layers(number_inputs, layers=4)
-    form.network.form.process()
+    utils_custom.get_defaults_param_form(form, CONFIG_FILE, number_inputs, config_reader)
     return render_template('parameters.html', form=form, page=4)
 
 
@@ -310,7 +316,10 @@ def parameters():
 def run():
     form = RunForm()
     target_type = get('data').Category[get('target')]
-    labels = None if target_type == 'numerical' else get('fs').cat_unique_values_dict[get('target')]
+
+
+    labels = get_target_labels(get('target'), target_type, get('fs'))
+
     CONFIG_FILE = config[get_session('user')]['config_file']
     features = get('defaults')
     target = get('target')
@@ -348,7 +357,7 @@ def run():
 def pause():
     import psutil
     p = processes[get_session('user')] if get_session('user') in processes.keys() else None
-    if not isinstance(p, str):
+    if not isinstance(p, str) and p:
         pid = p.pid
         parent = psutil.Process(pid)
         for child in parent.children(recursive=True):
@@ -482,5 +491,14 @@ def run_thread(all_params_config, features, target, labels, defaults, dtypes):
     runner.run()
 
 
+def get_target_labels(target, target_type, fs):
+    #TODO labels if target type is a RANGE, BOOL, ...
+    if target_type == 'categorical' or target_type == 'hash':
+        return fs.cat_unique_values_dict[target]
+    elif target_type == 'range':
+        return [str(a) for a in list(range(min(fs.df[target].values),max(fs.df[target].values)))]
+    return None
+
+    return None
 if __name__ == '__main__':
     app.run(debug=True, threaded=True)

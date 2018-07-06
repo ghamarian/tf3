@@ -144,7 +144,8 @@ def upload():
             config_writer.add_item('PATHS', 'checkpoint_dir', os.path.join(target, 'checkpoints/'))
             config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'checkpoints/'))
         else:
-            dataset_name = form.new_files.train_file.data.filename.split('.')[0]
+            ext = form.new_files.train_file.data.filename.split('.')[-1]
+            dataset_name = form.new_files.train_file.data.filename.split('.' + ext)[0]
             config_name = utils_custom.generate_config_name(APP_ROOT, session['user'], dataset_name)
             target = os.path.join(APP_ROOT, 'user_data', session['user'], dataset_name, config_name)
 
@@ -186,7 +187,8 @@ def upload():
 def upload_new():
     form = UploadNewForm()
     if form.validate_on_submit():
-        dataset_name = form.new_files.train_file.data.filename.split('.')[0]
+        ext = form.new_files.train_file.data.filename.split('.')[-1]
+        dataset_name = form.new_files.train_file.data.filename.split('.'+ext)[0]
         config_name = utils_custom.generate_config_name(APP_ROOT, session['user'], dataset_name)
         target = os.path.join(APP_ROOT, 'user_data', session['user'], dataset_name, config_name)
         config_writer.add_item('PATHS', 'checkpoint_dir', os.path.join(target, 'checkpoints/'))
@@ -301,7 +303,7 @@ def parameters():
     flash_errors(form)
     number_inputs = len(
         [get('data').Category[i] for i in range(len(get('data').Category)) if get('data').Category[i] != 'none']) - 1
-    form.network.form.hidden_layers.default = utils_custom.get_hidden_layers(number_inputs, layers=4)
+    form.network.form.hidden_layers.default = utils_custom.get_hidden_layers(number_inputs, layers=2)
     form.network.form.process()
     return render_template('parameters.html', form=form, page=4)
 

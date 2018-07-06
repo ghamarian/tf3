@@ -22,7 +22,7 @@ def get_html_types(dict_types):
     return dict_html_types
 
 
-def get_hidden_layers(INPUT_DIM, layers=4):
+def get_hidden_layers(INPUT_DIM, layers=2):
     hidden = [int(width) for width in np.exp(np.log(INPUT_DIM) * np.arange(layers - 1, 0, -1) / layers)]
     return ','.join(str(x) for x in hidden)
 
@@ -42,7 +42,8 @@ def get_configs_files(app_root, username):
         # TODO parameters to show how information of configuration model
         for config_file in user_configs[user_dataset]:
             connfig.read(os.path.join(path, user_dataset, config_file, 'config.ini'))
-            parameters_configs[user_dataset + '_' + config_file] = connfig.get('NETWORK', 'model_name')
+            if 'NETWORK' in connfig.keys():
+                parameters_configs[user_dataset + '_' + config_file] = connfig.get('NETWORK', 'model_name')
         dataset_form_exis.append((user_dataset, user_dataset))
     return dataset_form_exis, user_configs, parameters_configs
 

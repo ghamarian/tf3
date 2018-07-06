@@ -84,18 +84,7 @@ class Classifier:
         self.params['linear_optimizer'] = self.params['optimizer']
         self.params['activation_fn'] = getattr(tf.nn, self.params['activation_fn'])
 
-
         self.model = mb.create_from_model_name(self.params['model_name'], self.feature_columns, self.params)
-        #dataset, labels = self.train_csv_reader._make_numpy_array('line')
-
-
-        # self.input_fn = tf.estimator.inputs.numpy_input_fn(
-        #     x={'input_2': dataset},
-        #     y=labels,
-        #     num_epochs=1,
-        #     shuffle=True)
-        # self.model = tf.keras.estimator.model_to_estimator(keras_model_path='models/test.h5')
-
 
     def _create_specs(self):
         max_steps = self.params[MAX_STEPS]
@@ -134,6 +123,7 @@ class KerasClassifier:
        self.validation_csv_reader = validation_csv_reader
 
        tf.logging.set_verbosity(tf.logging.DEBUG)
+
        tf.reset_default_graph()
 
        self._create_run_config()

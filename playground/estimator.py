@@ -39,7 +39,18 @@ def pandas_train_input_fn(df):
     )
 
 
-model = tf.estimator.LinearRegressor(feature_columns, "checkpoint")
+
+feature_list = [tf.feature_column.numeric_column(feature) for feature in feature_names[:-1]]
+
+BATCH_SIZE = 32
+NUM_EPOCHS = 100
+
+def train_input_fn():
+    return tf.contrib.data._make_csv_dataset('iris.csv', BATCH_SIZE, num_epochs=NUM_EPOCHS, label_name='species')
+
+
+
+model = tf.estimator.LinearRegressor(feature_list, "checkpoint")
 
 # model.train(train_input_fn, steps=1000)
 # steps is for mini-batches (training step)

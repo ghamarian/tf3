@@ -32,7 +32,8 @@ class CSVReader(metaclass=ABCMeta):
     def convert_defaults(self, dtypes, column_defaults):
         defaults = column_defaults.copy()
         defaults.update({key: float(defaults[key]) for key in dtypes['numerical']})
-        defaults.update({key: int(defaults[key]) for key in dtypes['range']})
+        if 'range' in dtypes:
+            defaults.update({key: int(defaults[key]) for key in dtypes['range']})
         self.column_defaults = [[key] for key in defaults.values()]
 
     @abstractmethod

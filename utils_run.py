@@ -45,7 +45,7 @@ def get_acc(directory, config_writer, CONFIG_FILE):
             if str(e.step) in checkpoints:
                 accuras[e.step] = {}
                 for v in e.summary.value:
-                    if v.tag == 'loss':
+                    if v.tag == 'average_loss':
                         accuras[e.step]['loss'] = float("{0:.3f}".format(v.simple_value))
                         if v.simple_value < min_loss:
                             min_loss = v.simple_value

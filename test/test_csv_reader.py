@@ -19,7 +19,9 @@ def config():
 
 @pytest.fixture
 def train_reader(config):
-    return TrainCSVReader(config)
+    defaults = {'sepal_length': '5.8', 'sepal_width': '3', 'petal_length': '4.35', 'petal_width': '1.3', 'class': 'Iris-setosa'}
+    dtypes = {'numerical': ['sepal_length', 'sepal_width', 'petal_length', 'petal_width'], 'categorical': ['class']}
+    return TrainCSVReader(config, defaults, dtypes, 'class')
 
 
 @pytest.fixture

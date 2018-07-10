@@ -121,6 +121,7 @@ def define_new_config_file(dataset_name, APP_ROOT, username):
     config_name = utils_custom.generate_config_name(APP_ROOT, username, dataset_name)
     target = os.path.join(APP_ROOT, 'user_data', username, dataset_name, config_name)
     config_writer.add_item('PATHS', 'checkpoint_dir', os.path.join(target, 'checkpoints/'))
+    config_writer.add_item('PATHS', 'export_dir', os.path.join(target, 'checkpoints/export/best_exporter'))
     config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'checkpoints/'))
     if not os.path.isdir(target):
         os.makedirs(target, exist_ok=True)
@@ -310,7 +311,11 @@ def parameters():
     flash_errors(form)
     number_inputs = len(
         [get('data').Category[i] for i in range(len(get('data').Category)) if get('data').Category[i] != 'none']) - 1
-    utils_custom.get_defaults_param_form(form, CONFIG_FILE, number_inputs, config_reader)
+    target_type = get('data').Category[get('target')]
+    number_outputs = 1 if target_type == 'numerical' else len(get('fs').cat_unique_values_dict[get('target')])
+    num_samples = len(get('df').index)
+
+    utils_custom.get_defaults_param_form(form, CONFIG_FILE, number_inputs, number_outputs, num_samples, config_reader)
     return render_template('parameters.html', form=form, page=4)
 
 
@@ -327,9 +332,10 @@ def run():
     target = get('target')
     dict_types, categoricals = utils_run.get_dictionaries(get('defaults'), get('category_list'), get('fs'),
                                                           get('target'))
-    directory = config_reader.read_config(CONFIG_FILE).all()['checkpoint_dir']
+    directory = config_reader.read_config(CONFIG_FILE).all()['export_dir']
+
     CONFIG_FILE = config[get_session('user')]['config_file']
-    checkpoints = utils_run.get_acc(directory, config_writer, CONFIG_FILE)
+    checkpoints = utils_run.get_eval_results(directory, config_writer, CONFIG_FILE)
     sfeatures = features.copy()
     sfeatures.pop(target)
 
@@ -381,20 +387,21 @@ def predict():
 
     dict_types, categoricals = utils_run.get_dictionaries(get('defaults'), get('category_list'), get('fs'),
                                                           get('target'))
-    directory = config_reader.read_config(CONFIG_FILE).all()['checkpoint_dir']
+    directory = config_reader.read_config(CONFIG_FILE).all()['export_dir']
 
-    checkpoints = utils_run.get_acc(directory, config_writer, CONFIG_FILE)
+    checkpoints = utils_run.get_eval_results(directory, config_writer, CONFIG_FILE)
 
     running = 1 if get_session('user') in processes.keys() and not isinstance(processes[get_session('user')],
                                                                               str) else 0
     if request.method == 'POST':
-        utils_run.change_model_default(request.form['radiob'], CONFIG_FILE, config_reader)
         new_features = {}
         for k, v in features.items():
             if k not in get('fs').group_by(get('category_list'))['none']:
                 new_features[k] = request.form[k] if k != target else features[k]
 
         all_params_config = config_reader.read_config(CONFIG_FILE)
+        all_params_config.set('PATHS', 'checkpoint_dir', os.path.join(all_params_config.export_dir(), request.form['radiob']))
+
         labels = None if target_type == 'numerical' else get('fs').cat_unique_values_dict[get('target')]
         dtypes = get('fs').group_by(get('category_list'))
         runner = Runner(all_params_config, get('features'), get('target'), labels, get('defaults'), dtypes)

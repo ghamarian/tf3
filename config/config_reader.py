@@ -96,7 +96,7 @@ class CustomConfigParser(configparser.ConfigParser):
         return int(self._from_training('num_epochs'))
 
     def hidden_layers(self):
-        return ast.literal_eval(self.get('NETWORK', 'hidden_layers'))
+        return [int(x) for x in self.get('NETWORK', 'hidden_layers').split(',')]
 
     def features(self):
         return dict(self.items(FEATURES))
@@ -106,6 +106,9 @@ class CustomConfigParser(configparser.ConfigParser):
 
     def checkpoint_dir(self):
         return self.get_rel_path(PATHS, 'checkpoint_dir')
+
+    def export_dir(self):
+        return self.get_rel_path(PATHS, 'export_dir')
 
     def training_path(self):
         return utils.abs_path_of(self._from_paths('train_file'))

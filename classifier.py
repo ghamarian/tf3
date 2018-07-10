@@ -6,7 +6,7 @@ from model_builder import ModelBuilder
 from keras.models import load_model
 from train_csv_reader import TrainCSVReader
 from validation_csv_reader import ValidationCSVReader
-
+from best_exporter import BestExporter
 HIDDEN_LAYERS = 'hidden_layers'
 
 MAX_STEPS = 'max_steps'
@@ -98,10 +98,16 @@ class Classifier:
         #     scaffold=tf.train.Scaffold(),
         #     summary_op=tf.summary.merge_all())
         #
-
+        feature_spec = tf.feature_column.make_parse_example_spec(
+            self.feature_columns)
+        serving_input_receiver_fn = (
+            tf.estimator.export.build_parsing_serving_input_receiver_fn(
+                feature_spec))
         self.eval_spec = tf.estimator.EvalSpec(
             input_fn=self._validation_input_fn,
             steps=None,  # How many batches of test data
+            exporters=BestExporter(serving_input_receiver_fn=serving_input_receiver_fn,
+                                   exports_to_keep=self.params[KEEP_CHECKPOINT_MAX]),
             start_delay_secs=0, throttle_secs=1)
 
     def _create_run_config(self):

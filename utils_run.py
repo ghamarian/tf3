@@ -1,6 +1,14 @@
 import os
 import tensorflow as tf
 import math
+import socket
+from contextlib import closing
+
+
+def find_free_port():
+    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
+        s.bind(('', 0))
+        return str(s.getsockname()[1])
 
 
 def get_dictionaries(features, categories, fs, target):
@@ -30,19 +38,20 @@ def get_acc(directory, config_writer, CONFIG_FILE):
         files_checkpoints = os.listdir(directory)
         for file in files_checkpoints:
             if '.meta' in file:
+                # TODO get the last one ?
                 checkpoints.append(file.split('.')[1].split('-')[-1])
-        path_to_events_file = os.path.join(eval_dir, os.listdir(eval_dir)[0])
+        path_to_events_file = os.path.join(eval_dir, os.listdir(eval_dir)[-1])
         for e in tf.train.summary_iterator(path_to_events_file):
             if str(e.step) in checkpoints:
                 accuras[e.step] = {}
                 for v in e.summary.value:
                     if v.tag == 'loss':
-                        accuras[e.step]['loss'] = v.simple_value
+                        accuras[e.step]['loss'] = float("{0:.3f}".format(v.simple_value))
                         if v.simple_value < min_loss:
                             min_loss = v.simple_value
                             min_loss_index = str(e.step)
                     elif v.tag == 'accuracy':
-                        accuras[e.step]['accuracy'] = v.simple_value
+                        accuras[e.step]['accuracy'] =  float("{0:.3f}".format(v.simple_value))
                         if v.simple_value > max_acc:
                             max_acc = v.simple_value
                             max_acc_index = str(e.step)

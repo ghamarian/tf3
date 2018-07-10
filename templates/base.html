@@ -30,8 +30,8 @@
                 <ul class="nav navbar-nav">
                     <li class="active"><a href="#">Home</a></li>
                     <li><a href="login">Login</a></li>
-                    <li><a href="#">Sign Up</a></li>
-                    <li><a href="#">Log Out</a></li>
+{#                    <li><a href="#">Sign Up</a></li>#}
+                    <li><a href="{{ url_for('logout') }}">Log Out</a></li>
                     <li><a href="#"> <span class="glyphicon glyphicon-user"></span>{{ user }} </a></li>
                 </ul>
             </div><!--/.nav-collapse -->
@@ -46,16 +46,16 @@
 
 {% block scripts %}
     {{ super() }}
-  <script type="text/javascript">
-        $( document ).ready(function() {
-            var element =  document.getElementById({{ page }});
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var element = document.getElementById({{ page }});
             element.className = element.className.replace("btn btn-default", "btn btn-primary");
             var i;
-             for (i = {{ page }} +1 ; i < 6 ; i++) {
-                 var nelement =  document.getElementById(i);
-                 nelement.classList.add('disabled');
-                 nelement.disabled = true;
-                    }
+            for (i = {{ page }} +1; i < 6; i++) {
+                var nelement = document.getElementById(i);
+                nelement.classList.add('disabled');
+                nelement.disabled = true;
+            }
         });
 
     </script>

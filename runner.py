@@ -30,7 +30,8 @@ class Runner:
     def run(self):
         try:
             self.classifier.run()
-        except tf.errors.NotFoundError:
+        # except tf.errors.NotFoundError:
+        except:
             self.classifier.clear_checkpoint()
             self.classifier.run()
 

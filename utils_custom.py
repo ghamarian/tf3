@@ -43,11 +43,11 @@ def get_configs_files(app_root, username):
         for config_file in user_configs[user_dataset]:
             parameters_configs[user_dataset + '_' + config_file] = {}
             connfig.read(os.path.join(path, user_dataset, config_file, 'config.ini'))
-            if 'BEST_MODEL' in connfig.keys():
+            if 'BEST_MODEL' in connfig.sections():
                 parameters_configs[user_dataset + '_' + config_file]['acc'] = connfig.get('BEST_MODEL', 'max_acc')
                 parameters_configs[user_dataset + '_' + config_file]['loss'] = connfig.get('BEST_MODEL', 'min_loss')
-            if 'NETWORK' in connfig.keys():
-                parameters_configs[user_dataset + '_' + config_file] = connfig.get('NETWORK', 'model_name')
+            if 'NETWORK' in connfig.sections():
+                parameters_configs[user_dataset + '_' + config_file]['model'] = connfig.get('NETWORK', 'model_name')
         dataset_form_exis.append((user_dataset, user_dataset))
     return dataset_form_exis, user_configs, parameters_configs
 

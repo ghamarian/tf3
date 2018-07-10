@@ -32,8 +32,9 @@
     <script type="text/javascript">
         $(document).ready(function () {
             $('#target tr:contains({{ target_selected }})').addClass('selected');
-            {#if ({{ target_selected }} != "none"){#}
-            {#     $("input").prop('disabled', false);#}
+            if ($( "#target tr" ).hasClass( "selected" )){
+                 $("input").prop('disabled', false);
+                     };
         });
     </script>
 

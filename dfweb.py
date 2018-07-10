@@ -3,12 +3,14 @@ import json
 import logging
 import os
 import pandas as pd
+import psutil
 import threading
 import time
 import utils_run
 import utils_custom
 from config import config_reader
 from config.config_writer import ConfigWriter
+from db import db
 from feature_selection import FeatureSelection
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_bootstrap import Bootstrap
@@ -28,36 +30,36 @@ import uuid
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='[%(levelname)s] (%(threadName)-10s) %(message)s',
-                    )
+# logging.basicConfig(level=logging.DEBUG,
+#                     format='[%(levelname)s] (%(threadName)-10s) %(message)s',
+#                     )
 
 DATASETS = "datasets"
-
 SAMPLE_DATA_SIZE = 5
-
 WTF_CSRF_SECRET_KEY = os.urandom(42)
-
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
-
 app = Flask(__name__)
 Bootstrap(app)
 app.secret_key = WTF_CSRF_SECRET_KEY
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///username.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 config_writer = ConfigWriter()
 config = {}
 
 stop_event = threading.Event()
 processes = {}
+ports = {}
 
-
-# TODO create as database
-users = {}
-usertest = User('usertest2', generate_password_hash('test12345678', method='sha256'), 'test@test.com')
-users['usertest2'] = usertest
+# users = {}
+# usertest = User('usertest2', generate_password_hash('test12345678', method='sha256'), 'test@test.com')
+# users['usertest2'] = usertest
 
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+
+# login_manager.login_view = 'upload'
 
 
 def get_session(user_id):
@@ -75,14 +77,6 @@ def get_config():
     return config[user]
 
 
-def create_config(dataset, config_name):
-    user = get_session('user')
-    path = APP_ROOT + '/user_data/' + user + '/' + dataset + '/' + config_name
-    os.makedirs(path, exist_ok=True)
-    copyfile('config/default_config.ini', path + '/config.ini')
-    config[user]['config_file'] = path + '/config.ini'
-
-
 def get(key):
     return get_config()[key]
 
@@ -94,19 +88,17 @@ def update_config(key, value):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return users[user_id]
+    return User.query.filter_by(id=user_id).first()
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
     if form.validate_on_submit():
-        username = form.username.data
-        password = form.password.data
-        if not username in users.keys():
+        if db.session.query(User.id).filter_by(username=form.username.data).scalar() is None:
             return render_template('login.html', form=form, error="Invalid username or password")
-        user = users[username]
-        if check_password_hash(user.password, password):
+        user = User.query.filter_by(username=form.username.data).first()
+        if check_password_hash(user.password, form.password.data):
             login_user(user, remember=form.remember.data)
             session['user'] = user.username
             config[user.username] = {}
@@ -117,15 +109,11 @@ def login():
     return render_template('login.html', form=form)
 
 
-def define_new_config_file(dataset_name, APP_ROOT, username):
-    config_name = utils_custom.generate_config_name(APP_ROOT, username, dataset_name)
-    target = os.path.join(APP_ROOT, 'user_data', username, dataset_name, config_name)
-    config_writer.add_item('PATHS', 'checkpoint_dir', os.path.join(target, 'checkpoints/'))
-    config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'checkpoints/'))
-    if not os.path.isdir(target):
-        os.makedirs(target, exist_ok=True)
-    create_config(dataset_name, config_name)
-    return config_name
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
 
 
 @app.route('/upload', methods=['GET', 'POST'])
@@ -134,7 +122,6 @@ def upload():
     form = UploadForm()
     user_dataset, user_configs, parameters_configs = utils_custom.get_configs_files(APP_ROOT, session['user'])
     form.exisiting_files.train_file_exist.choices = user_dataset
-
     if form.validate_on_submit():
         if form.is_existing.data:
             dataset_name = request.form['exisiting_files-train_file_exist']
@@ -142,47 +129,18 @@ def upload():
                 config_name = request.form['exisiting_files-configuration']
             else:
                 config_name = define_new_config_file(dataset_name, APP_ROOT, session['user'])
-            config[session['user']]['config_file'] = os.path.join('user_data', session['user'],
-                                                                  dataset_name, config_name, 'config.ini')
-            train_file_name = os.path.join('user_data', session['user'],
-                                           dataset_name, dataset_name + '-train.csv')
-
+            config[session['user']]['config_file'] = os.path.join('user_data', session['user'], dataset_name,
+                                                                  config_name, 'config.ini')
+            train_file_name = os.path.join('user_data', session['user'], dataset_name, dataset_name + '-train.csv')
             update_config('train_file', os.path.join(APP_ROOT, train_file_name))
             config_writer.add_item('PATHS', 'train_file', os.path.join(APP_ROOT, train_file_name))
-
-            test_file_name = os.path.join('user_data', session['user'],
-                                          dataset_name, dataset_name + '-validation.csv')
+            test_file_name = os.path.join('user_data', session['user'], dataset_name, dataset_name + '-validation.csv')
             update_config('validation_file', os.path.join(APP_ROOT, test_file_name))
             config_writer.add_item('PATHS', 'validation_file', os.path.join(APP_ROOT, test_file_name))
             target = os.path.join(APP_ROOT, 'user_data', session['user'], dataset_name, config_name)
-            config_writer.add_item('PATHS', 'checkpoint_dir', os.path.join(target, 'checkpoints/'))
-            config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'checkpoints/'))
+            update_config_checkpoints(config_writer, target)
         else:
-            ext = form.new_files.train_file.data.filename.split('.')[-1]
-            dataset_name = form.new_files.train_file.data.filename.split('.' + ext)[0]
-            config_name = define_new_config_file(dataset_name, APP_ROOT, session['user'])
-            target = os.path.join(APP_ROOT, 'user_data', session['user'], dataset_name, config_name)
-
-            config_writer.add_item('PATHS', 'checkpoint_dir', os.path.join(target, 'checkpoints/'))
-            config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'checkpoints/'))
-
-            if not os.path.isdir(target):
-                os.makedirs(target, exist_ok=True)
-
-            create_config(dataset_name, config_name)
-
-            target_ds = os.path.join(APP_ROOT, 'user_data', session['user'], dataset_name)
-            save_file(target_ds, form.new_files.train_file, 'train_file')
-            save_file(target_ds, form.new_files.test_file, 'validation_file')
-            # TODO check if files exists
-            if not 'validation_file' in get_config() and not isinstance(form.new_files.train_file.data,
-                                                                        str) and not isinstance(
-                form.new_files.test_file.data, str):
-                config_writer.add_item('PATHS', 'train_file',
-                                       os.path.join(target, form.new_files.train_file.data.filename))
-                config_writer.add_item('PATHS', 'validation_file',
-                                       os.path.join(target, form.new_files.test_file.data.filename))
-                return redirect(url_for('feature'))
+            new_config(form, APP_ROOT, session['user'], config_writer)
         if not 'validation_file' in get_config():
             return redirect(url_for('slider'))
         else:
@@ -201,21 +159,7 @@ def upload():
 def upload_new():
     form = UploadNewForm()
     if form.validate_on_submit():
-        ext = form.new_files.train_file.data.filename.split('.')[-1]
-        dataset_name = form.new_files.train_file.data.filename.split('.' + ext)[0]
-        config_name = define_new_config_file(dataset_name, APP_ROOT, session['user'])
-        target_ds = os.path.join(APP_ROOT, 'user_data', session['user'], dataset_name)
-        save_file(target_ds, form.new_files.train_file, 'train_file')
-        save_file(target_ds, form.new_files.test_file, 'validation_file')
-        # TODO check if files exists
-        if not 'validation_file' in get_config() and not isinstance(form.new_files.train_file.data,
-                                                                    str) and not isinstance(
-            form.new_files.test_file.data, str):
-            config_writer.add_item('PATHS', 'train_file',
-                                   os.path.join(target, form.new_files.train_file.data.filename))
-            config_writer.add_item('PATHS', 'validation_file',
-                                   os.path.join(target, form.new_files.test_file.data.filename))
-            return redirect(url_for('feature'))
+        new_config(form, APP_ROOT, session['user'], config_writer)
         if not 'validation_file' in get_config():
             return redirect(url_for('slider'))
         else:
@@ -262,8 +206,8 @@ def feature():
         get('data').Defaults = default_values
         update_config('defaults', dict(zip(get('data').index.tolist(), default_values)))
         get('fs').update(get('category_list'), dict(zip(get('data').index.tolist(), default_values)))
-        CONFIG_FILE = config[get_session('user')]['config_file']
-        utils_custom.save_features_changes(CONFIG_FILE, get('data'), config_writer, categories)
+        utils_custom.save_features_changes(config[get_session('user')]['config_file'], get('data'), config_writer,
+                                           categories)
 
         return redirect(url_for('target'))
 
@@ -282,6 +226,16 @@ def target():
         update_config('features', get('fs').create_tf_features(get('category_list'), target))
         update_config('target', target)
         config_writer.add_item('TARGET', 'target', target)
+
+        target_type = get('data').Category[get('target')]
+        if target_type == 'range':
+            new_categ_list = []
+            for categ, feature in zip(get_config()['category_list'], get_config()['df'].columns):
+                new_categ_list.append(categ if feature != target else 'categorical')
+            update_config('category_list', new_categ_list)
+            get('data').Category = get('category_list')
+            get('fs').update(get('category_list'), dict(zip(get('data').index.tolist(), get('data').Defaults)))
+
         if 'split_df' in get_config():
             split_train_test(get('split_df'))
             config_writer.add_item('SPLIT_DF', 'split_df', get('split_df'))
@@ -291,7 +245,8 @@ def target():
     if 'TARGET' in config_reader.read_config(CONFIG_FILE).keys():
         target_selected = config_reader.read_config(CONFIG_FILE)['TARGET']['target']
 
-    return render_template('target_selection.html', name="Dataset target selection", form=form, data=data, page=3, target_selected=target_selected)
+    return render_template('target_selection.html', name="Dataset target selection", form=form, data=data, page=3,
+                           target_selected=target_selected)
 
 
 @app.route('/parameters', methods=['GET', 'POST'])
@@ -318,26 +273,24 @@ def parameters():
 def run():
     form = RunForm()
     target_type = get('data').Category[get('target')]
-
-
     labels = get_target_labels(get('target'), target_type, get('fs'))
-
     CONFIG_FILE = config[get_session('user')]['config_file']
     features = get('defaults')
     target = get('target')
     dict_types, categoricals = utils_run.get_dictionaries(get('defaults'), get('category_list'), get('fs'),
                                                           get('target'))
     directory = config_reader.read_config(CONFIG_FILE).all()['checkpoint_dir']
-    CONFIG_FILE = config[get_session('user')]['config_file']
     checkpoints = utils_run.get_acc(directory, config_writer, CONFIG_FILE)
     sfeatures = features.copy()
     sfeatures.pop(target)
-
-    if form.validate_on_submit():
-        tboard_thread = threading.Thread(name='tensor_board', target=lambda: tensor_board_thread(CONFIG_FILE))
+    if not session['user'] in ports.keys():
+        port = utils_run.find_free_port()
+        ports[session['user']] = port
+        tboard_thread = threading.Thread(name='tensor_board', target=lambda: tensor_board_thread(CONFIG_FILE, port))
         tboard_thread.setDaemon(True)
         tboard_thread.start()
 
+    if form.validate_on_submit():
         dtypes = get('fs').group_by(get('category_list'))
         all_params_config = config_reader.read_config(CONFIG_FILE)
         r_thread = Process(target=lambda: run_thread(all_params_config, get('features'), get('target'),
@@ -347,17 +300,16 @@ def run():
         processes[get_session('user')] = r_thread
         return render_template('run.html', form=form, running=1, page=5, features=sfeatures, target=get('target'),
                                types=utils_custom.get_html_types(dict_types), categoricals=categoricals,
-                               checkpoints=checkpoints)
+                               checkpoints=checkpoints, port=ports[session['user']])
     running = 1 if get_session('user') in processes.keys() and not isinstance(processes[get_session('user')],
                                                                               str) else 0
     return render_template('run.html', form=form, running=running, page=5, features=sfeatures, target=get('target'),
                            types=utils_custom.get_html_types(dict_types), categoricals=categoricals,
-                           checkpoints=checkpoints)
+                           checkpoints=checkpoints, port=ports[session['user']])
 
 
 @app.route('/pause', methods=['GET', 'POST'])
 def pause():
-    import psutil
     p = processes[get_session('user')] if get_session('user') in processes.keys() else None
     if not isinstance(p, str) and p:
         pid = p.pid
@@ -430,7 +382,9 @@ def split_train_test(percent):
     dataset = dataset[dataset[get('target')].isin(counts[counts > 1].index)]
     target = dataset[[get('target')]]
     test_size = (dataset.shape[0] * percent) // 100
-    train_df, test_df = train_test_split(dataset, test_size=test_size, stratify=target)
+    # train_df, test_df = train_test_split(dataset, test_size=test_size, stratify=target)
+   # train_df, test_df = train_test_split(dataset, test_size=0.8, stratify=target)
+    train_df, test_df = train_test_split(dataset, test_size=test_size)
     train_df.to_csv(train_file, index=False)
     test_df.to_csv(validation_file, index=False)
 
@@ -479,12 +433,12 @@ def save_file(target, dataset_form_field, dataset_type):
         update_config(dataset_type, destination)
 
 
-def tensor_board_thread(CONFIG_FILE):
-    # TODO adapt to multiuser
+def tensor_board_thread(CONFIG_FILE, port):
+    # TODO testing to multiuser
     config_path = config_reader.read_config(CONFIG_FILE).all()['checkpoint_dir']
     logging.debug('Starting tensor board')
     time.sleep(3)
-    os.system("tensorboard --logdir=" + config_path)
+    os.system("tensorboard --logdir=" + config_path + "  --port=" + port)
     logging.debug('Exiting tensor board')
 
 
@@ -493,14 +447,57 @@ def run_thread(all_params_config, features, target, labels, defaults, dtypes):
     runner.run()
 
 
+def create_config(dataset, config_name):
+    user = get_session('user')
+    path = APP_ROOT + '/user_data/' + user + '/' + dataset + '/' + config_name
+    os.makedirs(path, exist_ok=True)
+    copyfile('config/default_config.ini', path + '/config.ini')
+    config[user]['config_file'] = path + '/config.ini'
+
+
 def get_target_labels(target, target_type, fs):
-    #TODO labels if target type is a RANGE, BOOL, ...
     if target_type == 'categorical' or target_type == 'hash':
         return fs.cat_unique_values_dict[target]
     elif target_type == 'range':
-        return [str(a) for a in list(range(min(fs.df[target].values),max(fs.df[target].values)))]
+        return [str(a) for a in list(range(min(fs.df[target].values), max(fs.df[target].values)))]
     return None
 
-    return None
+
+def define_new_config_file(dataset_name, APP_ROOT, username):
+    config_name = utils_custom.generate_config_name(APP_ROOT, username, dataset_name)
+    target = os.path.join(APP_ROOT, 'user_data', username, dataset_name, config_name)
+    update_config_checkpoints(config_writer, target)
+    if not os.path.isdir(target):
+        os.makedirs(target, exist_ok=True)
+    create_config(dataset_name, config_name)
+    return config_name
+
+
+def update_config_checkpoints(config_writer, target):
+    config_writer.add_item('PATHS', 'checkpoint_dir', os.path.join(target, 'checkpoints/'))
+    config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'checkpoints/'))
+
+
+def new_config(form, APP_ROOT, username, config_writer):
+    ext = form.new_files.train_file.data.filename.split('.')[-1]
+    dataset_name = form.new_files.train_file.data.filename.split('.' + ext)[0]
+    config_name = define_new_config_file(dataset_name, APP_ROOT, username)
+    create_config(dataset_name, config_name)
+    target_ds = os.path.join(APP_ROOT, 'user_data', username, dataset_name)
+    save_file(target_ds, form.new_files.train_file, 'train_file')
+    save_file(target_ds, form.new_files.test_file, 'validation_file')
+    # TODO check if files exists
+    if not 'validation_file' in get_config() and not isinstance(form.new_files.train_file.data,
+                                                                str) and not isinstance(form.new_files.test_file.data,
+                                                                                        str):
+        target = os.path.join(APP_ROOT, 'user_data', username, dataset_name, config_name)
+        config_writer.add_item('PATHS', 'train_file', os.path.join(target, form.new_files.train_file.data.filename))
+        config_writer.add_item('PATHS', 'validation_file', os.path.join(target, form.new_files.test_file.data.filename))
+        return redirect(url_for('feature'))
+
+
+
+db.init_app(app)
+
 if __name__ == '__main__':
     app.run(debug=True, threaded=True)

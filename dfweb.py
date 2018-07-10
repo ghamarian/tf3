@@ -122,9 +122,12 @@ def define_new_config_file(dataset_name, APP_ROOT, username):
     target = os.path.join(APP_ROOT, 'user_data', username, dataset_name, config_name)
     config_writer.add_item('PATHS', 'checkpoint_dir', os.path.join(target, 'checkpoints/'))
     config_writer.add_item('PATHS', 'export_dir', os.path.join(target, 'checkpoints/export/best_exporter'))
-    config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'checkpoints/'))
+    config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'log/'))
+
     if not os.path.isdir(target):
         os.makedirs(target, exist_ok=True)
+        os.makedirs(os.path.join(target, 'log/'), exist_ok=True)
+
     create_config(dataset_name, config_name)
     return config_name
 
@@ -157,7 +160,8 @@ def upload():
             config_writer.add_item('PATHS', 'validation_file', os.path.join(APP_ROOT, test_file_name))
             target = os.path.join(APP_ROOT, 'user_data', session['user'], dataset_name, config_name)
             config_writer.add_item('PATHS', 'checkpoint_dir', os.path.join(target, 'checkpoints/'))
-            config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'checkpoints/'))
+            config_writer.add_item('PATHS', 'export_dir', os.path.join(target, 'checkpoints/export/best_exporter'))
+            config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'log/'))
         else:
             ext = form.new_files.train_file.data.filename.split('.')[-1]
             dataset_name = form.new_files.train_file.data.filename.split('.' + ext)[0]
@@ -165,10 +169,12 @@ def upload():
             target = os.path.join(APP_ROOT, 'user_data', session['user'], dataset_name, config_name)
 
             config_writer.add_item('PATHS', 'checkpoint_dir', os.path.join(target, 'checkpoints/'))
-            config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'checkpoints/'))
+            config_writer.add_item('PATHS', 'export_dir', os.path.join(target, 'checkpoints/export/best_exporter'))
+            config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'log/'))
 
             if not os.path.isdir(target):
                 os.makedirs(target, exist_ok=True)
+                os.makedirs(os.path.join(target, 'log/'), exist_ok=True)
 
             create_config(dataset_name, config_name)
 

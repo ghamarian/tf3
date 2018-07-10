@@ -47,7 +47,7 @@ def get_configs_files(app_root, username):
                 parameters_configs[user_dataset + '_' + config_file]['acc'] = connfig.get('BEST_MODEL', 'max_acc')
                 parameters_configs[user_dataset + '_' + config_file]['loss'] = connfig.get('BEST_MODEL', 'min_loss')
             if 'NETWORK' in connfig.keys():
-                parameters_configs[user_dataset + '_' + config_file] = connfig.get('NETWORK', 'model_name')
+                parameters_configs[user_dataset + '_' + config_file]['model'] = connfig.get('NETWORK', 'model_name')
         dataset_form_exis.append((user_dataset, user_dataset))
     return dataset_form_exis, user_configs, parameters_configs
 

@@ -13,7 +13,7 @@ from tensorflow.python.framework import errors_impl
 from tensorflow.python.platform import gfile
 from tensorflow.python.platform import tf_logging
 from tensorflow.python.summary import summary_iterator
-from tensorflow.python.estimator.exporter  import Exporter, _SavedModelExporter
+from tensorflow.python.estimator.exporter import Exporter, _SavedModelExporter
 
 
 def _verify_compare_fn_args(compare_fn):
@@ -183,7 +183,6 @@ class BestExporter(Exporter):
       self._copy_checkpoint(checkpoint_path, export_result_path, eval_result["global_step"])
 
       self._garbage_collect_exports(export_path)
-      print(self._log)
       with open(os.path.join(export_path, 'export.log'), 'w') as fp:
         json.dump(self._log, fp)
 
@@ -192,7 +191,6 @@ class BestExporter(Exporter):
 
   def _copy_checkpoint(self, checkpoint_pattern, dest_path, step):
     for file in glob.glob(checkpoint_pattern+'*'):
-      print(file)
       shutil.copy(file, dest_path)
     with open(os.path.join(dest_path, 'checkpoint'), 'w') as fp:
       text = 'model_checkpoint_path: "model.ckpt-number"\n'.replace('number', str(step))

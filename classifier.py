@@ -1,6 +1,8 @@
 import tensorflow as tf
 import shutil
 import numpy as np
+import logging
+import os
 from config import config_reader
 from model_builder import ModelBuilder
 from keras.models import load_model
@@ -31,6 +33,18 @@ class Classifier:
         # self.feature_columns = [tf.feature_column.numeric_column(key) for key in self.train_csv_reader._feature_names()]
 
         tf.logging.set_verbosity(tf.logging.DEBUG)
+        log = logging.getLogger('tensorflow')
+        log.setLevel(logging.INFO)
+
+        # create formatter and add it to the handlers
+        formatter = logging.Formatter('%(asctime)s - %(message)s')
+
+        # create file handler which logs even debug messages
+        fh = logging.FileHandler(os.path.join(params['log_dir'], 'tensorflow.log'))
+        fh.setLevel(logging.DEBUG)
+        fh.setFormatter(formatter)
+        log.addHandler(fh)
+
         tf.reset_default_graph()
 
         self._create_run_config()

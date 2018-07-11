@@ -15,7 +15,7 @@ def sanity_check_number_of_layers(form, field):
 
 class PathsForm(FlaskForm):
     fcheckpoint_dir = StringField("Checkpoints path", validators=[InputRequired()], default="checkpoints")
-    flog_dir = StringField("Log directory", validators=[InputRequired()], default='checkpoints')
+    flog_dir = StringField("Log directory", validators=[InputRequired()], default='log')
 
 
 class ExperimentForm(FlaskForm):

@@ -30,14 +30,18 @@ import uuid
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 
-# logging.basicConfig(level=logging.DEBUG,
-#                     format='[%(levelname)s] (%(threadName)-10s) %(message)s',
-#                     )
+logging.basicConfig(level=logging.DEBUG,
+                    format='[%(levelname)s] (%(threadName)-10s) %(message)s',
+                    )
 
 DATASETS = "datasets"
+
 SAMPLE_DATA_SIZE = 5
+
 WTF_CSRF_SECRET_KEY = os.urandom(42)
+
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+
 app = Flask(__name__)
 Bootstrap(app)
 app.secret_key = WTF_CSRF_SECRET_KEY
@@ -75,6 +79,14 @@ def get_config():
     if user not in config:
         return redirect(url_for('login'))
     return config[user]
+
+
+def create_config(dataset, config_name):
+    user = get_session('user')
+    path = APP_ROOT + '/user_data/' + user + '/' + dataset + '/' + config_name
+    os.makedirs(path, exist_ok=True)
+    copyfile('config/default_config.ini', path + '/config.ini')
+    config[user]['config_file'] = path + '/config.ini'
 
 
 def get(key):
@@ -115,6 +127,20 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
+def define_new_config_file(dataset_name, APP_ROOT, username):
+    config_name = utils_custom.generate_config_name(APP_ROOT, username, dataset_name)
+    target = os.path.join(APP_ROOT, 'user_data', username, dataset_name, config_name)
+    config_writer.add_item('PATHS', 'checkpoint_dir', os.path.join(target, 'checkpoints/'))
+    config_writer.add_item('PATHS', 'export_dir', os.path.join(target, 'checkpoints/export/best_exporter'))
+    config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'log/'))
+
+    if not os.path.isdir(target):
+        os.makedirs(target, exist_ok=True)
+        os.makedirs(os.path.join(target, 'log/'), exist_ok=True)
+
+    create_config(dataset_name, config_name)
+    return config_name
+
 
 @app.route('/upload', methods=['GET', 'POST'])
 @login_required
@@ -139,6 +165,9 @@ def upload():
             config_writer.add_item('PATHS', 'validation_file', os.path.join(APP_ROOT, test_file_name))
             target = os.path.join(APP_ROOT, 'user_data', session['user'], dataset_name, config_name)
             update_config_checkpoints(config_writer, target)
+            config_writer.add_item('PATHS', 'checkpoint_dir', os.path.join(target, 'checkpoints/'))
+            config_writer.add_item('PATHS', 'export_dir', os.path.join(target, 'checkpoints/export/best_exporter'))
+            config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'log/'))
         else:
             new_config(form, APP_ROOT, session['user'], config_writer)
         if not 'validation_file' in get_config():
@@ -206,8 +235,8 @@ def feature():
         get('data').Defaults = default_values
         update_config('defaults', dict(zip(get('data').index.tolist(), default_values)))
         get('fs').update(get('category_list'), dict(zip(get('data').index.tolist(), default_values)))
-        utils_custom.save_features_changes(config[get_session('user')]['config_file'], get('data'), config_writer,
-                                           categories)
+        CONFIG_FILE = config[get_session('user')]['config_file']
+        utils_custom.save_features_changes(CONFIG_FILE, get('data'), config_writer, categories)
 
         return redirect(url_for('target'))
 
@@ -265,7 +294,11 @@ def parameters():
     flash_errors(form)
     number_inputs = len(
         [get('data').Category[i] for i in range(len(get('data').Category)) if get('data').Category[i] != 'none']) - 1
-    utils_custom.get_defaults_param_form(form, CONFIG_FILE, number_inputs, config_reader)
+    target_type = get('data').Category[get('target')]
+    number_outputs = 1 if target_type == 'numerical' else len(get('fs').cat_unique_values_dict[get('target')])
+    num_samples = len(get('df').index)
+
+    utils_custom.get_defaults_param_form(form, CONFIG_FILE, number_inputs, number_outputs, num_samples, config_reader)
     return render_template('parameters.html', form=form, page=4)
 
 
@@ -279,7 +312,10 @@ def run():
     target = get('target')
     dict_types, categoricals = utils_run.get_dictionaries(get('defaults'), get('category_list'), get('fs'),
                                                           get('target'))
-    directory = config_reader.read_config(CONFIG_FILE).all()['checkpoint_dir']
+
+    directory = config_reader.read_config(CONFIG_FILE).all()['export_dir']
+
+    CONFIG_FILE = config[get_session('user')]['config_file']
     checkpoints = utils_run.get_acc(directory, config_writer, CONFIG_FILE)
     sfeatures = features.copy()
     sfeatures.pop(target)
@@ -310,6 +346,7 @@ def run():
 
 @app.route('/pause', methods=['GET', 'POST'])
 def pause():
+    import psutil
     p = processes[get_session('user')] if get_session('user') in processes.keys() else None
     if not isinstance(p, str) and p:
         pid = p.pid
@@ -347,6 +384,8 @@ def predict():
                 new_features[k] = request.form[k] if k != target else features[k]
 
         all_params_config = config_reader.read_config(CONFIG_FILE)
+        all_params_config.set('PATHS', 'checkpoint_dir', os.path.join(all_params_config.export_dir(), request.form['radiob']))
+
         labels = None if target_type == 'numerical' else get('fs').cat_unique_values_dict[get('target')]
         dtypes = get('fs').group_by(get('category_list'))
         runner = Runner(all_params_config, get('features'), get('target'), labels, get('defaults'), dtypes)
@@ -456,6 +495,7 @@ def create_config(dataset, config_name):
 
 
 def get_target_labels(target, target_type, fs):
+    #TODO labels if target type is a RANGE, BOOL, ...
     if target_type == 'categorical' or target_type == 'hash':
         return fs.cat_unique_values_dict[target]
     elif target_type == 'range':

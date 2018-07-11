@@ -22,9 +22,9 @@ def get_html_types(dict_types):
     return dict_html_types
 
 
-def get_hidden_layers(INPUT_DIM, layers=2):
-    hidden = [int(width) for width in np.exp(np.log(INPUT_DIM) * np.arange(layers - 1, 0, -1) / layers)]
-    return ','.join(str(x) for x in hidden)
+def get_hidden_layers(INPUT_DIM, OUTUPUT_DIM, num_samples, alpha=2):
+    size = num_samples/(alpha * (INPUT_DIM + OUTUPUT_DIM))
+    return str(int(round(size)))
 
 
 def get_configs_files(app_root, username):
@@ -61,8 +61,8 @@ def save_features_changes(CONFIG_FILE, data, config_writer, categories):
     config_writer.write_config(CONFIG_FILE)
 
 
-def get_defaults_param_form(form, CONFIG_FILE, number_inputs, config_reader):
-    form.network.form.hidden_layers.default = get_hidden_layers(number_inputs, layers=4)
+def get_defaults_param_form(form, CONFIG_FILE, number_inputs, number_outputs, num_samples, config_reader):
+    form.network.form.hidden_layers.default = get_hidden_layers(number_inputs, number_outputs, num_samples)
     form.network.form.process()
     if 'EXPERIMENT' in config_reader.read_config(CONFIG_FILE).keys():
         form.experiment.form.keep_checkpoint_max.default = config_reader.read_config(CONFIG_FILE)['EXPERIMENT'][

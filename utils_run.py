@@ -3,6 +3,7 @@ import tensorflow as tf
 import math
 import socket
 from contextlib import closing
+import json
 
 
 def find_free_port():
@@ -26,35 +27,28 @@ def get_dictionaries(features, categories, fs, target):
     return dict_types, categoricals
 
 
-def get_acc(directory, config_writer, CONFIG_FILE):
-    checkpoints = []
-    accuras = {}
-    eval_dir = os.path.join(directory, 'eval')
+def get_eval_results(directory, config_writer, CONFIG_FILE):
+    results = {}
+    if not os.path.isfile(os.path.join(directory, 'export.log')):
+        return results
+
+    log_file = json.load(open(os.path.join(directory, 'export.log'), 'r'))
+
     max_acc = 0
     max_acc_index = 0
     min_loss = math.inf
     min_loss_index = 0
-    if os.path.exists(eval_dir):
-        files_checkpoints = os.listdir(directory)
-        for file in files_checkpoints:
-            if '.meta' in file:
-                # TODO get the last one ?
-                checkpoints.append(file.split('.')[1].split('-')[-1])
-        path_to_events_file = os.path.join(eval_dir, os.listdir(eval_dir)[-1])
-        for e in tf.train.summary_iterator(path_to_events_file):
-            if str(e.step) in checkpoints:
-                accuras[e.step] = {}
-                for v in e.summary.value:
-                    if v.tag == 'average_loss':
-                        accuras[e.step]['loss'] = float("{0:.3f}".format(v.simple_value))
-                        if v.simple_value < min_loss:
-                            min_loss = v.simple_value
-                            min_loss_index = str(e.step)
-                    elif v.tag == 'accuracy':
-                        accuras[e.step]['accuracy'] =  float("{0:.3f}".format(v.simple_value))
-                        if v.simple_value > max_acc:
-                            max_acc = v.simple_value
-                            max_acc_index = str(e.step)
+    for k, v in log_file.items():
+        acc = v['accuracy']
+        loss = v['average_loss']
+        step = str(int(v['global_step']))
+        if max_acc < acc:
+            max_acc = acc
+            max_acc_index = step
+        if min_loss > loss:
+            min_loss = loss
+            min_loss_index = step
+        results[k.split('/')[-1]] = {'accuracy': acc, 'loss': loss, 'step': step}
 
     # SAVE best model
     config_writer.add_item('BEST_MODEL', 'max_acc',str(float("{0:.3f}".format(max_acc))))
@@ -62,7 +56,7 @@ def get_acc(directory, config_writer, CONFIG_FILE):
     config_writer.add_item('BEST_MODEL', 'min_loss', str(float("{0:.3f}".format(min_loss))))
     config_writer.add_item('BEST_MODEL', 'min_loss_index', str(min_loss_index))
     config_writer.write_config(CONFIG_FILE)
-    return accuras
+    return results
 
 
 def change_model_default(new_model, CONFIG_FILE, config_reader):

@@ -39,8 +39,9 @@ def get_eval_results(directory, config_writer, CONFIG_FILE):
     min_loss = math.inf
     min_loss_index = 0
     for k, v in log_file.items():
-        acc = v['accuracy']
-        loss = v['average_loss']
+        acc = float("{0:.3f}".format(v['accuracy']))
+        loss = float("{0:.3f}".format(v['average_loss']))
+
         step = str(int(v['global_step']))
         if max_acc < acc:
             max_acc = acc

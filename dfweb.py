@@ -127,19 +127,39 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-def define_new_config_file(dataset_name, APP_ROOT, username):
-    config_name = utils_custom.generate_config_name(APP_ROOT, username, dataset_name)
-    target = os.path.join(APP_ROOT, 'user_data', username, dataset_name, config_name)
+def update_config_checkpoints(config_writer, target):
     config_writer.add_item('PATHS', 'checkpoint_dir', os.path.join(target, 'checkpoints/'))
     config_writer.add_item('PATHS', 'export_dir', os.path.join(target, 'checkpoints/export/best_exporter'))
     config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'log/'))
 
+def define_new_config_file(dataset_name, APP_ROOT, username):
+    config_name = utils_custom.generate_config_name(APP_ROOT, username, dataset_name)
+    target = os.path.join(APP_ROOT, 'user_data', username, dataset_name, config_name)
+    update_config_checkpoints(config_writer, target)
     if not os.path.isdir(target):
         os.makedirs(target, exist_ok=True)
         os.makedirs(os.path.join(target, 'log/'), exist_ok=True)
-
     create_config(dataset_name, config_name)
     return config_name
+
+
+def new_config(form, APP_ROOT, username, config_writer):
+    ext = form.new_files.train_file.data.filename.split('.')[-1]
+    dataset_name = form.new_files.train_file.data.filename.split('.' + ext)[0]
+    config_name = define_new_config_file(dataset_name, APP_ROOT, username)
+    create_config(dataset_name, config_name)
+    target_ds = os.path.join(APP_ROOT, 'user_data', username, dataset_name)
+    save_file(target_ds, form.new_files.train_file, 'train_file')
+    save_file(target_ds, form.new_files.test_file, 'validation_file')
+    # TODO check if files exists
+    if not 'validation_file' in get_config() and not isinstance(form.new_files.train_file.data,
+                                                                str) and not isinstance(form.new_files.test_file.data,
+                                                                                        str):
+        target = os.path.join(APP_ROOT, 'user_data', username, dataset_name, config_name)
+        config_writer.add_item('PATHS', 'train_file', os.path.join(target, form.new_files.train_file.data.filename))
+        config_writer.add_item('PATHS', 'validation_file', os.path.join(target, form.new_files.test_file.data.filename))
+        return redirect(url_for('feature'))
+
 
 
 @app.route('/upload', methods=['GET', 'POST'])
@@ -165,9 +185,6 @@ def upload():
             config_writer.add_item('PATHS', 'validation_file', os.path.join(APP_ROOT, test_file_name))
             target = os.path.join(APP_ROOT, 'user_data', session['user'], dataset_name, config_name)
             update_config_checkpoints(config_writer, target)
-            config_writer.add_item('PATHS', 'checkpoint_dir', os.path.join(target, 'checkpoints/'))
-            config_writer.add_item('PATHS', 'export_dir', os.path.join(target, 'checkpoints/export/best_exporter'))
-            config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'log/'))
         else:
             new_config(form, APP_ROOT, session['user'], config_writer)
         if not 'validation_file' in get_config():
@@ -312,11 +329,9 @@ def run():
     target = get('target')
     dict_types, categoricals = utils_run.get_dictionaries(get('defaults'), get('category_list'), get('fs'),
                                                           get('target'))
-
     directory = config_reader.read_config(CONFIG_FILE).all()['export_dir']
-
-    CONFIG_FILE = config[get_session('user')]['config_file']
-    checkpoints = utils_run.get_acc(directory, config_writer, CONFIG_FILE)
+    # checkpoints = utils_run.get_acc(directory, config_writer, CONFIG_FILE)
+    checkpoints = utils_run.get_eval_results(directory, config_writer, CONFIG_FILE)
     sfeatures = features.copy()
     sfeatures.pop(target)
     if not session['user'] in ports.keys():
@@ -334,9 +349,11 @@ def run():
         r_thread.daemon = True
         r_thread.start()
         processes[get_session('user')] = r_thread
+
         return render_template('run.html', form=form, running=1, page=5, features=sfeatures, target=get('target'),
                                types=utils_custom.get_html_types(dict_types), categoricals=categoricals,
                                checkpoints=checkpoints, port=ports[session['user']])
+
     running = 1 if get_session('user') in processes.keys() and not isinstance(processes[get_session('user')],
                                                                               str) else 0
     return render_template('run.html', form=form, running=running, page=5, features=sfeatures, target=get('target'),
@@ -370,28 +387,24 @@ def predict():
 
     dict_types, categoricals = utils_run.get_dictionaries(get('defaults'), get('category_list'), get('fs'),
                                                           get('target'))
-    directory = config_reader.read_config(CONFIG_FILE).all()['checkpoint_dir']
+    directory = config_reader.read_config(CONFIG_FILE).all()['export_dir']
 
-    checkpoints = utils_run.get_acc(directory, config_writer, CONFIG_FILE)
-
+    checkpoints = utils_run.get_eval_results(directory, config_writer, CONFIG_FILE)
     running = 1 if get_session('user') in processes.keys() and not isinstance(processes[get_session('user')],
                                                                               str) else 0
     if request.method == 'POST':
-        utils_run.change_model_default(request.form['radiob'], CONFIG_FILE, config_reader)
         new_features = {}
         for k, v in features.items():
             if k not in get('fs').group_by(get('category_list'))['none']:
                 new_features[k] = request.form[k] if k != target else features[k]
 
         all_params_config = config_reader.read_config(CONFIG_FILE)
-        all_params_config.set('PATHS', 'checkpoint_dir', os.path.join(all_params_config.export_dir(), request.form['radiob']))
-
+        all_params_config.set('PATHS', 'checkpoint_dir',
+                              os.path.join(all_params_config.export_dir(), request.form['radiob']))
         labels = None if target_type == 'numerical' else get('fs').cat_unique_values_dict[get('target')]
         dtypes = get('fs').group_by(get('category_list'))
         runner = Runner(all_params_config, get('features'), get('target'), labels, get('defaults'), dtypes)
-
         final_pred = runner.predict(new_features, get('target'), get('df'))
-
         return render_template('run.html', form=form, running=running, page=5, features=new_features,
                                target=get('target'),
                                types=utils_custom.get_html_types(dict_types), categoricals=categoricals,
@@ -422,7 +435,7 @@ def split_train_test(percent):
     target = dataset[[get('target')]]
     test_size = (dataset.shape[0] * percent) // 100
     # train_df, test_df = train_test_split(dataset, test_size=test_size, stratify=target)
-   # train_df, test_df = train_test_split(dataset, test_size=0.8, stratify=target)
+    # train_df, test_df = train_test_split(dataset, test_size=0.8, stratify=target)
     train_df, test_df = train_test_split(dataset, test_size=test_size)
     train_df.to_csv(train_file, index=False)
     test_df.to_csv(validation_file, index=False)
@@ -495,46 +508,12 @@ def create_config(dataset, config_name):
 
 
 def get_target_labels(target, target_type, fs):
-    #TODO labels if target type is a RANGE, BOOL, ...
+    # TODO labels if target type is a RANGE, BOOL, ...
     if target_type == 'categorical' or target_type == 'hash':
         return fs.cat_unique_values_dict[target]
     elif target_type == 'range':
         return [str(a) for a in list(range(min(fs.df[target].values), max(fs.df[target].values)))]
     return None
-
-
-def define_new_config_file(dataset_name, APP_ROOT, username):
-    config_name = utils_custom.generate_config_name(APP_ROOT, username, dataset_name)
-    target = os.path.join(APP_ROOT, 'user_data', username, dataset_name, config_name)
-    update_config_checkpoints(config_writer, target)
-    if not os.path.isdir(target):
-        os.makedirs(target, exist_ok=True)
-    create_config(dataset_name, config_name)
-    return config_name
-
-
-def update_config_checkpoints(config_writer, target):
-    config_writer.add_item('PATHS', 'checkpoint_dir', os.path.join(target, 'checkpoints/'))
-    config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'checkpoints/'))
-
-
-def new_config(form, APP_ROOT, username, config_writer):
-    ext = form.new_files.train_file.data.filename.split('.')[-1]
-    dataset_name = form.new_files.train_file.data.filename.split('.' + ext)[0]
-    config_name = define_new_config_file(dataset_name, APP_ROOT, username)
-    create_config(dataset_name, config_name)
-    target_ds = os.path.join(APP_ROOT, 'user_data', username, dataset_name)
-    save_file(target_ds, form.new_files.train_file, 'train_file')
-    save_file(target_ds, form.new_files.test_file, 'validation_file')
-    # TODO check if files exists
-    if not 'validation_file' in get_config() and not isinstance(form.new_files.train_file.data,
-                                                                str) and not isinstance(form.new_files.test_file.data,
-                                                                                        str):
-        target = os.path.join(APP_ROOT, 'user_data', username, dataset_name, config_name)
-        config_writer.add_item('PATHS', 'train_file', os.path.join(target, form.new_files.train_file.data.filename))
-        config_writer.add_item('PATHS', 'validation_file', os.path.join(target, form.new_files.test_file.data.filename))
-        return redirect(url_for('feature'))
-
 
 
 db.init_app(app)

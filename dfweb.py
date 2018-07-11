@@ -287,7 +287,6 @@ def parameters():
 
 @app.route('/run', methods=['GET', 'POST'])
 def run():
-    form = RunForm()
     target_type = get('data').Category[get('target')]
     labels = get_target_labels(get('target'), target_type, get('fs'))
     CONFIG_FILE = config[get_session('user')]['config_file']
@@ -307,7 +306,7 @@ def run():
         tboard_thread.setDaemon(True)
         tboard_thread.start()
 
-    if form.validate_on_submit():
+    if request.method == 'POST':
         dtypes = get('fs').group_by(get('category_list'))
         all_params_config = config_reader.read_config(CONFIG_FILE)
         r_thread = Process(target=lambda: run_thread(all_params_config, get('features'), get('target'),
@@ -316,13 +315,13 @@ def run():
         r_thread.start()
         processes[get_session('user')] = r_thread
 
-        return render_template('run.html', form=form, running=1, page=5, features=sfeatures, target=get('target'),
+        return render_template('run.html', running=1, page=5, features=sfeatures, target=get('target'),
                                types=utils_custom.get_html_types(dict_types), categoricals=categoricals,
                                checkpoints=checkpoints, port=ports[session['user']])
 
     running = 1 if get_session('user') in processes.keys() and not isinstance(processes[get_session('user')],
                                                                               str) else 0
-    return render_template('run.html', form=form, running=running, page=5, features=sfeatures, target=get('target'),
+    return render_template('run.html', running=running, page=5, features=sfeatures, target=get('target'),
                            types=utils_custom.get_html_types(dict_types), categoricals=categoricals,
                            checkpoints=checkpoints, port=ports[session['user']])
 
@@ -345,7 +344,6 @@ def pause():
 
 @app.route('/predict', methods=['GET', 'POST'])
 def predict():
-    form = RunForm()
     target_type = get('data').Category[get('target')]
     features = get('defaults')
     target = get('target')
@@ -371,13 +369,13 @@ def predict():
         dtypes = get('fs').group_by(get('category_list'))
         runner = Runner(all_params_config, get('features'), get('target'), labels, get('defaults'), dtypes)
         final_pred = runner.predict(new_features, get('target'), get('df'))
-        return render_template('run.html', form=form, running=running, page=5, features=new_features,
+        return render_template('run.html', running=running, page=5, features=new_features,
                                target=get('target'),
                                types=utils_custom.get_html_types(dict_types), categoricals=categoricals,
                                prediction=final_pred, checkpoints=checkpoints)
     sfeatures = features.copy()
     sfeatures.pop(target)
-    return render_template('run.html', form=form, running=running, page=5, features=sfeatures, target=get('target'),
+    return render_template('run.html', running=running, page=5, features=sfeatures, target=get('target'),
                            types=utils_custom.get_html_types(dict_types), categoricals=categoricals,
                            checkpoints=checkpoints)
 

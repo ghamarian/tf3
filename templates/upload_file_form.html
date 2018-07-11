@@ -86,10 +86,10 @@
                     handle_key2.configs_parame = handle_key.parameters[data_and_conf];
                     $('#tablediv').append('<tr>');
                     $('#tablediv').append('<td> <input type="radio" id="exisiting_files-configuration" name="exisiting_files-configuration" value="' + handle_key.configs[dataset_selected][i] + '">' + handle_key.configs[dataset_selected][i]);
-                    $('#tablediv').append('<td> ' + handle_key2.configs_parame['model']);
-                    $('#tablediv').append('<td> ' + handle_key2.configs_parame['acc']);
-                    $('#tablediv').append('<td> ' + handle_key2.configs_parame['loss']);
-                    $('#tablediv').append('</tr>');
+                    $('#tablediv').append('</td> <td> ' + handle_key2.configs_parame['model']);
+                    $('#tablediv').append('</td> <td> ' + handle_key2.configs_parame['acc']);
+                    $('#tablediv').append('</td> <td> ' + handle_key2.configs_parame['loss']);
+                    $('#tablediv').append('</td> </tr>');
 
                 }
             });
@@ -99,7 +99,7 @@
                     $('#submit').prop('disabled', true);
                 }
                 else {
-                    table.$('tr.selected').removeClass('selected');
+                    {#table.$('tr.selected').removeClass('selected');#}
                     $(this).addClass('selected');
                     $('#submit').prop('disabled', false);
                 }

@@ -10,11 +10,9 @@
     <script type="text/javascript">
         var run = {{ running }}
             $(document).ready(function () {
-                if (Boolean(run)) {
-                    $('#run').prop('disabled', true);
-                    $('#gif_animated').append('<div class="loader"></div>');
-                } else {
-                    $('#stop').prop('disabled', true);
+                if (Boolean(run) == true) {
+                    $('.play').toggleClass('active');
+                    $('#formId').attr('action', '/pause');
                 }
             });
         var handle_key = {};
@@ -61,54 +59,41 @@
 
 {% block app_content %}
     {#    <meta http-equiv="refresh" content="60"/>#}
-    <div class="bs-callout bs-callout-warning" align="center">
-        <th1> Train model</th1>
-        <div class="row">
-            <div class="col-md-5" align="center">
-                <form action="/run" method="post">
-                    {{ form.csrf_token }}
-                    <div id="gif_animated" name="gif_animated"></div>
-                    <button type="submit" formmethod="post" id="run" name="run" class="play"><span
-                            class="glyphicon glyphicon-play"></span> Run
-                    </button>
-                </form>
-                <br>
-                <a role="button" name="stop" id="stop" class="btn btn-danger" href="/pause"> <span
-                        class="glyphicon glyphicon-stop"></span> STOP </a>
-            </div>
+    {#    <div class="bs-callout bs-callout-default">#}
+    <form id="formId" action="/run" method="post">
+        <button type="submit" formmethod="post" id="run" name="run" class="play"></button>
+        <h1>Training Play/Pause </h1>
+        <span class="headline">click/touch the button to train your model.</span>
+    </form>
+    <a role="button" name="tensor" class="btn btn-warning" target="_blank"
+       href="http://localhost:{{ port }}"><span class="glyphicon glyphicon-blackboard"></span> TensorBoard</a>
+    {#    </div>#}
 
-            <div class="col-md-5" align="center">
-                <a role="button" name="tensor" class="btn btn-warning" target="_blank"
-                   href="http://localhost:{{ port }}"><span
-                        class="glyphicon glyphicon-blackboard"></span> TensorBoard</a>
-            </div>
-        </div>
-    </div>
-
-    <br>
 
     <div class="bs-callout bs-callout-warning" align="center">
-        <th1> Predict</th1>
-
-
+        <th2> PREDICT</th2>
         <form action="/predict" method="post">
             <div class="container">
                 <div class="row">
                     <div class="col-md-3">
                         <div class="bs-callout bs-callout-primary">
-                            <h4> 1.Feature values </h4>
-                            Select feature values.
+                            <h4><span class="glyphicon glyphicon-pencil"></span></h4>
+                            <h4>FEATURES VALUES </h4>
+                            Add new feature values.
                             <br> <br>
-                            <table>
-                                <div id="maindiv"></div>
-                            </table>
+                            <div class="pre-scrollable">
+                                <table>
+                                    <div id="maindiv"></div>
+                                </table>
+                            </div>
                         </div>
                     </div>
 
                     <div class="col-md-4">
                         <div class="bs-callout bs-callout-info">
-                            <h4>2. Checkpoints</h4>
-                            Select model
+                            <h4><span class="glyphicon glyphicon-tasks"></span></h4>
+                            <h4> CHECKPOINTS</h4>
+                            Select trained model
                             <br>
                             <div align="right"><a href="/run"><span class="glyphicon glyphicon-refresh"></span> </a>
                             </div>
@@ -120,19 +105,23 @@
                                     <th scope="col">Loss</th>
                                 </tr>
                                 </thead>
-                                <tbody id="tablediv">
-                                </tbody>
+                                <div class="pre-scrollable">
+                                    <tbody id="tablediv">
+                                    </tbody>
+                                </div>
                             </table>
                         </div>
                     </div>
 
                     <div class="col-md-3">
                         <div class="bs-callout bs-callout-success">
-                            <h4>3. Prediction</h4>
+                            <h4><span class="glyphicon glyphicon-ok"></span></h4>
+                            <h4> PREDICT</h4>
+                            Get the predict value for your feature values
                             <br>
                             <h3>{{ target }} : <b>{{ prediction }}</b></h3>
                             <button type="submit" formmethod="post" id="predict" class="btn btn-primary" disabled>
-                                Predict
+                                PREDICT
                             </button>
 
                         </div>
@@ -141,9 +130,6 @@
             </div>
         </form>
     </div>
-
-
-
 
 {% endblock %}
 

@@ -88,8 +88,10 @@ class Classifier:
 
     def _create_specs(self):
         max_steps = self.params[MAX_STEPS]
+        # self.train_spec = tf.estimator.TrainSpec(
+        #     input_fn=self._train_input_fn, max_steps=max_steps)
         self.train_spec = tf.estimator.TrainSpec(
-            input_fn=self._train_input_fn, max_steps=max_steps)
+            input_fn=self._train_input_fn, max_steps=None)
 
         # TODO throttle and start_delay and steps?
         # summary_hook = tf.train.SummarySaverHook(

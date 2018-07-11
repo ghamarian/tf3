@@ -19,17 +19,18 @@ body {
 }
 
 .navbar {
-  margin-bottom: 20px;
+    margin-bottom: 20px;
 }
 
-#slider .rs-handle  {
+#slider .rs-handle {
     background-color: transparent;
     border: 8px solid transparent;
     border-right-color: black;
     margin: -6px 0px 0px 14px !important;
     border-width: 6px 104px 6px 4px;
 }
-#slider .rs-handle:before  {
+
+#slider .rs-handle:before {
     display: block;
     content: " ";
     position: absolute;
@@ -40,11 +41,13 @@ body {
     bottom: -11px;
     border-radius: 100px;
 }
-#slider .rs-tooltip  {
+
+#slider .rs-tooltip {
     top: 75%;
     font-size: 11px;
 }
-#slider .rs-tooltip div  {
+
+#slider .rs-tooltip div {
     text-align: center;
     background: orange;
     color: white;
@@ -52,11 +55,13 @@ body {
     padding: 1px 5px 2px;
     margin-top: 4px;
 }
-#slider .rs-range-color  {
+
+#slider .rs-range-color {
     /*background-color: #DB5959;*/
     background-color: #337ab7;
 }
-#slider .rs-path-color  {
+
+#slider .rs-path-color {
     /*background-color: #F0C5C5;*/
     /*background-color: #4cb7ff;*/
     background-color: #46a9fe;
@@ -76,44 +81,46 @@ body {
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
-
 /*#slider .rs-handle  {*/
-    /*background-color: transparent;*/
-    /*border: 8px solid transparent;*/
-    /*border-right-color: black;*/
-    /*margin: -8px 0 0 14px !important;*/
+/*background-color: transparent;*/
+/*border: 8px solid transparent;*/
+/*border-right-color: black;*/
+/*margin: -8px 0 0 14px !important;*/
 /*}*/
 /*#slider .rs-handle:before  {*/
-    /*display: block;*/
-    /*content: " ";*/
-    /*position: absolute;*/
-    /*height: 12px;*/
-    /*width: 12px;*/
-    /*background: black;*/
-    /*right: -6px;*/
-    /*bottom: -6px;*/
-    /*border-radius: 100%;*/
+/*display: block;*/
+/*content: " ";*/
+/*position: absolute;*/
+/*height: 12px;*/
+/*width: 12px;*/
+/*background: black;*/
+/*right: -6px;*/
+/*bottom: -6px;*/
+/*border-radius: 100%;*/
 /*}*/
 /*#slider .rs-handle:after  {*/
-    /*display: block;*/
-    /*content: " ";*/
-    /*width: 106px;*/
-    /*position: absolute;*/
-    /*top: -1px;*/
-    /*right: 0px;*/
-    /*border-top: 2px dotted black;*/
+/*display: block;*/
+/*content: " ";*/
+/*width: 106px;*/
+/*position: absolute;*/
+/*top: -1px;*/
+/*right: 0px;*/
+/*border-top: 2px dotted black;*/
 /*}*/
 /*#slider .rs-range-color  {*/
-    /*background-color: #8832cd;*/
+/*background-color: #8832cd;*/
 /*}*/
 /*#slider .rs-path-color  {*/
-    /*background-color: #ddc5f0;*/
+/*background-color: #ddc5f0;*/
 /*}*/
-
 
 .btn-arrow-right,
 .btn-arrow-left {
@@ -121,19 +128,22 @@ body {
     padding-left: 18px;
     padding-right: 18px;
     outline: none !important;
-   box-shadow: none;
+    box-shadow: none;
 }
+
 .btn-arrow-right {
     padding-left: 36px;
 }
+
 .btn-arrow-left {
     padding-right: 36px;
 }
+
 .btn-arrow-right:before,
 .btn-arrow-right:after,
 .btn-arrow-left:before,
 .btn-arrow-left:after { /* make two squares (before and after), looking similar to the button */
-    content:"";
+    content: "";
     position: absolute;
     top: 5px; /* move it down because of rounded corners */
     width: 22px; /* same as height */
@@ -146,6 +156,7 @@ body {
     -webkit-border-radius: 0px 4px 0px 0px;
     -moz-border-radius: 0px 4px 0px 0px;
 }
+
 .btn-arrow-right:before,
 .btn-arrow-right:after {
     transform: rotate(45deg); /* rotate right arrow squares 45 deg to point right */
@@ -154,6 +165,7 @@ body {
     -o-transform: rotate(45deg);
     -ms-transform: rotate(45deg);
 }
+
 .btn-arrow-left:before,
 .btn-arrow-left:after {
     transform: rotate(225deg); /* rotate left arrow squares 225 deg to point left */
@@ -162,33 +174,147 @@ body {
     -o-transform: rotate(225deg);
     -ms-transform: rotate(225deg);
 }
+
 .btn-arrow-right:before,
 .btn-arrow-left:before { /* align the "before" square to the left */
     left: -11px;
 }
+
 .btn-arrow-right:after,
 .btn-arrow-left:after { /* align the "after" square to the right */
     right: -11px;
 }
+
 .btn-arrow-right:after,
 .btn-arrow-left:before { /* bring arrow pointers to front */
     z-index: 1;
 }
+
 .btn-arrow-right:before,
 .btn-arrow-left:after { /* hide arrow tails background */
     background-color: white;
 }
 
-.panel-body{
-    margin: 20px; !important;
+.panel-body {
+    margin: 20px;
+!important;
 }
-th1{
+
+th1 {
     font-size: 1.875em; /* 30px/16=1.875em */
     color: #4e555b;
 }
+
 table.formatHTML5 tr.selected {
     background-color: #d4e9e6 !important;
-    color:#fff;
+    color: #fff;
     vertical-align: middle;
     padding: 1.5em;
+}
+
+@import url(https://fonts.googleapis.com/css?family=Open+Sans:400,800);
+body {
+    background: #f9f9f9;
+    font-family: 'Open Sans', sans-serif;
+}
+
+.h3 {
+    text-align: center !important;
+}
+
+h1 {
+    text-transform: uppercase;
+    color: #34495e;
+    letter-spacing: 2px;
+    font-size: 2em;
+    margin-bottom: 0;
+}
+
+.headline {
+    display: block;
+    color: #2c3e50;
+    font-size: 1.5em;
+    margin-bottom: 1.5em;
+}
+
+.bs-callout {
+    padding: 20px;
+    margin: 20px 0;
+    border: 1px solid #eee;
+    border-left-width: 5px;
+    border-radius: 20px;
+}
+
+.bs-callout h4 {
+    margin-top: 0;
+    margin-bottom: 5px;
+}
+
+.bs-callout p:last-child {
+    margin-bottom: 0;
+}
+
+.bs-callout code {
+    border-radius: 3px;
+}
+
+.bs-callout + .bs-callout {
+    margin-top: -5px;
+}
+
+.bs-callout-default {
+    border-left-color: #777;
+}
+
+.bs-callout-default h4 {
+    color: #777;
+    font-size: 21px;
+}
+
+.bs-callout-primary {
+    border-left-color: #2c52ca;
+}
+
+.bs-callout-primary h4 {
+    color: #2C52CA;
+    font-size: 21px;
+}
+
+.bs-callout-success {
+    border-left-color: #41B3B8;
+}
+
+.bs-callout-success h4 {
+    color: #41b3b8;
+    font-size: 21px;
+}
+.bs-callout-success h3 {
+    color: #41b3b8;
+    font-size: 18px;
+}
+.bs-callout-danger {
+    border-left-color: #d9534f;
+}
+
+.bs-callout-danger h4 {
+    color: #d9534f;
+    font-size: 21px;
+}
+
+.bs-callout-warning {
+    border-left-color: #f0ad4e;
+}
+
+.bs-callout-warning h4 {
+    color: #f0ad4e;
+    font-size: 21px;
+}
+
+.bs-callout-info {
+    border-left-color: #4f86de;
+}
+
+.bs-callout-info h4 {
+    color: #4F86DE;
+    font-size: 21px;
 }

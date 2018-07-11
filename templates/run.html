@@ -60,71 +60,87 @@
 {% endblock %}
 
 {% block app_content %}
-    <meta http-equiv="refresh" content="60"/>
-    <div align="center">
+    {#    <meta http-equiv="refresh" content="60"/>#}
+    <div class="bs-callout bs-callout-warning" align="center">
         <th1> Train model</th1>
-    </div>
+        <div class="row">
+            <div class="col-md-5" align="center">
+                <form action="/run" method="post">
+                    {{ form.csrf_token }}
+                    <div id="gif_animated" name="gif_animated"></div>
+                    <button type="submit" formmethod="post" id="run" name="run" class="play"><span
+                            class="glyphicon glyphicon-play"></span> Run
+                    </button>
+                </form>
+                <br>
+                <a role="button" name="stop" id="stop" class="btn btn-danger" href="/pause"> <span
+                        class="glyphicon glyphicon-stop"></span> STOP </a>
+            </div>
 
-    <div class="row">
-        <div class="col-md-5" align="center">
-            <form action="/run" method="post">
-                {{ form.csrf_token }}
-                <div id="gif_animated" name="gif_animated"></div>
-                <button type="submit" formmethod="post" id="run" name="run" class="btn btn-primary"><span
-                        class="glyphicon glyphicon-play"></span> Run
-                </button>
-            </form>
-            <br>
-            <a role="button" name="stop" id="stop" class="btn btn-danger" href="/pause"> <span
-                    class="glyphicon glyphicon-stop"></span> STOP </a>
+            <div class="col-md-5" align="center">
+                <a role="button" name="tensor" class="btn btn-warning" target="_blank"
+                   href="http://localhost:{{ port }}"><span
+                        class="glyphicon glyphicon-blackboard"></span> TensorBoard</a>
+            </div>
         </div>
-
-        <div class="col-md-5" align="center">
-            <a role="button" name="tensor" class="btn btn-warning" target="_blank" href="http://localhost:{{ port }}"><span
-                    class="glyphicon glyphicon-blackboard"></span> TensorBoard</a>
-        </div>
     </div>
-
 
     <br>
 
-    <div align="center">
+    <div class="bs-callout bs-callout-warning" align="center">
         <th1> Predict</th1>
-    </div>
 
-    <form action="/predict" method="post">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-5">
-                    <h3> Features </h3>
-                    <table>
-                        <div id="maindiv"></div>
-                    </table>
-                </div>
 
-                <div class="col-md-5">
-                    <h5> Checkpoints </h5>
-                    <div align="right"><a href="/run"><span class="glyphicon glyphicon-refresh"></span> </a></div>
-                    <table class="table table-striped">
-                        <thead>
-                        <tr>
-                            <th scope="col">Model</th>
-                            <th scope="col">Accuracy</th>
-                            <th scope="col">Loss</th>
-                        </tr>
-                        </thead>
-                        <tbody id="tablediv">
-                        </tbody>
-                    </table>
+        <form action="/predict" method="post">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="bs-callout bs-callout-primary">
+                            <h4> 1.Feature values </h4>
+                            Select feature values.
+                            <br> <br>
+                            <table>
+                                <div id="maindiv"></div>
+                            </table>
+                        </div>
+                    </div>
 
+                    <div class="col-md-4">
+                        <div class="bs-callout bs-callout-info">
+                            <h4>2. Checkpoints</h4>
+                            Select model
+                            <br>
+                            <div align="right"><a href="/run"><span class="glyphicon glyphicon-refresh"></span> </a>
+                            </div>
+                            <table class="table table-striped">
+                                <thead>
+                                <tr>
+                                    <th scope="col">Model</th>
+                                    <th scope="col">Accuracy</th>
+                                    <th scope="col">Loss</th>
+                                </tr>
+                                </thead>
+                                <tbody id="tablediv">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="bs-callout bs-callout-success">
+                            <h4>3. Prediction</h4>
+                            <br>
+                            <h3>{{ target }} : <b>{{ prediction }}</b></h3>
+                            <button type="submit" formmethod="post" id="predict" class="btn btn-primary" disabled>
+                                Predict
+                            </button>
+
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-        <hr>
-        <h4>{{ target }} : <b>{{ prediction }}</b></h4>
-        <button type="submit" formmethod="post" id="predict" class="btn btn-primary" disabled>Predict</button>
-    </form>
-
+        </form>
+    </div>
 
 
 

@@ -27,7 +27,7 @@ class CSVReader(metaclass=ABCMeta):
 
     def make_dataset_from_config(self, params: Dict[str, object] = None) -> tf.data.Dataset:
         self._set_params(params)
-        return self._make_csv_dataset()
+        return self._make_csv_dataset(self.num_epochs)
 
     def convert_defaults(self, dtypes, column_defaults):
         defaults = column_defaults.copy()
@@ -39,9 +39,13 @@ class CSVReader(metaclass=ABCMeta):
     @abstractmethod
     def _set_params(self, params: Dict[str, object]) -> None:
         pass
+    #
+    # def _make_csv_dataset(self):
+    #     dataset = tf.contrib.data.make_csv_dataset([self.filename], self.batch_size, num_epochs=1,
+    #                                                label_name=self.label_name, column_defaults=self.column_defaults)
 
-    def _make_csv_dataset(self):
-        dataset = tf.contrib.data.make_csv_dataset([self.filename], self.batch_size, num_epochs=1,
+    def _make_csv_dataset(self, num_epo):
+        dataset = tf.contrib.data.make_csv_dataset([self.filename], self.batch_size, num_epochs=num_epo,
                                                    label_name=self.label_name, column_defaults=self.column_defaults)
 
         # TODO perhaps no need to cast

@@ -23,18 +23,20 @@
             <div id="existingfiles">
                 {{ render_field(form.exisiting_files) }}
                 <label for="exisiting_files-configuration" class="control-label" title="">Configuration</label>
-                <table class="table table-striped table-bordered" id="table_config">
-                    <thead class="thead-light">
-                    <tr>
-                        <th scope="col">Config name</th>
-                        <th scope="col">Model</th>
-                        <th scope="col">Accuracy</th>
-                        <th scope="col">Loss</th>
-                    </tr>
-                    </thead>
-                    <tbody id="tablediv">
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table table-striped table-bordered" id="table_config">
+                        <thead class="thead-light">
+                        <tr>
+                            <th scope="col">Config name</th>
+                            <th scope="col">Model</th>
+                            <th scope="col">Accuracy</th>
+                            <th scope="col">Loss</th>
+                        </tr>
+                        </thead>
+                        <tbody id="tablediv">
+                        </tbody>
+                    </table>
+                </div>
             </div>
             <p align="right">
                 <button type="submit" align="right" formmethod="post" class="btn btn-primary"> Next</button>
@@ -48,7 +50,6 @@
 {% block scripts %}
     {{ super() }}
     <script src="{{ url_for('.static', filename='choose.js') }}"></script>
-    {#        <script src="{{ url_for('.static', filename='upload.js') }}"></script>#}
     <script type="text/javascript">
         $(document).ready(function () {
             var handle_key = {};
@@ -63,12 +64,12 @@
                 var data_and_conf = dataset_selected + '_' + handle_key.configs[dataset_selected][i];
                 var handle_key2 = {};
                 handle_key2.configs_parame = handle_key.parameters[data_and_conf];
-                $('#tablediv').append('<tr>');
+                $('#tablediv').append('<tr role="row">');
                 $('#tablediv').append('<td> <input type="radio" id="exisiting_files-configuration" name="exisiting_files-configuration" value="' + handle_key.configs[dataset_selected][i] + '">' + handle_key.configs[dataset_selected][i]);
-                $('#tablediv').append('<td> ' + handle_key2.configs_parame['model']);
-                $('#tablediv').append('<td> ' + handle_key2.configs_parame['acc']);
-                $('#tablediv').append('<td> ' + handle_key2.configs_parame['loss']);
-                $('#tablediv').append('</tr>');
+                $('#tablediv').append('</td> <td> ' + handle_key2.configs_parame['model']);
+                $('#tablediv').append('</td> <td> ' + handle_key2.configs_parame['acc']);
+                $('#tablediv').append('</td> <td> ' + handle_key2.configs_parame['loss']);
+                $('#tablediv').append('</td>  </tr>');
 
             }
             $('#exisiting_files-train_file_exist').change(function () {

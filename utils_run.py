@@ -39,6 +39,7 @@ def get_eval_results(directory, config_writer, CONFIG_FILE):
     min_loss = math.inf
     min_loss_index = 0
     for k, v in log_file.items():
+        step = str(int(v['global_step']))
         if 'accuracy' in v.keys():
             acc = v['accuracy']
             if max_acc < acc:
@@ -48,13 +49,12 @@ def get_eval_results(directory, config_writer, CONFIG_FILE):
             acc = 'N/A'
 
         loss = v['average_loss']
-        step = str(int(v['global_step']))
 
         if min_loss > loss:
             min_loss = loss
             min_loss_index = step
 
-        results[k.split('/')[-1]] = {'accuracy': acc, 'loss': loss, 'step': step}
+        results[k.split('/')[-1]] = {'accuracy': float("{0:.3f}".format(acc)), 'loss': float("{0:.3f}".format(loss)), 'step': step}
     # SAVE best model
     config_writer.add_item('BEST_MODEL', 'max_acc',str(float("{0:.3f}".format(max_acc))))
     config_writer.add_item('BEST_MODEL', 'max_acc_index', str(max_acc_index))

@@ -312,7 +312,7 @@ def parameters():
     number_inputs = len(
         [get('data').Category[i] for i in range(len(get('data').Category)) if get('data').Category[i] != 'none']) - 1
     target_type = get('data').Category[get('target')]
-    number_outputs = 1 if target_type == 'numerical' else len(get('fs').cat_unique_values_dict[get('target')])
+    number_outputs = 1 if target_type == 'numerical' else len(get('fs').cat_unique_values_dict[get('target')]) #TODO fix
     num_samples = len(get('df').index)
 
     utils_custom.get_defaults_param_form(form, CONFIG_FILE, number_inputs, number_outputs, num_samples, config_reader)

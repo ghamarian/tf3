@@ -127,40 +127,6 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-def update_config_checkpoints(config_writer, target):
-    config_writer.add_item('PATHS', 'checkpoint_dir', os.path.join(target, 'checkpoints/'))
-    config_writer.add_item('PATHS', 'export_dir', os.path.join(target, 'checkpoints/export/best_exporter'))
-    config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'log/'))
-
-def define_new_config_file(dataset_name, APP_ROOT, username):
-    config_name = utils_custom.generate_config_name(APP_ROOT, username, dataset_name)
-    target = os.path.join(APP_ROOT, 'user_data', username, dataset_name, config_name)
-    update_config_checkpoints(config_writer, target)
-    if not os.path.isdir(target):
-        os.makedirs(target, exist_ok=True)
-        os.makedirs(os.path.join(target, 'log/'), exist_ok=True)
-    create_config(dataset_name, config_name)
-    return config_name
-
-
-def new_config(form, APP_ROOT, username, config_writer):
-    ext = form.new_files.train_file.data.filename.split('.')[-1]
-    dataset_name = form.new_files.train_file.data.filename.split('.' + ext)[0]
-    config_name = define_new_config_file(dataset_name, APP_ROOT, username)
-    create_config(dataset_name, config_name)
-    target_ds = os.path.join(APP_ROOT, 'user_data', username, dataset_name)
-    save_file(target_ds, form.new_files.train_file, 'train_file')
-    save_file(target_ds, form.new_files.test_file, 'validation_file')
-    # TODO check if files exists
-    if not 'validation_file' in get_config() and not isinstance(form.new_files.train_file.data,
-                                                                str) and not isinstance(form.new_files.test_file.data,
-                                                                                        str):
-        target = os.path.join(APP_ROOT, 'user_data', username, dataset_name, config_name)
-        config_writer.add_item('PATHS', 'train_file', os.path.join(target, form.new_files.train_file.data.filename))
-        config_writer.add_item('PATHS', 'validation_file', os.path.join(target, form.new_files.test_file.data.filename))
-        return redirect(url_for('feature'))
-
-
 
 @app.route('/upload', methods=['GET', 'POST'])
 @login_required
@@ -514,6 +480,40 @@ def get_target_labels(target, target_type, fs):
     elif target_type == 'range':
         return [str(a) for a in list(range(min(fs.df[target].values), max(fs.df[target].values)))]
     return None
+
+def update_config_checkpoints(config_writer, target):
+    config_writer.add_item('PATHS', 'checkpoint_dir', os.path.join(target, 'checkpoints/'))
+    config_writer.add_item('PATHS', 'export_dir', os.path.join(target, 'checkpoints/export/best_exporter'))
+    config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'log/'))
+
+def define_new_config_file(dataset_name, APP_ROOT, username):
+    config_name = utils_custom.generate_config_name(APP_ROOT, username, dataset_name)
+    target = os.path.join(APP_ROOT, 'user_data', username, dataset_name, config_name)
+    update_config_checkpoints(config_writer, target)
+    if not os.path.isdir(target):
+        os.makedirs(target, exist_ok=True)
+        os.makedirs(os.path.join(target, 'log/'), exist_ok=True)
+    create_config(dataset_name, config_name)
+    return config_name
+
+
+def new_config(form, APP_ROOT, username, config_writer):
+    ext = form.new_files.train_file.data.filename.split('.')[-1]
+    dataset_name = form.new_files.train_file.data.filename.split('.' + ext)[0]
+    config_name = define_new_config_file(dataset_name, APP_ROOT, username)
+    create_config(dataset_name, config_name)
+    target_ds = os.path.join(APP_ROOT, 'user_data', username, dataset_name)
+    save_file(target_ds, form.new_files.train_file, 'train_file')
+    save_file(target_ds, form.new_files.test_file, 'validation_file')
+    # TODO check if files exists
+    if not 'validation_file' in get_config() and not isinstance(form.new_files.train_file.data,
+                                                                str) and not isinstance(form.new_files.test_file.data,
+                                                                                        str):
+        target = os.path.join(APP_ROOT, 'user_data', username, dataset_name, config_name)
+        config_writer.add_item('PATHS', 'train_file', os.path.join(target, form.new_files.train_file.data.filename))
+        config_writer.add_item('PATHS', 'validation_file', os.path.join(target, form.new_files.test_file.data.filename))
+        return redirect(url_for('feature'))
+
 
 
 db.init_app(app)

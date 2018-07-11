@@ -288,10 +288,12 @@ h1 {
     color: #41b3b8;
     font-size: 21px;
 }
+
 .bs-callout-success h3 {
     color: #41b3b8;
     font-size: 18px;
 }
+
 .bs-callout-danger {
     border-left-color: #d9534f;
 }
@@ -305,7 +307,7 @@ h1 {
     border-left-color: #f0ad4e;
 }
 
-.bs-callout-warning h4 {
+.bs-callout-warning h1 {
     color: #f0ad4e;
     font-size: 21px;
 }

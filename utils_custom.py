@@ -69,8 +69,8 @@ def get_defaults_param_form(form, CONFIG_FILE, number_inputs, number_outputs, nu
             'keep_checkpoint_max']
         form.experiment.form.save_checkpoints_steps.default = config_reader.read_config(CONFIG_FILE)['EXPERIMENT'][
             'save_checkpoints_steps']
-        form.experiment.form.initialize_with_checkpoint.default = config_reader.read_config(CONFIG_FILE)['EXPERIMENT'][
-            'initialize_with_checkpoint']
+        # form.experiment.form.initialize_with_checkpoint.default = config_reader.read_config(CONFIG_FILE)['EXPERIMENT'][
+        #     'initialize_with_checkpoint']
         form.experiment.form.save_summary_steps.default = config_reader.read_config(CONFIG_FILE)['EXPERIMENT'][
             'save_summary_steps']
         form.experiment.form.throttle.default = config_reader.read_config(CONFIG_FILE)['EXPERIMENT']['throttle']

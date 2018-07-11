@@ -47,7 +47,9 @@ def get_eval_results(directory, config_writer, CONFIG_FILE):
                 max_acc_index = step
         else:
             acc = 'N/A'
+
         loss = v['average_loss']
+
         if min_loss > loss:
             min_loss = loss
             min_loss_index = step

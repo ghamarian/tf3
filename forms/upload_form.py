@@ -10,7 +10,6 @@ import os
 
 files = sorted(os.listdir('datasets'))
 
-
 # To avoid the limitation of FormField of wtforms
 class FileInputWithAccept:
     def __call__(self, field, **kwargs):
@@ -31,7 +30,7 @@ class NewFileForm(FlaskForm):
                                      validators=[FileAllowed(['csv'], message="Please enter csv file.")])
 
     test_file = FileFieldWithAccept(label='Validation dataset in CSV format',
-                                    validators=[FileAllowed(['csv'], message="Please enter csv file.")])
+                                    validators=[FileAllowed(['csv'], message="Please enter csv file.")] )
 
 
 class ExisitingDatasetForm(FlaskForm):
@@ -39,12 +38,14 @@ class ExisitingDatasetForm(FlaskForm):
     # validation_file_exist = SelectField(u'Validation dataset', choices=list(zip(files, files)))
     # configuration = SelectField(u'Configuration', choices=list())
 
+
 class UploadForm(FlaskForm):
     is_existing = BooleanField('Existing dataset')
     new_files = FormField(NewFileForm)
     exisiting_files = FormField(ExisitingDatasetForm)
     # exisiting_test_file = FormField(ExistingTestDatasetForm)
     submit = SubmitField("Submit")
+
 
 class UploadNewForm(FlaskForm):
     new_files = FormField(NewFileForm)

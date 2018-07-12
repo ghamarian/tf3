@@ -513,17 +513,28 @@ def new_config(form, APP_ROOT, username, config_writer):
     config_name = define_new_config_file(dataset_name, APP_ROOT, username)
     create_config(dataset_name, config_name)
     target_ds = os.path.join(APP_ROOT, 'user_data', username, dataset_name)
-    save_file(target_ds, form.new_files.train_file, 'train_file')
-    save_file(target_ds, form.new_files.test_file, 'validation_file')
     # TODO check if files exists
     if not 'validation_file' in get_config() and not isinstance(form.new_files.train_file.data,
                                                                 str) and not isinstance(form.new_files.test_file.data,
                                                                                         str):
-        target = os.path.join(APP_ROOT, 'user_data', username, dataset_name, config_name)
+        save_file(target_ds, form.new_files.train_file, 'train_file')
+        save_file(target_ds, form.new_files.test_file, 'validation_file')
+        target = os.path.join(APP_ROOT, 'user_data', username, dataset_name)
         config_writer.add_item('PATHS', 'train_file', os.path.join(target, form.new_files.train_file.data.filename))
         config_writer.add_item('PATHS', 'validation_file', os.path.join(target, form.new_files.test_file.data.filename))
         return redirect(url_for('feature'))
-
+    #TODO remove this if
+    if 'validation_file' in get_config() and isinstance(form.new_files.train_file.data,
+                                                                str) and isinstance(form.new_files.test_file.data,
+                                                                                        str):
+        save_file(target_ds, form.new_files.train_file, 'train_file')
+        save_file(target_ds, form.new_files.test_file, 'validation_file')
+        target = os.path.join(APP_ROOT, 'user_data', username, dataset_name)
+        config_writer.add_item('PATHS', 'train_file', os.path.join(target, form.new_files.train_file.data.filename))
+        config_writer.add_item('PATHS', 'validation_file', os.path.join(target, form.new_files.test_file.data.filename))
+        return redirect(url_for('feature'))
+    save_file(target_ds, form.new_files.train_file, 'train_file')
+    save_file(target_ds, form.new_files.test_file, 'validation_file')
 
 def create_dict_feature(features, categories, defaults):
     dict_features = {}

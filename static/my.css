@@ -330,7 +330,7 @@ h1 {
 body {
     background: #f9f9f9;
     font-family: 'Open Sans', sans-serif;
-    text-align: right;
+    text-align: left;
 }
 
 .play {
@@ -429,3 +429,9 @@ th2 {
     margin-bottom: 0;
 }
 
+.center-block {
+    display: block;
+    margin-right: auto;
+    margin-left: auto;
+    text-align: center !important;
+}

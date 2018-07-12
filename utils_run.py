@@ -53,8 +53,11 @@ def get_eval_results(directory, config_writer, CONFIG_FILE):
         if min_loss > loss:
             min_loss = loss
             min_loss_index = step
-
-        results[k.split('/')[-1]] = {'accuracy': acc, 'loss': loss, 'step': step}
+        try:
+            acc = float("{0:.3f}".format(acc))
+        except ValueError:
+            acc = acc
+        results[k.split('/')[-1]] = {'accuracy': acc, 'loss': float("{0:.3f}".format(loss)), 'step': step}
     # SAVE best model
     config_writer.add_item('BEST_MODEL', 'max_acc',str(float("{0:.3f}".format(max_acc))))
     config_writer.add_item('BEST_MODEL', 'max_acc_index', str(max_acc_index))

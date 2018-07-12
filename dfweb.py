@@ -152,6 +152,9 @@ def upload():
             target = os.path.join(APP_ROOT, 'user_data', session['user'], dataset_name, config_name)
             update_config_checkpoints(config_writer, target)
         else:
+            if form.new_files.train_file.data == '':
+                form = UploadNewForm()
+                return render_template('upload_file_new_form.html', form=form, page=0)
             new_config(form, APP_ROOT, session['user'], config_writer)
         if not 'validation_file' in get_config():
             return redirect(url_for('slider'))
@@ -171,6 +174,9 @@ def upload():
 def upload_new():
     form = UploadNewForm()
     if form.validate_on_submit():
+        # if not 'train_file' in get_config():
+        #     flash_errors(form)
+        #     return render_template('upload_file_new_form.html', form=form, page=0)
         new_config(form, APP_ROOT, session['user'], config_writer)
         if not 'validation_file' in get_config():
             return redirect(url_for('slider'))
@@ -212,8 +218,11 @@ def feature():
 
     form = Submit()
     if form.validate_on_submit():
-        update_config('category_list', json.loads(request.form['cat_column']))
-        default_values = json.loads(request.form['default_column'])
+        dict_feature_select = create_dict_feature(json.loads(request.form['default_featu']),
+                                                  json.loads(request.form['cat_column']),
+                                                  json.loads(request.form['default_column']))
+        cat_columns, default_values = reorder(dict_feature_select, get('df').keys())
+        update_config('category_list', cat_columns)
         get('data').Category = get('category_list')
         get('data').Defaults = default_values
         update_config('defaults', dict(zip(get('data').index.tolist(), default_values)))
@@ -278,7 +287,8 @@ def parameters():
     number_inputs = len(
         [get('data').Category[i] for i in range(len(get('data').Category)) if get('data').Category[i] != 'none']) - 1
     target_type = get('data').Category[get('target')]
-    number_outputs = 1 if target_type == 'numerical' else len(get('fs').cat_unique_values_dict[get('target')]) #TODO fix
+    number_outputs = 1 if target_type == 'numerical' else len(
+        get('fs').cat_unique_values_dict[get('target')])  # TODO fix
     num_samples = len(get('df').index)
 
     utils_custom.get_defaults_param_form(form, CONFIG_FILE, number_inputs, number_outputs, num_samples, config_reader)
@@ -479,10 +489,12 @@ def get_target_labels(target, target_type, fs):
         return [str(a) for a in list(range(min(fs.df[target].values), max(fs.df[target].values)))]
     return None
 
+
 def update_config_checkpoints(config_writer, target):
     config_writer.add_item('PATHS', 'checkpoint_dir', os.path.join(target, 'checkpoints/'))
     config_writer.add_item('PATHS', 'export_dir', os.path.join(target, 'checkpoints/export/best_exporter'))
     config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'log/'))
+
 
 def define_new_config_file(dataset_name, APP_ROOT, username):
     config_name = utils_custom.generate_config_name(APP_ROOT, username, dataset_name)
@@ -512,6 +524,20 @@ def new_config(form, APP_ROOT, username, config_writer):
         config_writer.add_item('PATHS', 'validation_file', os.path.join(target, form.new_files.test_file.data.filename))
         return redirect(url_for('feature'))
 
+
+def create_dict_feature(features, categories, defaults):
+    dict_features = {}
+    for f, c, d in zip(features, categories, defaults):
+        dict_features[f] = {}
+        dict_features[f]['category'] = c
+        dict_features[f]['default'] = d
+    return dict_features
+
+
+def reorder(dict_features, list_features):
+    cat_columns = [dict_features[c]['category'] for c in list_features]
+    default_values = [dict_features[c]['default'] for c in list_features]
+    return cat_columns, default_values
 
 
 db.init_app(app)

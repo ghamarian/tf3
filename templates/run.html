@@ -60,15 +60,16 @@
 {% block app_content %}
     {#    <meta http-equiv="refresh" content="60"/>#}
     {#    <div class="bs-callout bs-callout-default">#}
-    <form id="formId" action="/run" method="post">
-        <button type="submit" formmethod="post" id="run" name="run" class="play"></button>
-        <h1>Training Play/Pause </h1>
-        <span class="headline">click/touch the button to train your model.</span>
-    </form>
-    <a role="button" name="tensor" class="btn btn-warning" target="_blank"
-       href="http://localhost:{{ port }}"><span class="glyphicon glyphicon-blackboard"></span> TensorBoard</a>
-    {#    </div>#}
-
+    <div class="center-block">
+        <form id="formId" action="/run" method="post">
+            <button type="submit" formmethod="post" id="run" name="run" class="play"></button>
+            <h1>Training Play/Pause </h1>
+            <span class="headline">click/touch the button to train your model.</span>
+        </form>
+        <a role="button" name="tensor" class="btn btn-warning" target="_blank"
+           href="http://localhost:{{ port }}"><span class="glyphicon glyphicon-blackboard"></span> TensorBoard</a>
+        {#    </div>#}
+    </div>
 
     <div class="bs-callout bs-callout-warning" align="center">
         <th2> PREDICT</th2>

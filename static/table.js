@@ -72,7 +72,8 @@ $(document).ready(function () {
             },
             {
                 "render": function (data, type, row) {
-                    return `<input type="text" name=data value=${data} >`
+                    var my_id = row[0];
+                    return `<input type="text" name=${my_id} id=${my_id} value=${data} >`
                 },
                 "targets": 4
             }
@@ -84,15 +85,20 @@ $(document).ready(function () {
     // console.log($('#category-data').data());
 
     $('form').submit(function () {
-        let cat_column = table.$('select option:selected').map(function() {
+        let cat_column = table.$('select option:selected').map(function () {
             return this.value;
         }).get();
 
-        let default_column = table.$('input').map(function() {
+        let default_featu = table.$('input').map(function () {
+            return this.name;
+        }).get();
+
+        let default_column = table.$('input').map(function () {
             return this.value;
         }).get();
 
         console.log(default_column);
+
 
         let cat_input = $("<input>")
             .attr("type", "hidden")
@@ -102,8 +108,13 @@ $(document).ready(function () {
             .attr("type", "hidden")
             .attr("name", "default_column").val(JSON.stringify(default_column));
 
+        let input_default_featu= $("<input>")
+            .attr("type", "hidden")
+            .attr("name", "default_featu").val(JSON.stringify(default_featu));
+
         $('form').append(cat_input);
         $('form').append(default_input);
+        $('form').append(input_default_featu);
     });
 
 });

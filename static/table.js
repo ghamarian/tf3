@@ -50,6 +50,8 @@ $(document).ready(function () {
         'none-categorical': createMenu(none, none, categorical, hash),
         'none-hash': createMenu(none, none, categorical, hash),
         'none-range': createMenu(none, none, range, hash, categorical, numerical),
+        'none-int-range': createMenu(none, none, range, hash, categorical, numerical),
+        'none-int-category': createMenu(none, none, range, hash, categorical, numerical),
         'none-numerical': createMenu(none, none, numerical),
         'none-bool': createMenu(none, none, categorical)
     };

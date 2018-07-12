@@ -464,8 +464,7 @@ def tensor_board_thread(CONFIG_FILE, port):
     config_path = config_reader.read_config(CONFIG_FILE).all()['checkpoint_dir']
     logging.debug('Starting tensor board')
     time.sleep(3)
-    # os.system("tensorboard --logdir=" + config_path + "  --port=" + port)
-    os.system("tensorboard --logdir=" + config_path + "  --port=5000")
+    os.system("tensorboard --logdir=" + config_path + "  --port=" + port)
     logging.debug('Exiting tensor board')
 
 

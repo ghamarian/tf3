@@ -52,6 +52,7 @@ $(document).ready(function () {
         'none-range': createMenu(none, none, range, hash, categorical, numerical),
         'none-int-range': createMenu(none, none, range, hash, categorical, numerical),
         'none-int-category': createMenu(none, none, range, hash, categorical, numerical),
+        'none-int-hash': createMenu(none, none, range, hash, categorical, numerical),
         'none-numerical': createMenu(none, none, numerical),
         'none-bool': createMenu(none, none, categorical)
     };

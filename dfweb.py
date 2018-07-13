@@ -30,6 +30,7 @@ import uuid
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 
+from multiprocessing import Manager
 logging.basicConfig(level=logging.DEBUG,
                     format='[%(levelname)s] (%(threadName)-10s) %(message)s',
                     )
@@ -62,7 +63,7 @@ ports = {}
 login_manager = LoginManager()
 login_manager.init_app(app)
 
-
+return_dict = Manager().dict()
 # login_manager.login_view = 'upload'
 
 
@@ -371,8 +372,13 @@ def predict():
                               os.path.join(all_params_config.export_dir(), request.form['radiob']))
         labels = None if target_type == 'numerical' else get('fs').cat_unique_values_dict[get('target')]
         dtypes = get('fs').group_by(get('category_list'))
-        runner = Runner(all_params_config, get('features'), get('target'), labels, get('defaults'), dtypes)
-        final_pred = runner.predict(new_features, get('target'), get('df'))
+        r_thread = Process(target=lambda: predict_thread(all_params_config, get('features'), get('target'),
+                                                         labels, get('defaults'), dtypes, new_features, get('df')), name='predict')
+        r_thread.daemon = True
+        r_thread.start()
+        r_thread.join()
+        #runner = Runner(all_params_config, get('features'), get('target'), labels, get('defaults'), dtypes)
+        final_pred = return_dict['output']
         return render_template('run.html', running=running, page=5, features=new_features,
                                target=get('target'),
                                types=utils_custom.get_html_types(dict_types), categoricals=categoricals,
@@ -454,6 +460,11 @@ def tensor_board_thread(CONFIG_FILE, port):
 def run_thread(all_params_config, features, target, labels, defaults, dtypes):
     runner = Runner(all_params_config, features, target, labels, defaults, dtypes)
     runner.run()
+
+
+def predict_thread(all_params_config, features, target, labels, defaults, dtypes, new_features, df):
+    runner = Runner(all_params_config, features, target, labels, defaults, dtypes)
+    return_dict['output'] = runner.predict(new_features, target, df)
 
 
 def create_config(dataset, config_name):

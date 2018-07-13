@@ -62,7 +62,6 @@ class Classifier:
         predict_input_fn = tf.estimator.inputs.numpy_input_fn(x=self.input_predict_fn(features, df),
                                                               y=None, num_epochs=1, shuffle=False)
         predictions = list(self.model.predict(input_fn=predict_input_fn))
-        print(predictions)
         if 'predictions' in predictions[0].keys():
             return predictions[0]['predictions'][0]
         return predictions[0]['classes'][0].decode("utf-8")

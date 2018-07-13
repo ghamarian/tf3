@@ -71,8 +71,6 @@ class Classifier:
         input_predict = {}
         for k, v in features.items():
             input_predict[k] = np.array([v]).astype(df[k].dtype) if df[k].dtype == 'object' else np.array([float(v)]).astype(df[k].dtype)
-
-
         # input_predict.pop(target, None)
         return input_predict
 

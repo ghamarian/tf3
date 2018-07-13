@@ -174,9 +174,6 @@ def upload():
 def upload_new():
     form = UploadNewForm()
     if form.validate_on_submit():
-        # if not 'train_file' in get_config():
-        #     flash_errors(form)
-        #     return render_template('upload_file_new_form.html', form=form, page=0)
         new_config(form, APP_ROOT, session['user'], config_writer)
         if not 'validation_file' in get_config():
             return redirect(url_for('slider'))
@@ -218,10 +215,9 @@ def feature():
 
     form = Submit()
     if form.validate_on_submit():
-        dict_feature_select = create_dict_feature(json.loads(request.form['default_featu']),
-                                                  json.loads(request.form['cat_column']),
-                                                  json.loads(request.form['default_column']))
-        cat_columns, default_values = reorder(dict_feature_select, get('df').keys())
+        cat_columns, default_values = reorder_request(json.loads(request.form['default_featu']),
+                                                      json.loads(request.form['cat_column']),
+                                                      json.loads(request.form['default_column']), get('df').keys())
         update_config('category_list', cat_columns)
         get('data').Category = get('category_list')
         get('data').Defaults = default_values
@@ -256,7 +252,6 @@ def target():
             update_config('category_list', new_categ_list)
             get('data').Category = get('category_list')
             get('fs').update(get('category_list'), dict(zip(get('data').index.tolist(), get('data').Defaults)))
-
         if 'split_df' in get_config():
             split_train_test(get('split_df'))
             config_writer.add_item('SPLIT_DF', 'split_df', get('split_df'))
@@ -290,7 +285,6 @@ def parameters():
     number_outputs = 1 if target_type == 'numerical' else len(
         get('fs').cat_unique_values_dict[get('target')])  # TODO fix
     num_samples = len(get('df').index)
-
     utils_custom.get_defaults_param_form(form, CONFIG_FILE, number_inputs, number_outputs, num_samples, config_reader)
     return render_template('parameters.html', form=form, page=4)
 
@@ -309,9 +303,9 @@ def run():
     checkpoints = utils_run.get_eval_results(directory, config_writer, CONFIG_FILE)
     sfeatures = features.copy()
     sfeatures.pop(target)
-    if not session['user'] in ports.keys():
+    if not session['user'] + '_' + CONFIG_FILE in ports.keys():
         port = utils_run.find_free_port()
-        ports[session['user']] = port
+        ports[session['user'] + '_' + CONFIG_FILE] = port
         tboard_thread = threading.Thread(name='tensor_board', target=lambda: tensor_board_thread(CONFIG_FILE, port))
         tboard_thread.setDaemon(True)
         tboard_thread.start()
@@ -327,13 +321,13 @@ def run():
 
         return render_template('run.html', running=1, page=5, features=sfeatures, target=get('target'),
                                types=utils_custom.get_html_types(dict_types), categoricals=categoricals,
-                               checkpoints=checkpoints, port=ports[session['user']])
+                               checkpoints=checkpoints, port=ports[session['user'] + '_' + CONFIG_FILE])
 
     running = 1 if get_session('user') in processes.keys() and not isinstance(processes[get_session('user')],
                                                                               str) else 0
     return render_template('run.html', running=running, page=5, features=sfeatures, target=get('target'),
                            types=utils_custom.get_html_types(dict_types), categoricals=categoricals,
-                           checkpoints=checkpoints, port=ports[session['user']])
+                           checkpoints=checkpoints, port=ports[session['user'] + '_' + CONFIG_FILE])
 
 
 @app.route('/pause', methods=['GET', 'POST'])
@@ -382,12 +376,12 @@ def predict():
         return render_template('run.html', running=running, page=5, features=new_features,
                                target=get('target'),
                                types=utils_custom.get_html_types(dict_types), categoricals=categoricals,
-                               prediction=final_pred, checkpoints=checkpoints)
+                               prediction=final_pred, checkpoints=checkpoints, port=ports[session['user']+ '_' + CONFIG_FILE])
     sfeatures = features.copy()
     sfeatures.pop(target)
     return render_template('run.html', running=running, page=5, features=sfeatures, target=get('target'),
                            types=utils_custom.get_html_types(dict_types), categoricals=categoricals,
-                           checkpoints=checkpoints)
+                           checkpoints=checkpoints, port=ports[session['user']+ '_' + CONFIG_FILE])
 
 
 @app.route('/')
@@ -408,9 +402,7 @@ def split_train_test(percent):
     dataset = dataset[dataset[get('target')].isin(counts[counts > 1].index)]
     target = dataset[[get('target')]]
     test_size = (dataset.shape[0] * percent) // 100
-    # train_df, test_df = train_test_split(dataset, test_size=test_size, stratify=target)
-    # train_df, test_df = train_test_split(dataset, test_size=0.8, stratify=target)
-    train_df, test_df = train_test_split(dataset, test_size=test_size)
+    train_df, test_df = train_test_split(dataset, test_size=test_size, stratify=target, random_state=42)
     train_df.to_csv(train_file, index=False)
     test_df.to_csv(validation_file, index=False)
 
@@ -448,15 +440,6 @@ def flash_errors(form):
         for error in errors:
             flash(u"%s" % error)
             # flash(u"Error in the %s field - %s" % (getattr(form, field).label.text, error))
-
-
-def save_file(target, dataset_form_field, dataset_type):
-    dataset_file = dataset_form_field.data
-    if dataset_file:
-        dataset_filename = secure_filename(dataset_file.filename)
-        destination = os.path.join(target, dataset_filename)
-        dataset_file.save(destination)
-        update_config(dataset_type, destination)
 
 
 def tensor_board_thread(CONFIG_FILE, port):
@@ -507,9 +490,29 @@ def define_new_config_file(dataset_name, APP_ROOT, username):
     return config_name
 
 
+# def save_file(target, dataset_form_field, dataset_type):
+#     dataset_file = dataset_form_field.data
+#     if dataset_file:
+#         dataset_filename = secure_filename(dataset_file.filename)
+#         destination = os.path.join(target, dataset_filename)
+#         dataset_file.save(destination)
+#         update_config(dataset_type, destination)
+
+def save_filename(target, dataset_form_field, dataset_type, dataset_name):
+    dataset_form_field.data.filename = dataset_name + '.csv'
+    dataset_file = dataset_form_field.data
+    if dataset_file:
+        dataset_filename = secure_filename(dataset_file.filename)
+        destination = os.path.join(target, dataset_filename)
+        dataset_file.save(destination)
+        update_config(dataset_type, destination)
+
+
 def new_config(form, APP_ROOT, username, config_writer):
     ext = form.new_files.train_file.data.filename.split('.')[-1]
     dataset_name = form.new_files.train_file.data.filename.split('.' + ext)[0]
+    if os.path.isdir(os.path.join(APP_ROOT, 'user_data', session['user'], dataset_name)):
+        dataset_name = utils_custom.generate_dataset_name(APP_ROOT, session['user'], dataset_name)
     config_name = define_new_config_file(dataset_name, APP_ROOT, username)
     create_config(dataset_name, config_name)
     target_ds = os.path.join(APP_ROOT, 'user_data', username, dataset_name)
@@ -517,35 +520,23 @@ def new_config(form, APP_ROOT, username, config_writer):
     if not 'validation_file' in get_config() and not isinstance(form.new_files.train_file.data,
                                                                 str) and not isinstance(form.new_files.test_file.data,
                                                                                         str):
-        save_file(target_ds, form.new_files.train_file, 'train_file')
-        save_file(target_ds, form.new_files.test_file, 'validation_file')
+        save_filename(target_ds, form.new_files.train_file, 'train_file', dataset_name)
+        save_filename(target_ds, form.new_files.test_file, 'validation_file', dataset_name)
         target = os.path.join(APP_ROOT, 'user_data', username, dataset_name)
         config_writer.add_item('PATHS', 'train_file', os.path.join(target, form.new_files.train_file.data.filename))
         config_writer.add_item('PATHS', 'validation_file', os.path.join(target, form.new_files.test_file.data.filename))
         return redirect(url_for('feature'))
-    #TODO remove this if
-    if 'validation_file' in get_config() and isinstance(form.new_files.train_file.data,
-                                                                str) and isinstance(form.new_files.test_file.data,
-                                                                                        str):
-        save_file(target_ds, form.new_files.train_file, 'train_file')
-        save_file(target_ds, form.new_files.test_file, 'validation_file')
-        target = os.path.join(APP_ROOT, 'user_data', username, dataset_name)
-        config_writer.add_item('PATHS', 'train_file', os.path.join(target, form.new_files.train_file.data.filename))
-        config_writer.add_item('PATHS', 'validation_file', os.path.join(target, form.new_files.test_file.data.filename))
-        return redirect(url_for('feature'))
-    save_file(target_ds, form.new_files.train_file, 'train_file')
-    save_file(target_ds, form.new_files.test_file, 'validation_file')
+    save_filename(target_ds, form.new_files.train_file, 'train_file', dataset_name)
+    if isinstance(form.new_files.test_file.data, str) and form.new_files.test_file.data != '':
+        save_filename(target_ds, form.new_files.test_file, 'validation_file', dataset_name)
 
-def create_dict_feature(features, categories, defaults):
+
+def reorder_request(features, categories, defaults, list_features):
     dict_features = {}
     for f, c, d in zip(features, categories, defaults):
         dict_features[f] = {}
         dict_features[f]['category'] = c
         dict_features[f]['default'] = d
-    return dict_features
-
-
-def reorder(dict_features, list_features):
     cat_columns = [dict_features[c]['category'] for c in list_features]
     default_values = [dict_features[c]['default'] for c in list_features]
     return cat_columns, default_values

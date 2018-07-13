@@ -15,6 +15,19 @@ def generate_config_name(app_root, username, dataset_name):
     return new_name + str(cont)
 
 
+def generate_dataset_name(app_root, username, dataset_name):
+    user_datasets = []
+    if os.path.isdir(os.path.join(app_root, 'user_data', username)):
+        user_datasets = [a for a in os.listdir(os.path.join(app_root, 'user_data', username))
+                         if os.path.isdir(os.path.join(app_root, 'user_data', username, a))]
+    cont = 1
+    while dataset_name + '_' + str(cont) in user_datasets:
+        cont += 1
+    new_dataset_name = dataset_name + '_' + str(cont)
+    # os.mkdirs(os.path.join(app_root, 'user_data', username, new_dataset_name, 'config_1'))
+    return new_dataset_name
+
+
 def get_html_types(dict_types):
     dict_html_types = {}
     for k, v in dict_types.items():
@@ -23,7 +36,7 @@ def get_html_types(dict_types):
 
 
 def get_hidden_layers(INPUT_DIM, OUTUPUT_DIM, num_samples, alpha=2):
-    size = num_samples/(alpha * (INPUT_DIM + OUTUPUT_DIM))
+    size = num_samples / (alpha * (INPUT_DIM + OUTUPUT_DIM))
     return str(int(round(size)))
 
 

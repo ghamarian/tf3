@@ -42,12 +42,147 @@
             $('#tablediv').append('<tr>')
             $('#tablediv').append('<td> <input type="radio" id="radiob" name="radiob" value="' + key + '">' + key);
             $('#tablediv').append('<td> ' + value['accuracy']);
-            $('#tablediv').append('<td> ' + value['loss'] + ' </tr>');
+            $('#tablediv').append('<td> ' + value['loss'] );
+            $('#tablediv').append('<td> <a data-id='+ key + ' onclick="ConfirmDelete(this)" ><span class="glyphicon glyphicon-remove"></span></a> </tr>');
+
         });
-        $('input:radio[name="radiob"]').change(function () {
-            $('#predict').prop('disabled', false);
+
+        $(document).ready(function(){
+            $('#tablediv').on('click change', 'input:radio[name="radiob"]', function(){
+                $('#predict_button').prop('disabled', false);
+            });
+
+        });
+
+    </script>
+    <script>
+    function ConfirmDelete(elem) {
+        $("#deleteButton").unbind('click');
+        $('#deleteModalLabel').text("Are you sure you want to delete model " + $(elem).attr('data-id') + "?");
+        $('#deleteModal').modal();
+        (function () {
+
+            $("#deleteButton").click(function (e) {
+                $.ajax({
+                    url: "{{ url_for('delete', _external=True) }}",
+                    type: 'POST',
+                    dataType: 'json',
+                    contentType: 'application/json;charset=UTF-8',
+                    accepts: {
+                        json: 'application/json',
+                    },
+                    data: JSON.stringify({'deleteID': $(elem).attr('data-id')}),
+                    success: function (data) {
+                        var $radios = $('input[name="radiob"]');
+                        var $selected = $radios.filter(':checked');
+                        if ($selected.val() && $selected.val() != $(elem).attr('data-id')){
+                            $('#predict_button').prop('disabled', false);
+                        }else{
+                            $('#predict_button').prop('disabled', true);
+                        }
+                        $('#tablediv').empty();
+
+                        $.each(data.checkpoints, function (key, value) {
+                            var checked = '';
+                            if (key == $selected.val()){
+                                checked = 'checked';
+                            }
+                            $('#tablediv').append('<tr>');
+                            $('#tablediv').append('<td> <input type="radio" id="radiob" name="radiob" value="' + key + '" ' + checked + '>' + key);
+                            $('#tablediv').append('<td> ' + value['accuracy']);
+                            $('#tablediv').append('<td> ' + value['loss']);
+                            $('#tablediv').append('<td> <a data-id=' + key + ' onclick="ConfirmDelete(this)" ><span class="glyphicon glyphicon-remove"></span></a> </tr>');
+
+                        });
+                    }
+
+                })
+            })
+        }());
+
+    }
+
+    function ConfirmDeleteAll(elem) {
+        $( "#deleteButton").unbind('click');
+        $('#deleteModalLabel').text("Are you sure you want to delete all saved models?");
+        $('#deleteModal').modal();
+        (function() {
+
+           $("#deleteButton").click(function(e){
+               $.ajax({
+                url: "{{ url_for('delete', _external=True) }}",
+                type: 'POST',
+                dataType: 'json',
+                contentType: 'application/json;charset=UTF-8',
+                accepts: {
+                    json: 'application/json',
+                },
+                data: JSON.stringify({'deleteID': $(elem).attr('data-id')}),
+                   success: function (data) {
+                       $('#tablediv').empty();
+                       $('#predict_button').prop('disabled', true);
+                   }
+            })
+           })
+        }());
+    }
+    </script>
+    <script>
+        $(document).ready(function() {
+
+            setInterval(function () {
+                $.ajax({
+                    url: "{{ url_for('refresh', _external=True) }}",
+                    type: 'GET',
+                    dataType: 'json',
+                    contentType: 'application/json;charset=UTF-8',
+                    accepts: {
+                        json: 'application/json',
+                    },
+                    data: JSON.stringify("checkpoints"),
+                    success: function (data) {
+                        var $radios = $('input[name="radiob"]');
+                        var $selected = $radios.filter(':checked');
+                        if ($selected.val()){
+                            $('#predict_button').prop('disabled', false);
+                        }else{
+                            $('#predict_button').prop('disabled', true);
+                        }
+                        $('#tablediv').empty();
+
+                        $.each(data.checkpoints, function (key, value) {
+                            var checked = '';
+                            if (key == $selected.val()){
+                                checked = 'checked';
+                            }
+                            $('#tablediv').append('<tr>');
+                            $('#tablediv').append('<td> <input type="radio" id="radiob" name="radiob" value="' + key + '" ' + checked + '>' + key);
+                            $('#tablediv').append('<td> ' + value['accuracy']);
+                            $('#tablediv').append('<td> ' + value['loss']);
+                            $('#tablediv').append('<td> <a data-id=' + key + ' onclick="ConfirmDelete(this)" ><span class="glyphicon glyphicon-remove"></span></a> </tr>');
+
+                        });
+                    }
+                })
+
+            }, 10000)
         });
     </script>
+    <script>
+        $("#predict_button").click(function (e) {
+                $.ajax({
+                    url: "{{ url_for('predict', _external=True) }}",
+                    type: 'POST',
+
+                    data: $("#predict_form").serialize(),
+                    success: function (data) {
+                        $('#predict_val').text(data.prediction)
+                    }
+
+                })
+            });
+    </script>
+
 {% endblock %}
 
 
@@ -58,6 +193,7 @@
 {% endblock %}
 
 {% block app_content %}
+
     {#    <meta http-equiv="refresh" content="60"/>#}
     {#    <div class="bs-callout bs-callout-default">#}
     <div class="center-block">
@@ -75,7 +211,7 @@
 
     <div class="bs-callout bs-callout-warning" align="center">
         <th2> PREDICT</th2>
-        <form action="/predict" method="post">
+        <form action="/predict" method="post" id="predict_form">
             <div class="container">
                 <div class="row">
                     <div class="col-md-3">
@@ -98,20 +234,27 @@
                             <h4> CHECKPOINTS</h4>
                             Select trained model
                             <br>
-                            <div align="right"><a href="/run"><span class="glyphicon glyphicon-refresh"></span> </a>
-                            </div>
                             <table class="table table-striped">
                                 <thead>
                                 <tr>
                                     <th scope="col">Model</th>
                                     <th scope="col">Accuracy</th>
                                     <th scope="col">Loss</th>
+                                    <th scope="col"></th>
                                 </tr>
                                 </thead>
                                 <div class="pre-scrollable">
                                     <tbody id="tablediv">
                                     </tbody>
                                 </div>
+                                <tfoot align="right">
+                                    <tr>
+                                        <td colspan="4">Clear all models <a data-id=all onclick="ConfirmDeleteAll(this)" >
+                                            <span class="glyphicon glyphicon-trash" style="color:red"></span></a>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+
                             </table>
                         </div>
                     </div>
@@ -122,8 +265,8 @@
                             <h4> PREDICT</h4>
                             Get the predict value for your feature values
                             <br>
-                            <h3>{{ target }} : <b>{{ prediction }}</b></h3>
-                            <button type="submit" formmethod="post" id="predict" class="btn btn-primary" disabled>
+                            <h3>{{ target }} : <b><div id="predict_val"></div></b></h3>
+                            <button type="button" id="predict_button" class="btn btn-primary" disabled>
                                 PREDICT
                             </button>
 
@@ -134,5 +277,32 @@
         </form>
     </div>
 
-{% endblock %}
+    <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="text-align:center;">
+                <h4 class="modal-title" style="color:red;" id="deleteModalLabel"></h4>
+            </div>
 
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="button" id="deleteButton" class="btn btn-primary" data-dismiss="modal">Delete</button>
+            </div>
+        </div>
+    </div>
+    </div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  <!-- Categories: success (green), info (blue), warning (yellow), error (red) -->
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible" role="alert">
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <!-- <strong>Title</strong> --> {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+
+{% endblock %}

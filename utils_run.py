@@ -39,6 +39,8 @@ def get_eval_results(directory, config_writer, CONFIG_FILE):
     min_loss = math.inf
     min_loss_index = 0
     for k, v in log_file.items():
+        if not os.path.isdir(k):
+            continue
         step = str(int(v['global_step']))
         if 'accuracy' in v.keys():
             acc = v['accuracy']

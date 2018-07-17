@@ -29,7 +29,7 @@ from utils import copyfile
 import uuid
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
-
+from tensorflow.python.platform import gfile
 from multiprocessing import Manager
 logging.basicConfig(level=logging.DEBUG,
                     format='[%(levelname)s] (%(threadName)-10s) %(message)s',
@@ -331,6 +331,47 @@ def run():
                            checkpoints=checkpoints, port=ports[session['user'] + '_' + CONFIG_FILE])
 
 
+@app.route('/delete', methods=['POST'])
+def delete():
+    features = get('defaults')
+    target = get('target')
+    CONFIG_FILE = config[get_session('user')]['config_file']
+
+    dict_types, categoricals = utils_run.get_dictionaries(get('defaults'), get('category_list'), get('fs'),
+                                                          get('target'))
+    directory = config_reader.read_config(CONFIG_FILE).all()['export_dir']
+
+    checkpoints = utils_run.get_eval_results(directory, config_writer, CONFIG_FILE)
+    running = 1 if get_session('user') in processes.keys() and not isinstance(processes[get_session('user')],
+                                                                              str) else 0
+    sfeatures = features.copy()
+    sfeatures.pop(target)
+
+
+
+    all_params_config = config_reader.read_config(CONFIG_FILE)
+    del_id = request.get_json()['deleteID']
+    paths = [del_id] if del_id != 'all' else [d for d in os.listdir(all_params_config.export_dir()) if os.path.isdir(os.path.join(all_params_config.export_dir(),d))]
+    for p in paths:
+        gfile.DeleteRecursively(os.path.join(all_params_config.export_dir(), p))
+    checkpoints = utils_run.get_eval_results(directory, config_writer, CONFIG_FILE)
+
+    return jsonify(checkpoints=checkpoints)
+
+
+@app.route('/refresh', methods=['GET'])
+@login_required
+def refresh():
+
+    CONFIG_FILE = config[get_session('user')]['config_file']
+
+    directory = config_reader.read_config(CONFIG_FILE).all()['export_dir']
+
+    checkpoints = utils_run.get_eval_results(directory, config_writer, CONFIG_FILE)
+
+    return jsonify(checkpoints=checkpoints)
+
+
 @app.route('/pause', methods=['GET', 'POST'])
 def pause():
     import psutil
@@ -347,47 +388,36 @@ def pause():
     return redirect(url_for('run'))
 
 
-@app.route('/predict', methods=['GET', 'POST'])
+@app.route('/predict', methods=['POST'])
 def predict():
     target_type = get('data').Category[get('target')]
     features = get('defaults')
     target = get('target')
     CONFIG_FILE = config[get_session('user')]['config_file']
 
-    dict_types, categoricals = utils_run.get_dictionaries(get('defaults'), get('category_list'), get('fs'),
-                                                          get('target'))
-    directory = config_reader.read_config(CONFIG_FILE).all()['export_dir']
+    new_features = {}
+    for k, v in features.items():
+        if k not in get('fs').group_by(get('category_list'))['none']:
+            new_features[k] = request.form[k] if k != target else features[k]
 
-    checkpoints = utils_run.get_eval_results(directory, config_writer, CONFIG_FILE)
-    running = 1 if get_session('user') in processes.keys() and not isinstance(processes[get_session('user')],
-                                                                              str) else 0
-    if request.method == 'POST':
-        new_features = {}
-        for k, v in features.items():
-            if k not in get('fs').group_by(get('category_list'))['none']:
-                new_features[k] = request.form[k] if k != target else features[k]
+    all_params_config = config_reader.read_config(CONFIG_FILE)
+    all_params_config.set('PATHS', 'checkpoint_dir',
+                          os.path.join(all_params_config.export_dir(), request.form['radiob']))
+    labels = None if target_type == 'numerical' else get('fs').cat_unique_values_dict[get('target')]
+    dtypes = get('fs').group_by(get('category_list'))
+    r_thread = Process(target=lambda: predict_thread(all_params_config, get('features'), get('target'),
+                                                     labels, get('defaults'), dtypes, new_features, get('df')), name='predict')
+    r_thread.daemon = True
+    r_thread.start()
+    r_thread.join()
+    #runner = Runner(all_params_config, get('features'), get('target'), labels, get('defaults'), dtypes)
+    final_pred = return_dict['output']
+    if final_pred is None:
+        flash('Model\'s structure does not match the new parameter configuration', 'danger')
+        final_pred = ''
 
-        all_params_config = config_reader.read_config(CONFIG_FILE)
-        all_params_config.set('PATHS', 'checkpoint_dir',
-                              os.path.join(all_params_config.export_dir(), request.form['radiob']))
-        labels = None if target_type == 'numerical' else get('fs').cat_unique_values_dict[get('target')]
-        dtypes = get('fs').group_by(get('category_list'))
-        r_thread = Process(target=lambda: predict_thread(all_params_config, get('features'), get('target'),
-                                                         labels, get('defaults'), dtypes, new_features, get('df')), name='predict')
-        r_thread.daemon = True
-        r_thread.start()
-        r_thread.join()
-        #runner = Runner(all_params_config, get('features'), get('target'), labels, get('defaults'), dtypes)
-        final_pred = return_dict['output']
-        return render_template('run.html', running=running, page=5, features=new_features,
-                               target=get('target'),
-                               types=utils_custom.get_html_types(dict_types), categoricals=categoricals,
-                               prediction=final_pred, checkpoints=checkpoints, port=ports[session['user']+ '_' + CONFIG_FILE])
-    sfeatures = features.copy()
-    sfeatures.pop(target)
-    return render_template('run.html', running=running, page=5, features=sfeatures, target=get('target'),
-                           types=utils_custom.get_html_types(dict_types), categoricals=categoricals,
-                           checkpoints=checkpoints, port=ports[session['user']+ '_' + CONFIG_FILE])
+    return jsonify(prediction=final_pred)
+
 
 
 @app.route('/')

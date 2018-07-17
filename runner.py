@@ -36,4 +36,8 @@ class Runner:
             self.classifier.run()
 
     def predict(self, features, target, df):
-        return self.classifier.predict(features, target, df)
+        try:
+            result = self.classifier.predict(features, target, df)
+        except:
+            result = None
+        return result

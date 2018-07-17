@@ -17,7 +17,6 @@ from flask_bootstrap import Bootstrap
 from flask_login import LoginManager, login_user, login_required, logout_user
 from forms.login_form import LoginForm
 from forms.parameters_form import GeneralClassifierForm, GeneralRegressorForm
-from forms.run_form import RunForm
 from forms.submit_form import Submit
 from forms.upload_form import UploadForm, UploadNewForm
 from multiprocessing import Process
@@ -26,11 +25,11 @@ from runner import Runner
 from sklearn.model_selection import train_test_split
 from user import User
 from utils import copyfile
-import uuid
 from werkzeug.utils import secure_filename
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import check_password_hash
 
 from multiprocessing import Manager
+
 logging.basicConfig(level=logging.DEBUG,
                     format='[%(levelname)s] (%(threadName)-10s) %(message)s',
                     )
@@ -44,6 +43,7 @@ WTF_CSRF_SECRET_KEY = os.urandom(42)
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(__name__)
+
 Bootstrap(app)
 app.secret_key = WTF_CSRF_SECRET_KEY
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///username.db'
@@ -56,16 +56,10 @@ stop_event = threading.Event()
 processes = {}
 ports = {}
 
-# users = {}
-# usertest = User('usertest2', generate_password_hash('test12345678', method='sha256'), 'test@test.com')
-# users['usertest2'] = usertest
-
 login_manager = LoginManager()
 login_manager.init_app(app)
 
 return_dict = Manager().dict()
-# login_manager.login_view = 'upload'
-
 
 def get_session(user_id):
     with app.app_context():
@@ -154,13 +148,18 @@ def upload():
             update_config_checkpoints(config_writer, target)
         else:
             if form.new_files.train_file.data == '':
-                form = UploadNewForm()
-                return render_template('upload_file_new_form.html', form=form, page=0)
+                form = UploadForm()
+                return render_template('upload_file_form.html', form=form, page=0, user_configs=user_configs,
+                                       parameters=parameters_configs)
             new_config(form, APP_ROOT, session['user'], config_writer)
+
+        # target = os.path.join(APP_ROOT, 'user_data', session['user'], dataset_name, config_name)
+        # if not 'validation_file' in get_config() and config_reader.read_config(os.path.join(target, 'config.ini'))['PATHS']['train_file']=='':
         if not 'validation_file' in get_config():
             return redirect(url_for('slider'))
         else:
             return redirect(url_for('feature'))
+
     flash_errors(form)
     if not user_configs:
         form = UploadNewForm()
@@ -175,6 +174,8 @@ def upload():
 def upload_new():
     form = UploadNewForm()
     if form.validate_on_submit():
+        if form.new_files.train_file.data == '':
+            return render_template('upload_file_new_form.html', form=form, page=0)
         new_config(form, APP_ROOT, session['user'], config_writer)
         if not 'validation_file' in get_config():
             return redirect(url_for('slider'))
@@ -373,21 +374,23 @@ def predict():
         labels = None if target_type == 'numerical' else get('fs').cat_unique_values_dict[get('target')]
         dtypes = get('fs').group_by(get('category_list'))
         r_thread = Process(target=lambda: predict_thread(all_params_config, get('features'), get('target'),
-                                                         labels, get('defaults'), dtypes, new_features, get('df')), name='predict')
+                                                         labels, get('defaults'), dtypes, new_features, get('df')),
+                           name='predict')
         r_thread.daemon = True
         r_thread.start()
         r_thread.join()
-        #runner = Runner(all_params_config, get('features'), get('target'), labels, get('defaults'), dtypes)
+        # runner = Runner(all_params_config, get('features'), get('target'), labels, get('defaults'), dtypes)
         final_pred = return_dict['output']
         return render_template('run.html', running=running, page=5, features=new_features,
                                target=get('target'),
                                types=utils_custom.get_html_types(dict_types), categoricals=categoricals,
-                               prediction=final_pred, checkpoints=checkpoints, port=ports[session['user']+ '_' + CONFIG_FILE])
+                               prediction=final_pred, checkpoints=checkpoints,
+                               port=ports[session['user'] + '_' + CONFIG_FILE])
     sfeatures = features.copy()
     sfeatures.pop(target)
     return render_template('run.html', running=running, page=5, features=sfeatures, target=get('target'),
                            types=utils_custom.get_html_types(dict_types), categoricals=categoricals,
-                           checkpoints=checkpoints, port=ports[session['user']+ '_' + CONFIG_FILE])
+                           checkpoints=checkpoints, port=ports[session['user'] + '_' + CONFIG_FILE])
 
 
 @app.route('/')
@@ -500,15 +503,6 @@ def define_new_config_file(dataset_name, APP_ROOT, username):
     create_config(dataset_name, config_name)
     return config_name
 
-
-# def save_file(target, dataset_form_field, dataset_type):
-#     dataset_file = dataset_form_field.data
-#     if dataset_file:
-#         dataset_filename = secure_filename(dataset_file.filename)
-#         destination = os.path.join(target, dataset_filename)
-#         dataset_file.save(destination)
-#         update_config(dataset_type, destination)
-
 def save_filename(target, dataset_form_field, dataset_type, dataset_name):
     dataset_form_field.data.filename = dataset_name + '.csv'
     dataset_file = dataset_form_field.data
@@ -551,6 +545,35 @@ def reorder_request(features, categories, defaults, list_features):
     cat_columns = [dict_features[c]['category'] for c in list_features]
     default_values = [dict_features[c]['default'] for c in list_features]
     return cat_columns, default_values
+
+#
+# @app.route('/read_log')
+# def read_log_file():
+#     config = get_config()['config_file'].split('/')
+#     logfile = os.path.join(APP_ROOT, 'user_data', session['user'], config[-3], config[-2], 'log', 'tensorflow.log')
+#     import tailhead
+#     if os.path.isfile(logfile):
+#         for line in tailhead.follow_path(logfile):
+#             if line is not None:
+#                 print(line)
+#             else:
+#                 time.sleep(0.2)
+#         return jsonify(result=line)
+#     return jsonify(result=' . . . ')
+
+@app.route('/stream')
+@login_required
+def stream():
+    config = get_config()['config_file'].split('/')
+    logfile = os.path.join(APP_ROOT, 'user_data', session['user'], config[-3], config[-2], 'log', 'tensorflow.log')
+
+    def generate():
+        if os.path.isfile(logfile):
+            with open(logfile) as f:
+                while True:
+                    yield f.read()
+                    time.sleep(1)
+    return app.response_class(generate(), mimetype='text/plain')
 
 
 db.init_app(app)

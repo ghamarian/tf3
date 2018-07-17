@@ -4,12 +4,34 @@
 
 {% block scripts %}
     {{ super() }}
-    {#    <script src="{{ url_for('.static', filename='jquery.dataTables.js') }}"></script>#}
-    {#    <script src="{{ url_for('.static', filename='dataTables.select.js') }}"></script>#}
     <script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.16/sl-1.2.5/datatables.min.js"></script>
+    <script type="text/javascript"
+            src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.8/socket.io.min.js"></script>
+    <script type=text/javascript>
+        $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+    </script>
+
+
+    <pre id="output"></pre>
+    <script>
+        var output = document.getElementById('log');
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '{{ url_for('stream') }}');
+        xhr.send();
+
+        setInterval(function() {
+            output.textContent = xhr.responseText;
+            console.log(xhr.responseText)
+            $('#log').scrollTop($('#log')[0].scrollHeight);
+        }, 1000);
+    </script>
+
+
     <script type="text/javascript">
         var run = {{ running }}
             $(document).ready(function () {
+                document.getElementById("log").style.display = "none"
                 if (Boolean(run) == true) {
                     $('.play').toggleClass('active');
                     $('#formId').attr('action', '/pause');
@@ -47,6 +69,20 @@
         $('input:radio[name="radiob"]').change(function () {
             $('#predict').prop('disabled', false);
         });
+
+        function hidde_show() {
+            var x = document.getElementById("log");
+            if (x.style.display === "none") {
+                x.style.display = "block";
+                $('#detail_gly').removeClass('glyphicon-triangle-bottom').addClass('glyphicon-triangle-top');
+            } else {
+                x.style.display = "none";
+                $('#detail_gly').removeClass('glyphicon-triangle-top').addClass('glyphicon-triangle-bottom');
+
+            }
+        }
+
+
     </script>
 {% endblock %}
 
@@ -58,19 +94,16 @@
 {% endblock %}
 
 {% block app_content %}
-    {#    <meta http-equiv="refresh" content="60"/>#}
-    {#    <div class="bs-callout bs-callout-default">#}
     <div class="center-block">
         <form id="formId" action="/run" method="post">
             <button type="submit" formmethod="post" id="run" name="run" class="play">
-
             </button>
-            <h1>Training Play/Pause </h1>
-            <span class="headline">click/touch the button to train your model.</span>
+            <h1>TRAIN MODEL </h1>
+            {#            <span class="headline">click/touch the button to train your model.</span>#}
+            <span class="headline">   </span>
         </form>
         <a role="button" name="tensor" class="btn btn-warning" target="_blank"
            href="http://localhost:{{ port }}"><span class="glyphicon glyphicon-blackboard"></span> TensorBoard</a>
-        {#    </div>#}
     </div>
 
     <div class="bs-callout bs-callout-warning" align="center">
@@ -133,6 +166,11 @@
             </div>
         </form>
     </div>
+
+    <button class="btn btn-link btn-details" onclick="hidde_show()">
+        <span id="detail_gly" class="glyphicon glyphicon-triangle-bottom"></span> Details
+    </button>
+    <div id="log" class="log"></div>
 
 {% endblock %}
 

@@ -315,21 +315,29 @@ def run():
         tboard_thread.start()
 
     if request.method == 'POST':
-        dtypes = get('fs').group_by(get('category_list'))
-        all_params_config = config_reader.read_config(CONFIG_FILE)
-        r_thread = Process(target=lambda: run_thread(all_params_config, get('features'), get('target'),
-                                                     labels, get('defaults'), dtypes), name='run')
-        r_thread.daemon = True
-        r_thread.start()
-        processes[get_session('user')] = r_thread
+        if request.form['action'] == 'run':
+            dtypes = get('fs').group_by(get('category_list'))
+            all_params_config = config_reader.read_config(CONFIG_FILE)
+            r_thread = Process(target=lambda: run_thread(all_params_config, get('features'), get('target'),
+                                                         labels, get('defaults'), dtypes), name='run')
+            r_thread.daemon = True
+            r_thread.start()
+            processes[get_session('user')] = r_thread
+        else:
+            import psutil
+            p = processes[get_session('user')] if get_session('user') in processes.keys() else None
+            if not isinstance(p, str) and p:
+                pid = p.pid
+                parent = psutil.Process(pid)
+                for child in parent.children(recursive=True):
+                    print
+                    "child", child
+                    child.kill()
+                parent.kill()
+                processes[get_session('user')] = ''
+        return jsonify(True)
 
-        return render_template('run.html', running=1, page=5, features=sfeatures, target=get('target'),
-                               types=utils_custom.get_html_types(dict_types), categoricals=categoricals,
-                               checkpoints=checkpoints, port=ports[session['user'] + '_' + CONFIG_FILE])
-
-    running = 1 if get_session('user') in processes.keys() and not isinstance(processes[get_session('user')],
-                                                                              str) else 0
-    return render_template('run.html', running=running, page=5, features=sfeatures, target=get('target'),
+    return render_template('run.html', page=5, features=sfeatures, target=get('target'),
                            types=utils_custom.get_html_types(dict_types), categoricals=categoricals,
                            checkpoints=checkpoints, port=ports[session['user'] + '_' + CONFIG_FILE])
 
@@ -374,21 +382,21 @@ def refresh():
 
     return jsonify(checkpoints=checkpoints)
 
-
-@app.route('/pause', methods=['GET', 'POST'])
-def pause():
-    import psutil
-    p = processes[get_session('user')] if get_session('user') in processes.keys() else None
-    if not isinstance(p, str) and p:
-        pid = p.pid
-        parent = psutil.Process(pid)
-        for child in parent.children(recursive=True):
-            print
-            "child", child
-            child.kill()
-        parent.kill()
-        processes[get_session('user')] = ''
-    return redirect(url_for('run'))
+#
+# @app.route('/pause', methods=['GET', 'POST'])
+# def pause():
+#     import psutil
+#     p = processes[get_session('user')] if get_session('user') in processes.keys() else None
+#     if not isinstance(p, str) and p:
+#         pid = p.pid
+#         parent = psutil.Process(pid)
+#         for child in parent.children(recursive=True):
+#             print
+#             "child", child
+#             child.kill()
+#         parent.kill()
+#         processes[get_session('user')] = ''
+#     return redirect(url_for('run'))
 
 
 @app.route('/predict', methods=['POST'])
@@ -591,18 +599,48 @@ def reorder_request(features, categories, defaults, list_features):
 #         return jsonify(result=line)
 #     return jsonify(result=' . . . ')
 
+
+def follow(stream):
+    "Follow the live contents of a text file."
+    line = ''
+    for block in iter(lambda:stream.read(1024), None):
+        if '\n' in block:
+            for line in (line+block).splitlines(True)+['']:
+                if line.endswith('\n'):
+                    yield line
+        elif not block:
+            time.sleep(1.0)
+
+
 @app.route('/stream')
 @login_required
 def stream():
     config = get_config()['config_file'].split('/')
     logfile = os.path.join(APP_ROOT, 'user_data', session['user'], config[-3], config[-2], 'log', 'tensorflow.log')
+    #
+    # def generate():
+    #     while not os.path.isfile(logfile):
+    #         time.sleep(2)
+    #     with open(logfile, 'rt') as following:
+    #         "Follow the live contents of a text file."
+    #         line = ''
+    #         for block in iter(lambda: following.read(1024), None):
+    #             if '\n' in block:
+    #                 for line in (line + block).splitlines(True) + ['']:
+    #                     if line.endswith('\n'):
+    #                         yield line
+    #             elif not block:
+    #                 time.sleep(1.0)
 
     def generate():
+        import tailer
         if os.path.isfile(logfile):
-            with open(logfile) as f:
-                while True:
-                    yield f.read()
-                    time.sleep(1)
+            while True:
+                for line in tailer.follow(open(logfile)):
+                    print(line)
+                    if line is not None:
+                        yield line
+                        time.sleep(1)
     return app.response_class(generate(), mimetype='text/plain')
 
 

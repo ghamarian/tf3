@@ -19,7 +19,7 @@
     {#        {{ wtf.quick_form(form, form_type='inline', enctype="multipart/form-data", button_map={'submit': 'primary'}) }}#}
     <div class="row">
         <!--{{ wtf.quick_form(form, id='new_dataset', enctype="multipart/form-data", button_map={'submit': 'primary'}) }}-->
-        <form action="/upload_new" method="post" enctype="multipart/form-data">
+        <form action="/upload" method="post" enctype="multipart/form-data">
             {{ form.csrf_token }}
 
             <div id="newfiles">

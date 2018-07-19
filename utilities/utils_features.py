@@ -15,6 +15,6 @@ def get_target_labels(target, target_type, fs):
     # TODO labels if target type is a RANGE, BOOL, ...
     if target_type == 'categorical' or target_type == 'hash':
         return fs.cat_unique_values_dict[target]
-    elif target_type == 'range':
+    elif 'range' in target_type:
         return [str(a) for a in list(range(min(fs.df[target].values), max(fs.df[target].values)))]
     return None

@@ -3,15 +3,13 @@ import json
 import logging
 import os
 import pandas as pd
-import psutil
 import threading
 import time
-import utils_run
-import utils_custom
+from feature_selection import FeatureSelection
+from utilities import utils_run, utils_custom, utils_io, threads, utils_features, utils_config, upload_util
 from config import config_reader
 from config.config_writer import ConfigWriter
 from db import db
-from feature_selection import FeatureSelection
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_bootstrap import Bootstrap
 from flask_login import LoginManager, login_user, login_required, logout_user
@@ -21,16 +19,14 @@ from forms.submit_form import Submit
 from forms.upload_form import UploadForm, UploadNewForm
 from multiprocessing import Process
 from pprint import pprint
-from runner import Runner
 from sklearn.model_selection import train_test_split
 from user import User
-from utils import copyfile
-from werkzeug.utils import secure_filename
+from runner import Runner
 from werkzeug.security import check_password_hash
-
-from werkzeug.security import generate_password_hash, check_password_hash
 from tensorflow.python.platform import gfile
 from multiprocessing import Manager
+from werkzeug.utils import secure_filename
+from shutil import copyfile
 
 logging.basicConfig(level=logging.DEBUG,
                     format='[%(levelname)s] (%(threadName)-10s) %(message)s',
@@ -63,10 +59,10 @@ login_manager.init_app(app)
 
 return_dict = Manager().dict()
 
+
 def get_session(user_id):
     with app.app_context():
         if user_id not in session:
-            # session[user_id] = uuid.uuid4()
             return redirect(url_for('login'))
         return session[user_id]
 
@@ -76,14 +72,6 @@ def get_config():
     if user not in config:
         return redirect(url_for('login'))
     return config[user]
-
-
-def create_config(dataset, config_name):
-    user = get_session('user')
-    path = APP_ROOT + '/user_data/' + user + '/' + dataset + '/' + config_name
-    os.makedirs(path, exist_ok=True)
-    copyfile('config/default_config.ini', path + '/config.ini')
-    config[user]['config_file'] = path + '/config.ini'
 
 
 def get(key):
@@ -125,48 +113,102 @@ def logout():
     return redirect(url_for('login'))
 
 
+def load_config():
+    # read saved config
+    CONFIG_FILE = config[get_session('user')]['config_file']
+    conf = config_reader.read_config(CONFIG_FILE)
+
+    # update files and df in config dict
+    update_config('file', conf['PATHS']['file'])
+    update_config('train_file', conf['PATHS']['train_file'])
+    update_config('validation_file', conf['PATHS']['validation_file'])
+
+    update_config('df', pd.read_csv(conf['PATHS']['file']))
+
+    # retrieve values from config, assign_category does this
+    df = get('df')
+    df.reset_index(inplace=True, drop=True)
+    categories, unique_values, default_list, frequent_values2frequency = assign_category(df, get_session('user'))
+
+    data = df.head(SAMPLE_DATA_SIZE).T
+    data.insert(0, 'Defaults', default_list.values())
+    data.insert(0, '(most frequent, frequency)', frequent_values2frequency.values())
+    data.insert(0, 'Unique Values', unique_values)
+    data.insert(0, 'Category', categories)
+
+    sample_column_names = ["Sample {}".format(i) for i in range(1, SAMPLE_DATA_SIZE + 1)]
+    data.columns = list(
+        itertools.chain(['Category', '#Unique Values', '(Most frequent, Frequency)', 'Defaults'], sample_column_names))
+
+    update_config('data', data)
+    update_config('defaults', dict(zip(get('data').index.tolist(), default_list.values())))
+    update_config('category_list', categories)
+
+    # target select
+    target = conf['TARGET']['target']
+    update_config('features', get('fs').create_tf_features(get('category_list'), target))
+    update_config('target', target)
+
+    config_writer.config = conf
+
+
+def existing_data(form, user_configs):
+    dataset_name = form['exisiting_files-train_file_exist']
+    username = session['user']
+    path = os.path.join(APP_ROOT, 'user_data', username, dataset_name)
+
+    if 'exisiting_files-configuration' in form:
+        config_name = form['exisiting_files-configuration']
+        config[session['user']]['config_file'] = os.path.join(path, config_name, 'config.ini')
+        load_config()
+        return 'parameters'
+
+    else:
+        config_name = utils_config.define_new_config_file(dataset_name, APP_ROOT, username, config_writer)
+        config[session['user']]['config_file'] = os.path.join(path, config_name, 'config.ini')
+        if user_configs[dataset_name] and os.path.isfile(
+                os.path.join(path, user_configs[dataset_name][0], 'config.ini')):
+            reader = config_reader.read_config(os.path.join(path, user_configs[dataset_name][0], 'config.ini'))
+            copyfile(os.path.join(path, user_configs[dataset_name][0], 'config.ini'),
+                     os.path.join(path, config_name, 'config.ini'))
+            filename = reader['PATHS']['file']
+        elif os.path.isfile(os.path.join(path, dataset_name + '.csv')):
+            filename = os.path.join(path, dataset_name + '.csv')
+        else:
+            filename = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and '.csv' in f][0]
+
+        update_config('file', os.path.join(path, filename))
+        config_writer.add_item('PATHS', 'file', os.path.join(path, filename))
+        config_writer.write_config(config[get_session('user')]['config_file'])
+        return 'slider'
+
+
 @app.route('/upload', methods=['GET', 'POST'])
 @login_required
 def upload():
+    config[session['user']] = {}
+    global config_writer
+    config_writer = ConfigWriter()
     form = UploadForm()
     user_dataset, user_configs, parameters_configs = utils_custom.get_configs_files(APP_ROOT, session['user'])
     form.exisiting_files.train_file_exist.choices = user_dataset
     if form.validate_on_submit():
         if form.is_existing.data:
-            dataset_name = request.form['exisiting_files-train_file_exist']
-            if 'exisiting_files-configuration' in request.form:
-                config_name = request.form['exisiting_files-configuration']
-            else:
-                config_name = define_new_config_file(dataset_name, APP_ROOT, session['user'])
-            config[session['user']]['config_file'] = os.path.join('user_data', session['user'], dataset_name,
-                                                                  config_name, 'config.ini')
-            train_file_name = os.path.join('user_data', session['user'], dataset_name, dataset_name + '-train.csv')
-            update_config('train_file', os.path.join(APP_ROOT, train_file_name))
-            config_writer.add_item('PATHS', 'train_file', os.path.join(APP_ROOT, train_file_name))
-            test_file_name = os.path.join('user_data', session['user'], dataset_name, dataset_name + '-validation.csv')
-            update_config('validation_file', os.path.join(APP_ROOT, test_file_name))
-            config_writer.add_item('PATHS', 'validation_file', os.path.join(APP_ROOT, test_file_name))
-            target = os.path.join(APP_ROOT, 'user_data', session['user'], dataset_name, config_name)
-            update_config_checkpoints(config_writer, target)
+            return redirect(url_for(existing_data(request.form, user_configs)))
         else:
             if form.new_files.train_file.data == '':
                 form = UploadForm()
                 return render_template('upload_file_form.html', form=form, page=0, user_configs=user_configs,
                                        parameters=parameters_configs)
             new_config(form, APP_ROOT, session['user'], config_writer)
-
-        # target = os.path.join(APP_ROOT, 'user_data', session['user'], dataset_name, config_name)
-        # if not 'validation_file' in get_config() and config_reader.read_config(os.path.join(target, 'config.ini'))['PATHS']['train_file']=='':
-        if not 'validation_file' in get_config():
+        if not 'validation_file' in get_config() or not os.path.isfile(get('train_file')):
             return redirect(url_for('slider'))
         else:
             return redirect(url_for('feature'))
-
     flash_errors(form)
     if not user_configs:
         form = UploadNewForm()
         return render_template('upload_file_new_form.html', form=form, page=0)
-
     return render_template('upload_file_form.html', form=form, page=0, user_configs=user_configs,
                            parameters=parameters_configs)
 
@@ -187,6 +229,34 @@ def upload_new():
     return render_template('upload_file_new_form.html', form=form, page=0)
 
 
+def new_config(form, APP_ROOT, username, config_writer):
+    ext = form.new_files.train_file.data.filename.split('.')[-1]
+    dataset_name = form.new_files.train_file.data.filename.split('.' + ext)[0]
+
+    if os.path.isdir(os.path.join(APP_ROOT, 'user_data', session['user'], dataset_name)):
+        dataset_name = utils_custom.generate_dataset_name(APP_ROOT, session['user'], dataset_name)
+
+    config_name = utils_config.define_new_config_file(dataset_name, APP_ROOT, username, config_writer)
+    config[username]['config_file'] = utils_config.create_config(username, APP_ROOT, dataset_name, config_name)
+    path = os.path.join(APP_ROOT, 'user_data', username, dataset_name)
+
+    save_filename(path, form.new_files.train_file, 'train_file', dataset_name)
+    config_writer.add_item('PATHS', 'train_file', os.path.join(path, form.new_files.train_file.data.filename))
+
+    config_writer.add_item('PATHS', 'file', os.path.join(path, form.new_files.train_file.data.filename))
+    update_config('file', os.path.join(path, form.new_files.train_file.data.filename))
+
+    if not isinstance(form.new_files.test_file.data, str):
+        ext = form.new_files.test_file.data.filename.split('.')[-1]
+        test_file = form.new_files.test_file.data.filename.split('.' + ext)[0]
+        save_filename(path, form.new_files.test_file, 'validation_file', test_file)
+        config_writer.add_item('PATHS', 'validation_file', os.path.join(path, form.new_files.test_file.data.filename))
+        config_writer.write_config(config[get_session('user')]['config_file'])
+        return redirect(url_for('feature'))
+
+    config_writer.write_config(config[get_session('user')]['config_file'])
+
+
 @app.route('/slider', methods=['GET', 'POST'])
 def slider():
     form = Submit(id="form")
@@ -198,13 +268,12 @@ def slider():
 
 @app.route('/feature', methods=['GET', 'POST'])
 def feature():
-    # if 'df' not in get_config():
-    update_config('df', pd.read_csv(get('train_file')))
-
+    # if 'df' not in get_config():x
+    update_config('df', pd.read_csv(get('file')))
     df = get('df')
     df.reset_index(inplace=True, drop=True)
-    categories, unique_values, default_list, frequent_values2frequency = assign_category(df)
-
+    categories, unique_values, default_list, frequent_values2frequency = assign_category(df, get_session(
+        'user'))
     data = df.head(SAMPLE_DATA_SIZE).T
     data.insert(0, 'Defaults', default_list.values())
     data.insert(0, '(most frequent, frequency)', frequent_values2frequency.values())
@@ -219,9 +288,10 @@ def feature():
 
     form = Submit()
     if form.validate_on_submit():
-        cat_columns, default_values = reorder_request(json.loads(request.form['default_featu']),
-                                                      json.loads(request.form['cat_column']),
-                                                      json.loads(request.form['default_column']), get('df').keys())
+        cat_columns, default_values = utils_features.reorder_request(json.loads(request.form['default_featu']),
+                                                                     json.loads(request.form['cat_column']),
+                                                                     json.loads(request.form['default_column']),
+                                                                     get('df').keys())
         update_config('category_list', cat_columns)
         get('data').Category = get('category_list')
         get('data').Defaults = default_values
@@ -288,7 +358,7 @@ def parameters():
     target_type = get('data').Category[get('target')]
     number_outputs = 1 if target_type == 'numerical' else len(
         get('fs').cat_unique_values_dict[get('target')])  # TODO fix
-    num_samples = len(get('df').index)
+    num_samples = len(pd.read_csv(get('train_file')).index)
     utils_custom.get_defaults_param_form(form, CONFIG_FILE, number_inputs, number_outputs, num_samples, config_reader)
     return render_template('parameters.html', form=form, page=4)
 
@@ -296,7 +366,7 @@ def parameters():
 @app.route('/run', methods=['GET', 'POST'])
 def run():
     target_type = get('data').Category[get('target')]
-    labels = get_target_labels(get('target'), target_type, get('fs'))
+    labels = utils_features.get_target_labels(get('target'), target_type, get('fs'))
     CONFIG_FILE = config[get_session('user')]['config_file']
     features = get('defaults')
     target = get('target')
@@ -310,7 +380,8 @@ def run():
     if not session['user'] + '_' + CONFIG_FILE in ports.keys():
         port = utils_run.find_free_port()
         ports[session['user'] + '_' + CONFIG_FILE] = port
-        tboard_thread = threading.Thread(name='tensor_board', target=lambda: tensor_board_thread(CONFIG_FILE, port))
+        tboard_thread = threading.Thread(name='tensor_board',
+                                         target=lambda: threads.tensor_board_thread(CONFIG_FILE, port, config_reader))
         tboard_thread.setDaemon(True)
         tboard_thread.start()
 
@@ -318,23 +389,14 @@ def run():
         if request.form['action'] == 'run':
             dtypes = get('fs').group_by(get('category_list'))
             all_params_config = config_reader.read_config(CONFIG_FILE)
-            r_thread = Process(target=lambda: run_thread(all_params_config, get('features'), get('target'),
-                                                         labels, get('defaults'), dtypes), name='run')
+            r_thread = Process(
+                target=lambda: threads.run_thread(all_params_config, get('features'), get('target'),
+                                                  labels, get('defaults'), dtypes), name='run')
             r_thread.daemon = True
             r_thread.start()
             processes[get_session('user')] = r_thread
         else:
-            import psutil
-            p = processes[get_session('user')] if get_session('user') in processes.keys() else None
-            if not isinstance(p, str) and p:
-                pid = p.pid
-                parent = psutil.Process(pid)
-                for child in parent.children(recursive=True):
-                    print
-                    "child", child
-                    child.kill()
-                parent.kill()
-                processes[get_session('user')] = ''
+            threads.pause_threads(get_session('user'), processes)
         return jsonify(True)
 
     return render_template('run.html', page=5, features=sfeatures, target=get('target'),
@@ -347,56 +409,26 @@ def delete():
     features = get('defaults')
     target = get('target')
     CONFIG_FILE = config[get_session('user')]['config_file']
-
-    dict_types, categoricals = utils_run.get_dictionaries(get('defaults'), get('category_list'), get('fs'),
-                                                          get('target'))
     directory = config_reader.read_config(CONFIG_FILE).all()['export_dir']
-
-    checkpoints = utils_run.get_eval_results(directory, config_writer, CONFIG_FILE)
-    running = 1 if get_session('user') in processes.keys() and not isinstance(processes[get_session('user')],
-                                                                              str) else 0
     sfeatures = features.copy()
     sfeatures.pop(target)
-
-
-
     all_params_config = config_reader.read_config(CONFIG_FILE)
     del_id = request.get_json()['deleteID']
-    paths = [del_id] if del_id != 'all' else [d for d in os.listdir(all_params_config.export_dir()) if os.path.isdir(os.path.join(all_params_config.export_dir(),d))]
+    paths = [del_id] if del_id != 'all' else [d for d in os.listdir(all_params_config.export_dir()) if
+                                              os.path.isdir(os.path.join(all_params_config.export_dir(), d))]
     for p in paths:
         gfile.DeleteRecursively(os.path.join(all_params_config.export_dir(), p))
     checkpoints = utils_run.get_eval_results(directory, config_writer, CONFIG_FILE)
-
     return jsonify(checkpoints=checkpoints)
 
 
 @app.route('/refresh', methods=['GET'])
 @login_required
 def refresh():
-
     CONFIG_FILE = config[get_session('user')]['config_file']
-
     directory = config_reader.read_config(CONFIG_FILE).all()['export_dir']
-
     checkpoints = utils_run.get_eval_results(directory, config_writer, CONFIG_FILE)
-
     return jsonify(checkpoints=checkpoints)
-
-#
-# @app.route('/pause', methods=['GET', 'POST'])
-# def pause():
-#     import psutil
-#     p = processes[get_session('user')] if get_session('user') in processes.keys() else None
-#     if not isinstance(p, str) and p:
-#         pid = p.pid
-#         parent = psutil.Process(pid)
-#         for child in parent.children(recursive=True):
-#             print
-#             "child", child
-#             child.kill()
-#         parent.kill()
-#         processes[get_session('user')] = ''
-#     return redirect(url_for('run'))
 
 
 @app.route('/predict', methods=['POST'])
@@ -417,11 +449,11 @@ def predict():
     labels = None if target_type == 'numerical' else get('fs').cat_unique_values_dict[get('target')]
     dtypes = get('fs').group_by(get('category_list'))
     r_thread = Process(target=lambda: predict_thread(all_params_config, get('features'), get('target'),
-                                                     labels, get('defaults'), dtypes, new_features, get('df')), name='predict')
+                                                     labels, get('defaults'), dtypes, new_features,
+                                                     get('df')), name='predict')
     r_thread.daemon = True
     r_thread.start()
     r_thread.join()
-    #runner = Runner(all_params_config, get('features'), get('target'), labels, get('defaults'), dtypes)
     final_pred = return_dict['output']
     if final_pred is None:
         flash('Model\'s structure does not match the new parameter configuration', 'danger')
@@ -429,6 +461,23 @@ def predict():
 
     return jsonify(prediction=final_pred)
 
+
+@app.route('/stream')
+@login_required
+def stream():
+    config = get_config()['config_file'].split('/')
+    logfile = os.path.join(APP_ROOT, 'user_data', session['user'], config[-3], config[-2], 'log', 'tensorflow.log')
+    def generate():
+        import tailer
+        while not os.path.isfile(logfile):
+            time.sleep(2)
+        while True:
+            for line in tailer.follow(open(logfile)):
+                print(line)
+                if line is not None:
+                    yield line+'\n'
+
+    return app.response_class(generate(), mimetype='text/plain')
 
 
 @app.route('/')
@@ -439,7 +488,7 @@ def main():
 # TODO Perhaps to handle big files you can change this, to work with the filename instead
 # TODO write test.
 def split_train_test(percent):
-    dataset_file = get('train_file')
+    dataset_file = get('file')
     removed_ext = os.path.splitext(dataset_file)[0]
     train_file = "{}-train.csv".format(removed_ext)
     validation_file = "{}-validation.csv".format(removed_ext)
@@ -460,47 +509,10 @@ def split_train_test(percent):
     config_writer.add_item('PATHS', 'validation_file', validation_file)
 
 
-def assign_category(df):
-    fs = FeatureSelection(df)
-    update_config('fs', fs)
-    feature_dict = fs.feature_dict()
-    unique_values = [fs.unique_value_size_dict.get(key, -1) for key in df.columns]
-    category_list = [feature_dict[key] for key in df.columns]
-    CONFIG_FILE = config[get_session('user')]['config_file']
-    if 'COLUMN_CATEGORIES' in config_reader.read_config(CONFIG_FILE).keys():
-        category_list = []
-        for key in df.columns:
-            category_list.append(config_reader.read_config(CONFIG_FILE)['COLUMN_CATEGORIES'][key])
-
-    default_list = fs.defaults
-    frequent_values2frequency = fs.frequent_values2frequency
-    return category_list, unique_values, default_list, frequent_values2frequency
-
-
-def update_fs(df):
-    fs = FeatureSelection(df)
-    update_config('fs', fs)
-
-
 def flash_errors(form):
     for field, errors in form.errors.items():
         for error in errors:
             flash(u"%s" % error)
-            # flash(u"Error in the %s field - %s" % (getattr(form, field).label.text, error))
-
-
-def tensor_board_thread(CONFIG_FILE, port):
-    # TODO testing to multiuser
-    config_path = config_reader.read_config(CONFIG_FILE).all()['checkpoint_dir']
-    logging.debug('Starting tensor board')
-    time.sleep(3)
-    os.system("tensorboard --logdir=" + config_path + "  --port=" + port)
-    logging.debug('Exiting tensor board')
-
-
-def run_thread(all_params_config, features, target, labels, defaults, dtypes):
-    runner = Runner(all_params_config, features, target, labels, defaults, dtypes)
-    runner.run()
 
 
 def predict_thread(all_params_config, features, target, labels, defaults, dtypes, new_features, df):
@@ -508,38 +520,21 @@ def predict_thread(all_params_config, features, target, labels, defaults, dtypes
     return_dict['output'] = runner.predict(new_features, target, df)
 
 
-def create_config(dataset, config_name):
-    user = get_session('user')
-    path = APP_ROOT + '/user_data/' + user + '/' + dataset + '/' + config_name
-    os.makedirs(path, exist_ok=True)
-    copyfile('config/default_config.ini', path + '/config.ini')
-    config[user]['config_file'] = path + '/config.ini'
+def assign_category(df, username):
+    fs = FeatureSelection(df)
+    update_config('fs', fs)
+    feature_dict = fs.feature_dict()
+    unique_values = [fs.unique_value_size_dict.get(key, -1) for key in df.columns]
+    category_list = [feature_dict[key] for key in df.columns]
+    CONFIG_FILE = config[username]['config_file']
+    if 'COLUMN_CATEGORIES' in config_reader.read_config(CONFIG_FILE).keys():
+        category_list = []
+        for key in df.columns:
+            category_list.append(config_reader.read_config(CONFIG_FILE)['COLUMN_CATEGORIES'][key])
+    default_list = fs.defaults
+    frequent_values2frequency = fs.frequent_values2frequency
+    return category_list, unique_values, default_list, frequent_values2frequency
 
-
-def get_target_labels(target, target_type, fs):
-    # TODO labels if target type is a RANGE, BOOL, ...
-    if target_type == 'categorical' or target_type == 'hash':
-        return fs.cat_unique_values_dict[target]
-    elif target_type == 'range':
-        return [str(a) for a in list(range(min(fs.df[target].values), max(fs.df[target].values)))]
-    return None
-
-
-def update_config_checkpoints(config_writer, target):
-    config_writer.add_item('PATHS', 'checkpoint_dir', os.path.join(target, 'checkpoints/'))
-    config_writer.add_item('PATHS', 'export_dir', os.path.join(target, 'checkpoints/export/best_exporter'))
-    config_writer.add_item('PATHS', 'log_dir', os.path.join(target, 'log/'))
-
-
-def define_new_config_file(dataset_name, APP_ROOT, username):
-    config_name = utils_custom.generate_config_name(APP_ROOT, username, dataset_name)
-    target = os.path.join(APP_ROOT, 'user_data', username, dataset_name, config_name)
-    update_config_checkpoints(config_writer, target)
-    if not os.path.isdir(target):
-        os.makedirs(target, exist_ok=True)
-        os.makedirs(os.path.join(target, 'log/'), exist_ok=True)
-    create_config(dataset_name, config_name)
-    return config_name
 
 def save_filename(target, dataset_form_field, dataset_type, dataset_name):
     dataset_form_field.data.filename = dataset_name + '.csv'
@@ -549,99 +544,7 @@ def save_filename(target, dataset_form_field, dataset_type, dataset_name):
         destination = os.path.join(target, dataset_filename)
         dataset_file.save(destination)
         update_config(dataset_type, destination)
-
-
-def new_config(form, APP_ROOT, username, config_writer):
-    ext = form.new_files.train_file.data.filename.split('.')[-1]
-    dataset_name = form.new_files.train_file.data.filename.split('.' + ext)[0]
-    if os.path.isdir(os.path.join(APP_ROOT, 'user_data', session['user'], dataset_name)):
-        dataset_name = utils_custom.generate_dataset_name(APP_ROOT, session['user'], dataset_name)
-    config_name = define_new_config_file(dataset_name, APP_ROOT, username)
-    create_config(dataset_name, config_name)
-    target_ds = os.path.join(APP_ROOT, 'user_data', username, dataset_name)
-    # TODO check if files exists
-    if not 'validation_file' in get_config() and not isinstance(form.new_files.train_file.data,
-                                                                str) and not isinstance(form.new_files.test_file.data,
-                                                                                        str):
-        save_filename(target_ds, form.new_files.train_file, 'train_file', dataset_name)
-        save_filename(target_ds, form.new_files.test_file, 'validation_file', dataset_name)
-        target = os.path.join(APP_ROOT, 'user_data', username, dataset_name)
-        config_writer.add_item('PATHS', 'train_file', os.path.join(target, form.new_files.train_file.data.filename))
-        config_writer.add_item('PATHS', 'validation_file', os.path.join(target, form.new_files.test_file.data.filename))
-        return redirect(url_for('feature'))
-    save_filename(target_ds, form.new_files.train_file, 'train_file', dataset_name)
-    if isinstance(form.new_files.test_file.data, str) and form.new_files.test_file.data != '':
-        save_filename(target_ds, form.new_files.test_file, 'validation_file', dataset_name)
-
-
-def reorder_request(features, categories, defaults, list_features):
-    dict_features = {}
-    for f, c, d in zip(features, categories, defaults):
-        dict_features[f] = {}
-        dict_features[f]['category'] = c
-        dict_features[f]['default'] = d
-    cat_columns = [dict_features[c]['category'] for c in list_features]
-    default_values = [dict_features[c]['default'] for c in list_features]
-    return cat_columns, default_values
-
-#
-# @app.route('/read_log')
-# def read_log_file():
-#     config = get_config()['config_file'].split('/')
-#     logfile = os.path.join(APP_ROOT, 'user_data', session['user'], config[-3], config[-2], 'log', 'tensorflow.log')
-#     import tailhead
-#     if os.path.isfile(logfile):
-#         for line in tailhead.follow_path(logfile):
-#             if line is not None:
-#                 print(line)
-#             else:
-#                 time.sleep(0.2)
-#         return jsonify(result=line)
-#     return jsonify(result=' . . . ')
-
-
-def follow(stream):
-    "Follow the live contents of a text file."
-    line = ''
-    for block in iter(lambda:stream.read(1024), None):
-        if '\n' in block:
-            for line in (line+block).splitlines(True)+['']:
-                if line.endswith('\n'):
-                    yield line
-        elif not block:
-            time.sleep(1.0)
-
-
-@app.route('/stream')
-@login_required
-def stream():
-    config = get_config()['config_file'].split('/')
-    logfile = os.path.join(APP_ROOT, 'user_data', session['user'], config[-3], config[-2], 'log', 'tensorflow.log')
-    #
-    # def generate():
-    #     while not os.path.isfile(logfile):
-    #         time.sleep(2)
-    #     with open(logfile, 'rt') as following:
-    #         "Follow the live contents of a text file."
-    #         line = ''
-    #         for block in iter(lambda: following.read(1024), None):
-    #             if '\n' in block:
-    #                 for line in (line + block).splitlines(True) + ['']:
-    #                     if line.endswith('\n'):
-    #                         yield line
-    #             elif not block:
-    #                 time.sleep(1.0)
-
-    def generate():
-        import tailer
-        if os.path.isfile(logfile):
-            while True:
-                for line in tailer.follow(open(logfile)):
-                    print(line)
-                    if line is not None:
-                        yield line
-                        time.sleep(1)
-    return app.response_class(generate(), mimetype='text/plain')
+    return True
 
 
 db.init_app(app)

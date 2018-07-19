@@ -1,11 +1,12 @@
 from configparser import ConfigParser
 from pprint import pprint
 
+from config.config_reader import CustomConfigParser
 
 class ConfigWriter:
 
     def __init__(self):
-        self.config = ConfigParser()
+        self.config = CustomConfigParser()
 
     def itemize(self, form):
         result = []

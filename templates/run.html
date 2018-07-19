@@ -12,7 +12,7 @@
     </script>
 
 
-    <pre id="output"></pre>
+
     <script>
         var output = document.getElementById('log');
 
@@ -337,8 +337,14 @@
         </div>
     </div>
 
+
+    <button class="btn btn-link btn-details" onclick="hidde_show()">
+        <span id="detail_gly" class="glyphicon glyphicon-triangle-bottom"></span> Details
+    </button>
+    <div id="log" class="log"></div>
+
     {% with messages = get_flashed_messages(with_categories=true) %}
-        <!-- Categories: success (green), info (blue), warning (yellow), error (red) -->
+        <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
         {% if messages %}
             {% for category, message in messages %}
                 <div class="alert alert-{{ category }} alert-dismissible" role="alert">
@@ -349,11 +355,5 @@
             {% endfor %}
         {% endif %}
     {% endwith %}
-
-
-    <button class="btn btn-link btn-details" onclick="hidde_show()">
-        <span id="detail_gly" class="glyphicon glyphicon-triangle-bottom"></span> Details
-    </button>
-    <div id="log" class="log"></div>
 
 {% endblock %}

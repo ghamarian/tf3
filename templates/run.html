@@ -64,6 +64,7 @@
         $(document).ready(function () {
             $('#tablediv').on('click change', 'input:radio[name="radiob"]', function () {
                 $('#predict_button').prop('disabled', false);
+                $('#defaultCheck2').prop('disabled', false);
             });
 
         });
@@ -84,13 +85,8 @@
     </script>
     <script>
         function ConfirmDelete(elem) {
-            $("#deleteButton").unbind('click');
-            $('#deleteModalLabel').text("Are you sure you want to delete model " + $(elem).attr('data-id') + "?");
-            $('#deleteModal').modal();
-            (function () {
-
-                $("#deleteButton").click(function (e) {
-                    $.ajax({
+            if (confirm("Are you sure you want to delete the selected model?")){
+                $.ajax({
                         url: "{{ url_for('delete', _external=True) }}",
                         type: 'POST',
                         dataType: 'json',
@@ -104,8 +100,10 @@
                             var $selected = $radios.filter(':checked');
                             if ($selected.val() && $selected.val() != $(elem).attr('data-id')) {
                                 $('#predict_button').prop('disabled', false);
+                                $('#defaultCheck2').prop('disabled', false);
                             } else {
                                 $('#predict_button').prop('disabled', true);
+                                $('#defaultCheck2').prop('disabled', true);
                             }
                             $('#tablediv').empty();
 
@@ -124,19 +122,13 @@
                         }
 
                     })
-                })
-            }());
-
+            }
         }
 
         function ConfirmDeleteAll(elem) {
-            $("#deleteButton").unbind('click');
-            $('#deleteModalLabel').text("Are you sure you want to delete all saved models?");
-            $('#deleteModal').modal();
-            (function () {
 
-                $("#deleteButton").click(function (e) {
-                    $.ajax({
+            if (confirm("Are you sure you want to delete all saved models?")){
+                $.ajax({
                         url: "{{ url_for('delete', _external=True) }}",
                         type: 'POST',
                         dataType: 'json',
@@ -148,10 +140,10 @@
                         success: function (data) {
                             $('#tablediv').empty();
                             $('#predict_button').prop('disabled', true);
+                            $('#defaultCheck2').prop('disabled', true);
                         }
                     })
-                })
-            }());
+            }
         }
     </script>
     <script>
@@ -171,8 +163,10 @@
                         var $selected = $radios.filter(':checked');
                         if ($selected.val()) {
                             $('#predict_button').prop('disabled', false);
+                            $('#defaultCheck2').prop('disabled', false);
                         } else {
                             $('#predict_button').prop('disabled', true);
+                            $('#defaultCheck2').prop('disabled', true);
                         }
                         $('#tablediv').empty();
 
@@ -202,7 +196,12 @@
 
                 data: $("#predict_form").serialize(),
                 success: function (data) {
-                    $('#predict_val').text(data.prediction)
+                    if (data.prediction == 'None'){
+                        alert('Model\'s structure does not match the new parameter configuration')
+                    }else{
+                        $('#predict_val').text(data.prediction)
+                    }
+
                 }
 
             })
@@ -210,14 +209,21 @@
     </script>
     <script>
         $("#run_button").click(function (e) {
-            var d_action = 'pause';
+            var form_data = {'action': 'pause'}
+
             if (document.getElementById("run_button").className == 'play') {
-                d_action = 'run';
+                form_data['action'] = 'run';
+            };
+            if (document.getElementById("defaultCheck2").checked == true) {
+                var $radios = $('input[name="radiob"]');
+                var $selected = $radios.filter(':checked');
+
+                form_data['resume_from'] = $selected.val();
             };
             $.ajax({
                 url: "{{ url_for('run', _external=True) }}",
                 type: 'POST',
-                data: {'action': d_action},
+                data: form_data,
                 success: function () {
                     $('.play').toggleClass('active');
                 }
@@ -295,9 +301,19 @@
                                         <span class="glyphicon glyphicon-trash" style="color:red"></span></a>
                                     </td>
                                 </tr>
+
                                 </tfoot>
 
                             </table>
+
+                            <div align="left" >
+                                <label class="checkbox-inline">
+                                    <input  type="checkbox" value="" id="defaultCheck2" disabled> Resume training from selected model
+                                </label>
+
+
+                            </div>
+
                         </div>
                     </div>
 
@@ -321,21 +337,6 @@
         </form>
     </div>
 
-    <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel"
-         aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header" style="text-align:center;">
-                    <h4 class="modal-title" style="color:red;" id="deleteModalLabel"></h4>
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-                    <button type="button" id="deleteButton" class="btn btn-primary" data-dismiss="modal">Delete</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
 
     <button class="btn btn-link btn-details" onclick="hidde_show()">
@@ -343,17 +344,12 @@
     </button>
     <div id="log" class="log"></div>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible" role="alert">
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
-                            aria-hidden="true">&times;</span></button>
-                    <!-- <strong>Title</strong> --> {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+
+    <div class="alert alert-{{ category }} alert-dismissible" role="alert">
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                aria-hidden="true">&times;</span></button>
+        <!-- <strong>Title</strong> --> {{ message }}
+    </div>
+
 
 {% endblock %}

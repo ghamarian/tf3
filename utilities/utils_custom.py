@@ -28,7 +28,7 @@ def get_hidden_layers(INPUT_DIM, OUTUPUT_DIM, num_samples, alpha=2):
 
 def get_configs_files(app_root, username):
     import configparser
-    connfig = configparser.ConfigParser()
+
     user_configs = {}
     parameters_configs = {}
     dataset_form_exis = []
@@ -41,6 +41,7 @@ def get_configs_files(app_root, username):
         # TODO parameters to show how information of configuration model
         for config_file in user_configs[user_dataset]:
             parameters_configs[user_dataset + '_' + config_file] = {}
+            connfig = configparser.ConfigParser()
             connfig.read(os.path.join(path, user_dataset, config_file, 'config.ini'))
             if 'NETWORK' in connfig.sections():
                 if 'BEST_MODEL' in connfig.sections():

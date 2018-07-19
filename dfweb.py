@@ -398,6 +398,9 @@ def run():
 
     if request.method == 'POST':
         if request.form['action'] == 'run':
+            if 'resume_from' in request.form:
+                pass
+                #TODO del checkpoints if resume_from exists, copy ckpt to checkpoints folder
             dtypes = sess.get('fs').group_by(sess.get('category_list'))
             all_params_config = config_reader.read_config(CONFIG_FILE)
             r_thread = Process(
@@ -466,9 +469,9 @@ def predict():
     r_thread.start()
     r_thread.join()
     final_pred = return_dict['output']
-    if final_pred is None:
-        flash('Model\'s structure does not match the new parameter configuration', 'danger')
-        final_pred = ''
+    # if final_pred is None:
+    #     flash('Model\'s structure does not match the new parameter configuration', 'danger')
+    #     final_pred = ''
 
     return jsonify(prediction=str(final_pred))
 

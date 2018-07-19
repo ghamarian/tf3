@@ -101,8 +101,8 @@ class Session:
                 new_categ_list.append(categ if feature != target else 'categorical')
             self.set('category_list', new_categ_list)
             self.get('data').Category = self.get('category_list')
-            self.get('fs').update(self.get('category_list'),
-                                  dict(zip(self.get('data').index.tolist(), self.get('data').Defaults)))
+        self.get('fs').update(self.get('category_list'),
+                              dict(zip(self.get('data').index.tolist(), self.get('data').Defaults)))
 
         self.update_writer_conf(conf)
 

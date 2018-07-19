@@ -88,21 +88,27 @@ def load_user(user_id):
     return User.query.filter_by(id=user_id).first()
 
 
+def checklogin(_username, _password, _remember):
+    new_user = db.session.query(User.id).filter_by(username=_username).scalar()
+    if new_user is None:
+        return False
+    user = User.query.filter_by(username=_username).first()
+    if check_password_hash(user.password, _password):
+        login_user(user, remember=_remember)
+        session['user'] = user.username
+        config[user.username] = {}
+        if not os.path.exists(os.path.join('user_data/', user.username)):
+            os.mkdir(os.path.join('user_data/', user.username))
+        return True
+    return False
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
     if form.validate_on_submit():
-        if db.session.query(User.id).filter_by(username=form.username.data).scalar() is None:
-            return render_template('login.html', form=form, error="Invalid username or password")
-        user = User.query.filter_by(username=form.username.data).first()
-        if check_password_hash(user.password, form.password.data):
-            login_user(user, remember=form.remember.data)
-            session['user'] = user.username
-            config[user.username] = {}
-            if not os.path.exists(os.path.join('user_data/', user.username)):
-                os.mkdir(os.path.join('user_data/', user.username))
-            return redirect(url_for('upload'))
-        return render_template('login.html', form=form, error='Invalid username or password')
+        if not checklogin(form.username.data, form.password.data, form.remember.data):
+            return render_template('login.html', form=form, error='Invalid username or password')
+        return redirect(url_for('upload'))
     return render_template('login.html', form=form)
 
 

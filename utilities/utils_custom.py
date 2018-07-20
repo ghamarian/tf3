@@ -1,6 +1,6 @@
 import os
 from tensorflow.python.platform import gfile
-
+import configparser
 
 def generate_dataset_name(app_root, username, dataset_name):
     user_datasets = []
@@ -27,14 +27,11 @@ def get_hidden_layers(INPUT_DIM, OUTUPUT_DIM, num_samples, alpha=2):
 
 
 def get_configs_files(app_root, username):
-    import configparser
-
     user_configs = {}
     parameters_configs = {}
     dataset_form_exis = []
     path = os.path.join(app_root, 'user_data', username)
-    user_datasets = [a for a in os.listdir(path) if
-                     os.path.isdir(os.path.join(path, a))]
+    user_datasets = [a for a in os.listdir(path) if os.path.isdir(os.path.join(path, a))]
     for user_dataset in user_datasets:
         user_configs[user_dataset] = [a for a in os.listdir(os.path.join(path, user_dataset)) if
                                       os.path.isdir(os.path.join(path, user_dataset, a))]
@@ -55,15 +52,6 @@ def get_configs_files(app_root, username):
                                       os.path.isdir(os.path.join(path, user_dataset, a))]
         dataset_form_exis.append((user_dataset, user_dataset))
     return dataset_form_exis, user_configs, parameters_configs
-
-
-def save_features_changes(CONFIG_FILE, data, config_writer, categories):
-    for label, categories in zip(data.index, categories):
-        cat = data.Category[label] if data.Category[label] != 'range' else 'int-range'
-        if 'none' in cat:
-            cat = 'none' + '-' + categories if 'none' not in categories else categories
-        config_writer.add_item('COLUMN_CATEGORIES', label, cat)
-    config_writer.write_config(CONFIG_FILE)
 
 
 def get_defaults_param_form(form, CONFIG_FILE, number_inputs, number_outputs, num_samples, config_reader):

@@ -3,10 +3,12 @@ from config import config_reader
 from flask import session, redirect, url_for
 from feature_selection import FeatureSelection
 import itertools
+from utilities import feature_util, target_util
 
 import pandas as pd
 
 SAMPLE_DATA_SIZE = 5
+
 
 class Session:
 
@@ -51,75 +53,84 @@ class Session:
         user = self.get_session('user')
         self._config_writer[user].config = conf
 
-
     # def update_config(self, key, value):
     #     config = self.get_config()
     #     config[key] = value
 
-    def load_config(self):
-        # read saved config
-        CONFIG_FILE = self.get('config_file')
+    def update_split(self, train_file, validation_file):
+        self.set('train_file', train_file)
+        self.set('validation_file', validation_file)
+        self.get_writer().add_item('PATHS', 'train_file', train_file)
+        self.get_writer().add_item('PATHS', 'validation_file', validation_file)
+        self.get_writer().add_item('SPLIT_DF', 'split_df', self.get('split_df'))
 
-        conf = config_reader.read_config(CONFIG_FILE)
-
-        # update files and df in config dict
-        self.set('file', conf['PATHS']['file'])
-        self.set('train_file', conf['PATHS']['train_file'])
-        self.set('validation_file', conf['PATHS']['validation_file'])
-
-        self.set('df', pd.read_csv(conf['PATHS']['file']))
-
-        # retrieve values from config, assign_category does this
-        df = self.get('df')
-        df.reset_index(inplace=True, drop=True)
-        categories, unique_values, default_list, frequent_values2frequency = self.assign_category(df)
-        default_values = [str(v) for v in default_list.values()]
-
-        data = df.head(SAMPLE_DATA_SIZE).T
-        data.insert(0, 'Defaults', default_list.values())
-        data.insert(0, '(most frequent, frequency)', frequent_values2frequency.values())
-        data.insert(0, 'Unique Values', unique_values)
-        data.insert(0, 'Category', categories)
-
-        sample_column_names = ["Sample {}".format(i) for i in range(1, SAMPLE_DATA_SIZE + 1)]
-        data.columns = list(
-            itertools.chain(['Category', '#Unique Values', '(Most frequent, Frequency)', 'Defaults'],
-                            sample_column_names))
-
-        self.set('data', data)
-        self.set('defaults', dict(zip(self.get('data').index.tolist(), default_values)))
-        self.set('category_list', categories)
-
-        # target select
-        target = conf['TARGET']['target']
+    def set_target(self, target):
+        self.get_writer().add_item('TARGET', 'target', target)
         self.set('features', self.get('fs').create_tf_features(self.get('category_list'), target))
         self.set('target', target)
         target_type = self.get('data').Category[self.get('target')]
-        if 'range' in target_type:
+        if target_type == 'range':
             new_categ_list = []
             for categ, feature in zip(self.get('category_list'), self.get('df').columns):
                 new_categ_list.append(categ if feature != target else 'categorical')
             self.set('category_list', new_categ_list)
             self.get('data').Category = self.get('category_list')
-        self.get('fs').update(self.get('category_list'),
-                              dict(zip(self.get('data').index.tolist(), self.get('data').Defaults)))
+            self.get('fs').update(self.get('category_list'),
+                                  dict(zip(self.get('data').index.tolist(), self.get('data').Defaults)))
 
+    def load_config(self):
+        # read saved config
+        conf = config_reader.read_config(self.get('config_file'))
+        # update files and df in config dict
+        self.set('file', conf['PATHS']['file'])
+        self.set('train_file', conf['PATHS']['train_file'])
+        self.set('validation_file', conf['PATHS']['validation_file'])
+        self.set('df', pd.read_csv(conf['PATHS']['file']))
+        self.get_features()
+        # target select
+        target = conf['TARGET']['target']
+        self.set_target(target)
         self.update_writer_conf(conf)
 
     def assign_category(self, df):
         fs = FeatureSelection(df)
         self.set('fs', fs)
-        feature_dict = fs.feature_dict()
-        unique_values = [fs.unique_value_size_dict.get(key, -1) for key in df.columns]
-        category_list = [feature_dict[key] for key in df.columns]
-        CONFIG_FILE = self.get('config_file')
-        if 'COLUMN_CATEGORIES' in config_reader.read_config(CONFIG_FILE).keys():
-            category_list = []
-            for key in df.columns:
-                category_list.append(config_reader.read_config(CONFIG_FILE)['COLUMN_CATEGORIES'][key])
-        default_list = fs.defaults
-        frequent_values2frequency = fs.frequent_values2frequency
+        category_list, unique_values, default_list, frequent_values2frequency = fs.assign_category(
+            self.get('config_file'), df)
         return category_list, unique_values, default_list, frequent_values2frequency
 
+    def update_new_features(self, cat_columns, default_values):
+        categories = self.get('category_list')
+        self.set('category_list', cat_columns)
+        self.get('data').Category = self.get('category_list')
+        self.get('data').Defaults = default_values
+        self.set('defaults', dict(zip(self.get('data').index.tolist(), default_values)))
+        self.get('fs').update(self.get('category_list'), dict(zip(self.get('data').index.tolist(), default_values)))
 
+        for label, categories in zip(self.get('data').index, categories):
+            cat = self.get('data').Category[label] if self.get('data').Category[label] != 'range' else 'int-range'
+            if 'none' in cat:
+                cat = 'none' + '-' + categories if 'none' not in categories else categories
+                self.get_writer().add_item('COLUMN_CATEGORIES', label, cat)
+        self.get_writer().write_config(self.get('config_file'))
 
+    def get_features(self):
+        # retrieve values from config, assign_category does this
+        self.set('df', pd.read_csv(self.get('file')))
+        df = self.get('df')
+        df.reset_index(inplace=True, drop=True)
+        categories, unique_values, default_list, frequent_values2frequency = self.assign_category(df)
+        default_values = [str(v) for v in default_list.values()]
+        self.set('data',
+                 feature_util.insert_data(df, categories, unique_values, default_list, frequent_values2frequency,
+                                          SAMPLE_DATA_SIZE))
+        self.set('defaults', dict(zip(self.get('data').index.tolist(), default_values)))
+        self.set('category_list', categories)
+        return categories
+
+    def split(self):
+        if 'split_df' in self.get_config():
+            train_file, validation_file = target_util.split_train_test(self.get('split_df'), self.get('file'),
+                                                                       self.get('target'), self.get('df'))
+            self.update_split(train_file, validation_file)
+        self.get_writer().write_config(self.get('config_file'))

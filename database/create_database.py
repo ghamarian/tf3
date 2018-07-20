@@ -3,7 +3,7 @@ from werkzeug.security import generate_password_hash
 from dfweb import app
 
 def create_all():
-    from db import db
+    from database.db import db
     with app.app_context():
         db.init_app(app)
         db.create_all()
@@ -16,7 +16,7 @@ def create_all():
 
 
 def create_new_user(username, password, email):
-    from db import db
+    from database.db import db
     with app.app_context():
         db.init_app(app)
         hashed_passwd = generate_password_hash(password, method='sha256')

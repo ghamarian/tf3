@@ -1,9 +1,7 @@
-import pandas as pd
 import tensorflow as tf
 import itertools
-import utils
-from pprint import pprint
 from collections import defaultdict
+from config import config_reader
 
 
 class FeatureSelection:
@@ -144,3 +142,15 @@ class FeatureSelection:
                             'hash': self.hash_columns}
 
         self.defaults = defaults
+
+    def assign_category(self, config_file, df):
+        feature_dict = self.feature_dict()
+        unique_values = [self.unique_value_size_dict.get(key, -1) for key in df.columns]
+        category_list = [feature_dict[key] for key in df.columns]
+        if 'COLUMN_CATEGORIES' in config_reader.read_config(config_file).keys():
+            category_list = []
+            for key in df.columns:
+                category_list.append(config_reader.read_config(config_file)['COLUMN_CATEGORIES'][key])
+        default_list = self.defaults
+        frequent_values2frequency = self.frequent_values2frequency
+        return category_list, unique_values, default_list, frequent_values2frequency

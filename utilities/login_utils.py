@@ -1,6 +1,6 @@
 import os
 from user import User
-from db import db
+from database.db import db
 from werkzeug.security import check_password_hash
 
 

@@ -1,4 +1,3 @@
-from flask_login import UserMixin
 #
 # #TODO change to a database to save user data
 # class User(UserMixin):
@@ -25,7 +24,7 @@ from flask_login import UserMixin
 #     def is_session(self, session):
 #         return self.id if session in self.sessions else None
 
-from db import db
+from database.db import db
 from flask_login import UserMixin
 
 

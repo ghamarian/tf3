@@ -50,11 +50,13 @@
 {% block scripts %}
     {{ super() }}
     <script src="{{ url_for('.static', filename='choose.js') }}"></script>
+    <script src="{{ url_for('.static', filename='upload.js') }}"></script>
     <script type="text/javascript">
         $(document).ready(function () {
             var handle_key = {};
-            handle_key.configs = {{ user_configs | tojson | safe }};
-            handle_key.parameters = {{ parameters | tojson | safe }};
+            handle_key.configs = {{  user_configs | tojson | safe }};
+            handle_key.parameters = {{  parameters | tojson | safe }};
+
             var dataset_selected = $('#exisiting_files-train_file_exist').find("option:selected").text();
             var len = handle_key.configs[dataset_selected].length;
 
@@ -64,44 +66,21 @@
                 var data_and_conf = dataset_selected + '_' + handle_key.configs[dataset_selected][i];
                 var handle_key2 = {};
                 handle_key2.configs_parame = handle_key.parameters[data_and_conf];
-                $('#tablediv').append('<tr role="row">');
-                $('#tablediv').append('<td> <input type="radio" id="exisiting_files-configuration" name="exisiting_files-configuration" value="' + handle_key.configs[dataset_selected][i] + '">' + handle_key.configs[dataset_selected][i]);
-                $('#tablediv').append('</td> <td> ' + handle_key2.configs_parame['model']);
-                $('#tablediv').append('</td> <td> ' + handle_key2.configs_parame['acc']);
-                $('#tablediv').append('</td> <td> ' + handle_key2.configs_parame['loss']);
-                $('#tablediv').append('</td>  </tr>');
-
+                add_new_row(handle_key.configs[dataset_selected][i], handle_key2.configs_parame['model'], handle_key2.configs_parame['acc'], handle_key2.configs_parame['loss']);
             }
+
+
             $('#exisiting_files-train_file_exist').change(function () {
                 var dataset_selected = $('#exisiting_files-train_file_exist').find("option:selected").text();
                 var len = handle_key.configs[dataset_selected].length;
-
                 $('#exisiting_files-configuration').find('option').remove();
                 $("#tablediv").empty();
                 var i;
                 for (i = 0; i < len; i++) {
                     var data_and_conf = dataset_selected + '_' + handle_key.configs[dataset_selected][i];
-                    var data_and_conf = dataset_selected + '_' + handle_key.configs[dataset_selected][i];
                     var handle_key2 = {};
                     handle_key2.configs_parame = handle_key.parameters[data_and_conf];
-                    $('#tablediv').append('<tr>');
-                    $('#tablediv').append('<td> <input type="radio" id="exisiting_files-configuration" name="exisiting_files-configuration" value="' + handle_key.configs[dataset_selected][i] + '">' + handle_key.configs[dataset_selected][i]);
-                    $('#tablediv').append('</td> <td> ' + handle_key2.configs_parame['model']);
-                    $('#tablediv').append('</td> <td> ' + handle_key2.configs_parame['acc']);
-                    $('#tablediv').append('</td> <td> ' + handle_key2.configs_parame['loss']);
-                    $('#tablediv').append('</td> </tr>');
-
-                }
-            });
-            $('#tablediv').on('click', 'tr', function () {
-                if ($(this).hasClass('selected')) {
-                    $(this).removeClass('selected');
-                    $('#submit').prop('disabled', true);
-                }
-                else {
-                    {#table.$('tr.selected').removeClass('selected');#}
-                    $(this).addClass('selected');
-                    $('#submit').prop('disabled', false);
+                    add_new_row(handle_key.configs[dataset_selected][i], handle_key2.configs_parame['model'], handle_key2.configs_parame['acc'], handle_key2.configs_parame['loss']);
                 }
             });
         });

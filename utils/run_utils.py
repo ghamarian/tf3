@@ -1,15 +1,13 @@
 import os
-import tensorflow as tf
 import math
-import socket
-from contextlib import closing
 import json
 
 
-def find_free_port():
-    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
-        s.bind(('', 0))
-        return str(s.getsockname()[1])
+def get_html_types(dict_types):
+    dict_html_types = {}
+    for k, v in dict_types.items():
+        dict_html_types[k] = "text" if v == 'categorical' else "number"
+    return dict_html_types
 
 
 def get_dictionaries(features, categories, fs, target):
@@ -67,14 +65,3 @@ def get_eval_results(directory, config_writer, CONFIG_FILE):
     config_writer.add_item('BEST_MODEL', 'min_loss_index', str(min_loss_index))
     config_writer.write_config(CONFIG_FILE)
     return results
-
-
-def change_model_default(new_model, CONFIG_FILE, config_reader):
-    text = 'model_checkpoint_path: "model.ckpt-number"\n'.replace('number', new_model)
-    path = config_reader.read_config(CONFIG_FILE).all()['checkpoint_dir']
-    with open(path + '/checkpoint') as f:
-        content = f.readlines()
-    content[0] = text
-    file = open(path + '/checkpoint', 'w')
-    file.write(''.join(content))
-    file.close()

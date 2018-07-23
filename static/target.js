@@ -1,6 +1,5 @@
 $(document).ready(function () {
     table_tag = $('#target');
-
     table = table_tag.DataTable({
         "columnDefs": [
             {
@@ -36,25 +35,14 @@ $(document).ready(function () {
         $('form').append($(input));
     });
 
+});
 
-    // $('#select').click(function (event) {
-    //     event.preventDefault();
-    //     // var cat_column = table.columns(1).data()[0]
-    //     let cat_column = table.$('select option:selected').text().split();
-    //
-    //
-    //     $.ajax('/cat_col', {
-    //         data: {'cat_column': JSON.stringify(cat_column)},
-    //         dataType: 'json',
-    //         type: "POST",
-    //         // contentType: "application/json; charset=utf-8",
-    //         cache: false,
-    //         // data: {"a": "b"},
-    //         success: function (data) {
-    //             $('#next').prop('disabled', false);
-    //         }
-    //     });
-    // });
-
-})
-;
+// function add_selected_target(target_selected) {
+//     // add_selected_target($('#target tr:contains({{ target_selected }})')).addClass('selected');
+//         target_selected.addClass('selected');
+//     if ($("#target tr").hasClass("selected")) {
+//         $("input").prop('disabled', false);
+//     }
+//
+// };
+//

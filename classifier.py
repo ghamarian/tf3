@@ -3,11 +3,8 @@ import shutil
 import numpy as np
 import logging
 import os
-from config import config_reader
 from model_builder import ModelBuilder
 from keras.models import load_model
-from train_csv_reader import TrainCSVReader
-from validation_csv_reader import ValidationCSVReader
 from best_exporter import BestExporter
 HIDDEN_LAYERS = 'hidden_layers'
 

@@ -1,32 +1,19 @@
 import json
-import logging
 import os
-import pandas as pd
-import threading
 import time
-from utilities import utils_run, utils_custom, threads, upload_util, login_utils, feature_util, param_utils
+from utils import run_utils, upload_util, db_ops, feature_util, param_utils, preprocessing, config_ops, sys_ops
 from config import config_reader
 from database.db import db
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_bootstrap import Bootstrap
 from flask_login import LoginManager, login_user, login_required, logout_user
 from forms.login_form import LoginForm
-
 from forms.submit_form import Submit
-from multiprocessing import Process
 from pprint import pprint
-
 from user import User
-from runner import Runner
-from tensorflow.python.platform import gfile
-from multiprocessing import Manager
+
+from thread_handler import ThreadHandler
 from session import Session
-
-logging.basicConfig(level=logging.DEBUG,
-                    format='[%(levelname)s] (%(threadName)-10s) %(message)s',
-                    )
-
-DATASETS = "datasets"
 
 SAMPLE_DATA_SIZE = 5
 WTF_CSRF_SECRET_KEY = os.urandom(42)
@@ -40,14 +27,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///username.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 sess = Session(app)
-stop_event = threading.Event()
-processes = {}
-ports = {}
+th = ThreadHandler()
 
 login_manager = LoginManager()
 login_manager.init_app(app)
-
-return_dict = Manager().dict()
 
 
 @login_manager.user_loader
@@ -59,8 +42,8 @@ def load_user(user_id):
 def login():
     form = LoginForm()
     if form.validate_on_submit():
-        if not login_utils.checklogin(form.username.data, form.password.data, form.remember.data, login_user, session,
-                                      sess):
+        if not db_ops.checklogin(form.username.data, form.password.data, form.remember.data, login_user, session,
+                                 sess):
             return render_template('login.html', form=form, error='Invalid username or password')
         return redirect(url_for('upload'))
     return render_template('login.html', form=form)
@@ -77,11 +60,16 @@ def logout():
 @login_required
 def upload():
     sess.reset_user()
-    user_dataset, user_configs, param_configs = utils_custom.get_configs_files(APP_ROOT, session['user'])
+    user_dataset, user_configs, param_configs = config_ops.get_configs_files(APP_ROOT, session['user'])
     form, name_form = upload_util.create_form(user_configs, user_dataset)
     if form.validate_on_submit():
-        url_redirect = upload_util.redirect(request, form, user_configs, session['user'], APP_ROOT, sess)
-        if url_redirect: return redirect(url_for(url_redirect))
+        if hasattr(form, 'exisiting_files') and form.is_existing.data:
+            return redirect(
+                url_for(upload_util.existing_data(request.form, user_configs, session['user'], sess, APP_ROOT)))
+        elif not form.new_files.train_file.data == '':
+            return redirect(
+                url_for(config_ops.new_config(form.new_files.train_file.data, form.new_files.test_file.data, APP_ROOT,
+                                              session['user'], sess)))
     flash_errors(form)
     return render_template(name_form, form=form, page=0, user_configs=user_configs, parameters=param_configs)
 
@@ -97,7 +85,7 @@ def slider():
 
 @app.route('/feature', methods=['GET', 'POST'])
 def feature():
-    sess.get_features()
+    sess.load_features()
     form = Submit()
     if form.validate_on_submit():
         cat_columns, default_values = feature_util.reorder_request(json.loads(request.form['default_featu']),
@@ -105,6 +93,8 @@ def feature():
                                                                    json.loads(request.form['default_column']),
                                                                    sess.get('df').keys())
         sess.update_new_features(cat_columns, default_values)
+        feature_util.write_features(sess.get('category_list'), sess.get('data'), sess.get_writer(),
+                                    sess.get('config_file'))
         return redirect(url_for('target'))
     return render_template("feature_selection.html", name='Dataset features selection',
                            data=sess.get('data'), cat=sess.get('category_list'), form=form, page=2)
@@ -115,13 +105,16 @@ def target():
     form = Submit()
     if form.validate_on_submit():
         sess.set_target(json.loads(request.form['selected_row'])[0])
-        sess.split()
+        if 'split_df' in sess.get_config():
+            train_file, validation_file = preprocessing.split_train_test(sess.get('split_df'), sess.get('file'),
+                                                                         sess.get('target'), sess.get('df'))
+            sess.update_split(train_file, validation_file)
+        sess.get_writer().write_config(sess.get('config_file'))
         return redirect(url_for('parameters'))
     reader = config_reader.read_config(sess.get('config_file'))
     target_selected = reader['TARGET']['target'] if 'TARGET' in reader.keys() else 'None'
     return render_template('target_selection.html', name="Dataset target selection", form=form, data=sess.get('data'),
                            page=3, target_selected=target_selected)
-
 
 
 @app.route('/parameters', methods=['GET', 'POST'])
@@ -134,37 +127,25 @@ def parameters():
         sess.get_writer().write_config(CONFIG_FILE)
         return redirect(url_for('run'))
     flash_errors(form)
-    number_inputs = param_utils.get_number_inputs(sess.get('data').Category)
-    target_type = sess.get('data').Category[sess.get('target')]
-    number_outputs = param_utils.get_number_outputs(target, target_type, fs)
-
-    num_samples = len(pd.read_csv(sess.get('train_file')).index)
-    utils_custom.get_defaults_param_form(form, CONFIG_FILE, number_inputs, number_outputs, num_samples, config_reader)
+    param_utils.get_defaults_param_form(form, CONFIG_FILE, sess.get('data'), sess.get('target'),
+                                        sess.get('train_file'))
     return render_template('parameters.html', form=form, page=4)
 
 
 @app.route('/run', methods=['GET', 'POST'])
 def run():
+    target = sess.get('target')
     target_type = sess.get('data').Category[sess.get('target')]
-    labels = feature_util.get_target_labels(sess.get('target'), target_type, sess.get('fs'))
     CONFIG_FILE = sess.get('config_file')
     features = sess.get('defaults')
-    target = sess.get('target')
-    dict_types, categoricals = utils_run.get_dictionaries(sess.get('defaults'), sess.get('category_list'),
-                                                          sess.get('fs'),
-                                                          sess.get('target'))
-    directory = config_reader.read_config(CONFIG_FILE).all()['export_dir']
-    # checkpoints = utils_run.get_acc(directory, config_writer, CONFIG_FILE)
-    checkpoints = utils_run.get_eval_results(directory, sess.get_writer(), CONFIG_FILE)
-    sfeatures = features.copy()
-    sfeatures.pop(target)
-    if not session['user'] + '_' + CONFIG_FILE in ports.keys():
-        port = utils_run.find_free_port()
-        ports[session['user'] + '_' + CONFIG_FILE] = port
-        tboard_thread = threading.Thread(name='tensor_board',
-                                         target=lambda: threads.tensor_board_thread(CONFIG_FILE, port, config_reader))
-        tboard_thread.setDaemon(True)
-        tboard_thread.start()
+
+    labels = feature_util.get_target_labels(sess.get('target'), target_type, sess.get('fs'))
+
+    all_params_config = config_reader.read_config(CONFIG_FILE)
+    export_dir = all_params_config.export_dir()
+    checkpoints = run_utils.get_eval_results(export_dir, sess.get_writer(), CONFIG_FILE)
+
+    th.run_tensor_board(session['user'], CONFIG_FILE)
 
     if request.method == 'POST':
         if request.form['action'] == 'run':
@@ -172,37 +153,45 @@ def run():
                 pass
                 # TODO del checkpoints if resume_from exists, copy ckpt to checkpoints folder
             dtypes = sess.get('fs').group_by(sess.get('category_list'))
-            all_params_config = config_reader.read_config(CONFIG_FILE)
-            r_thread = Process(
-                target=lambda: threads.run_thread(all_params_config, sess.get('features'), sess.get('target'),
-                                                  labels, sess.get('defaults'), dtypes), name='run')
-            r_thread.daemon = True
-            r_thread.start()
-            processes[sess.get_session('user')] = r_thread
+            th.run_estimator(all_params_config, sess.get('features'), sess.get('target'), labels, sess.get('defaults'),
+                             dtypes, session['user'])
         else:
-            threads.pause_threads(sess.get_session('user'), processes)
+            th.pause_threads(sess.get_session('user'))
         return jsonify(True)
 
+    dict_types, categoricals = run_utils.get_dictionaries(sess.get('defaults'), sess.get('category_list'),
+                                                          sess.get('fs'),
+                                                          sess.get('target'))
+    sfeatures = feature_util.remove_target(features, target)
     return render_template('run.html', page=5, features=sfeatures, target=sess.get('target'),
-                           types=utils_custom.get_html_types(dict_types), categoricals=categoricals,
-                           checkpoints=checkpoints, port=ports[session['user'] + '_' + CONFIG_FILE])
+                           types=run_utils.get_html_types(dict_types), categoricals=categoricals,
+                           checkpoints=checkpoints, port=th.get_port(session['user'], CONFIG_FILE))
+
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    new_features = feature_util.get_new_features(request.form, sess.get('defaults'), sess.get('target'), sess.get('fs').group_by(sess.get('category_list'))['none'])
+    all_params_config = config_reader.read_config(sess.get('config_file'))
+    all_params_config.set('PATHS', 'checkpoint_dir', os.path.join(all_params_config.export_dir(), request.form['radiob']))
+    labels = feature_util.get_target_labels(sess.get('target'), sess.get('data').Category[sess.get('target')], sess.get('fs'))
+    dtypes = sess.get('fs').group_by(sess.get('category_list'))
+    final_pred = th.predict_estimator(all_params_config, sess.get('features'), sess.get('target'), labels,
+                                      sess.get('defaults'), dtypes,
+                                      new_features, sess.get('df'))
+
+    return jsonify(prediction=str(final_pred))
 
 
 @app.route('/delete', methods=['POST'])
 def delete():
-    features = sess.get('defaults')
-    target = sess.get('target')
     CONFIG_FILE = sess.get('config_file')
-    directory = config_reader.read_config(CONFIG_FILE).all()['export_dir']
-    sfeatures = features.copy()
-    sfeatures.pop(target)
     all_params_config = config_reader.read_config(CONFIG_FILE)
+    export_dir = all_params_config.export_dir()
     del_id = request.get_json()['deleteID']
-    paths = [del_id] if del_id != 'all' else [d for d in os.listdir(all_params_config.export_dir()) if
-                                              os.path.isdir(os.path.join(all_params_config.export_dir(), d))]
-    for p in paths:
-        gfile.DeleteRecursively(os.path.join(all_params_config.export_dir(), p))
-    checkpoints = utils_run.get_eval_results(directory, sess.get_writer(), CONFIG_FILE)
+    paths = [del_id] if del_id != 'all' else [d for d in os.listdir(export_dir) if
+                                              os.path.isdir(os.path.join(export_dir, d))]
+    sys_ops.delete_recursive(paths, export_dir)
+    checkpoints = run_utils.get_eval_results(export_dir, sess.get_writer(), CONFIG_FILE)
     return jsonify(checkpoints=checkpoints)
 
 
@@ -210,40 +199,9 @@ def delete():
 @login_required
 def refresh():
     CONFIG_FILE = sess.get('config_file')
-    directory = config_reader.read_config(CONFIG_FILE).all()['export_dir']
-    checkpoints = utils_run.get_eval_results(directory, sess.get_writer(), CONFIG_FILE)
+    export_dir = config_reader.read_config(CONFIG_FILE).export_dir()
+    checkpoints = run_utils.get_eval_results(export_dir, sess.get_writer(), CONFIG_FILE)
     return jsonify(checkpoints=checkpoints)
-
-
-@app.route('/predict', methods=['POST'])
-def predict():
-    target_type = sess.get('data').Category[sess.get('target')]
-    features = sess.get('defaults')
-    target = sess.get('target')
-    CONFIG_FILE = sess.get('config_file')
-
-    new_features = {}
-    for k, v in features.items():
-        if k not in sess.get('fs').group_by(sess.get('category_list'))['none']:
-            new_features[k] = request.form[k] if k != target else features[k]
-
-    all_params_config = config_reader.read_config(CONFIG_FILE)
-    all_params_config.set('PATHS', 'checkpoint_dir',
-                          os.path.join(all_params_config.export_dir(), request.form['radiob']))
-    labels = None if target_type == 'numerical' else sess.get('fs').cat_unique_values_dict[sess.get('target')]
-    dtypes = sess.get('fs').group_by(sess.get('category_list'))
-    r_thread = Process(target=lambda: predict_thread(all_params_config, sess.get('features'), sess.get('target'),
-                                                     labels, sess.get('defaults'), dtypes, new_features,
-                                                     sess.get('df')), name='predict')
-    r_thread.daemon = True
-    r_thread.start()
-    r_thread.join()
-    final_pred = return_dict['output']
-    # if final_pred is None:
-    #     flash('Model\'s structure does not match the new parameter configuration', 'danger')
-    #     final_pred = ''
-
-    return jsonify(prediction=str(final_pred))
 
 
 @app.route('/stream')
@@ -258,7 +216,6 @@ def stream():
             time.sleep(2)
         while True:
             for line in tailer.follow(open(logfile)):
-                print(line)
                 if line is not None:
                     yield line + '\n'
 
@@ -274,11 +231,6 @@ def flash_errors(form):
     for field, errors in form.errors.items():
         for error in errors:
             flash(u"%s" % error)
-
-
-def predict_thread(all_params_config, features, target, labels, defaults, dtypes, new_features, df):
-    runner = Runner(all_params_config, features, target, labels, defaults, dtypes)
-    return_dict['output'] = runner.predict(new_features, target, df)
 
 
 db.init_app(app)

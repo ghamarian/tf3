@@ -1,9 +1,6 @@
 import configparser
-import os
-import utils
 from typing import Dict
-import ast
-from collections import OrderedDict
+from utils import sys_ops
 
 NETWORK = "NETWORK"
 
@@ -44,7 +41,7 @@ class CustomConfigParser(configparser.ConfigParser):
         if raw_get.startswith('/'):
             return raw_get
 
-        return utils.abs_path_of(raw_get)
+        return sys_ops.abs_path_of(raw_get)
 
     def _from_training(self, param):
         return self.get(TRAINING, param)
@@ -111,10 +108,10 @@ class CustomConfigParser(configparser.ConfigParser):
         return self.get_rel_path(PATHS, 'export_dir')
 
     def training_path(self):
-        return utils.abs_path_of(self._from_paths('train_file'))
+        return sys_ops.abs_path_of(self._from_paths('train_file'))
 
     def validation_path(self):
-        return utils.abs_path_of(self._from_paths('validation_file'))
+        return sys_ops.abs_path_of(self._from_paths('validation_file'))
 
     # TODO TASK0?
     def label_slice(self):

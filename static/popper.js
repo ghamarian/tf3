@@ -2327,7 +2327,7 @@ class Popper {
 
 
   /**
-   * Collection of utilities useful when writing custom modifiers.
+   * Collection of utils useful when writing custom modifiers.
    * Starting from version 1.7, this method is available only if you
    * include `popper-utils.js` before `popper.js`.
    *

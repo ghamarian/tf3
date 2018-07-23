@@ -1,19 +1,3 @@
-import itertools
-
-
-def insert_data(df, categories, unique_values, default_list, frequent_values2frequency, SAMPLE_DATA_SIZE):
-    data = df.head(SAMPLE_DATA_SIZE).T
-    data.insert(0, 'Defaults', default_list.values())
-    data.insert(0, '(most frequent, frequency)', frequent_values2frequency.values())
-    data.insert(0, 'Unique Values', unique_values)
-    data.insert(0, 'Category', categories)
-    sample_column_names = ["Sample {}".format(i) for i in range(1, SAMPLE_DATA_SIZE + 1)]
-    data.columns = list(
-        itertools.chain(['Category', '#Unique Values', '(Most frequent, Frequency)', 'Defaults'],
-                        sample_column_names))
-    return data
-
-
 def reorder_request(features, categories, defaults, list_features):
     dict_features = {}
     for f, c, d in zip(features, categories, defaults):
@@ -32,3 +16,26 @@ def get_target_labels(target, target_type, fs):
     elif 'range' in target_type:
         return [str(a) for a in list(range(min(fs.df[target].values), max(fs.df[target].values)))]
     return None
+
+
+def write_features(categories, data, writer, config_file):
+    for label, categories in zip(data.index, categories):
+        cat = data.Category[label] if data.Category[label] != 'range' else 'int-range'
+        if 'none' in cat:
+            cat = 'none' + '-' + categories if 'none' not in categories else categories
+            writer.add_item('COLUMN_CATEGORIES', label, cat)
+    writer.write_config(config_file)
+
+
+def remove_target(features, target):
+    sfeatures = features.copy()
+    sfeatures.pop(target)
+    return sfeatures
+
+
+def get_new_features(form, feat_defaults, target, fs_list):
+    new_features = {}
+    for k, v in feat_defaults.items():
+        if k not in fs_list:
+            new_features[k] = form[k] if k != target else feat_defaults[k]
+    return new_features

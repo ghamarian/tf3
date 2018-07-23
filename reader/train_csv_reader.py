@@ -1,4 +1,4 @@
-from csv_reader import CSVReader
+from reader.csv_reader import CSVReader
 from typing import Dict
 
 class TrainCSVReader(CSVReader):

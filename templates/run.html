@@ -7,33 +7,17 @@
     <script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.16/sl-1.2.5/datatables.min.js"></script>
     <script type="text/javascript"
             src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.8/socket.io.min.js"></script>
+    <script type="text/javascript" src="{{ url_for('.static', filename='run.js') }}"></script>
     <script type=text/javascript>
         $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
     </script>
-
-
-
-    <script>
-        var output = document.getElementById('log');
-
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', '{{ url_for('stream') }}');
-        xhr.send();
-
-        setInterval(function () {
-            output.textContent = xhr.responseText;
-            console.log(xhr.responseText);
-            $('#log').scrollTop($('#log')[0].scrollHeight);
-        }, 1000);
-    </script>
-
-
     <script type="text/javascript">
         var handle_key = {};
         handle_key.features = {{ features | tojson | safe }};
         handle_key.types = {{ types | tojson | safe }};
         handle_key.categoricals = {{ categoricals | tojson | safe }};
         handle_key.checkpoints = {{ checkpoints | tojson | safe }};
+
         $.each(handle_key.features, function (key, value) {
             if (handle_key.types[key] == "number") {
                 $('#maindiv').append('<tr> <th>' + key + ' </th> <th>')
@@ -53,182 +37,9 @@
             }
         });
         $.each(handle_key.checkpoints, function (key, value) {
-            $('#tablediv').append('<tr>')
-            $('#tablediv').append('<td> <input type="radio" id="radiob" name="radiob" value="' + key + '">' + key);
-            $('#tablediv').append('<td> ' + value['accuracy']);
-            $('#tablediv').append('<td> ' + value['loss']);
-            $('#tablediv').append('<td> <a data-id=' + key + ' onclick="ConfirmDelete(this)" ><span class="glyphicon glyphicon-remove"></span></a> </tr>');
-
+            add_new_row(key, value['accuracy'], value['loss'], false);
         });
 
-        $(document).ready(function () {
-            $('#tablediv').on('click change', 'input:radio[name="radiob"]', function () {
-                $('#predict_button').prop('disabled', false);
-                $('#defaultCheck2').prop('disabled', false);
-            });
-
-        });
-
-        function hidde_show() {
-            var x = document.getElementById("log");
-            if (x.style.display === "none") {
-                x.style.display = "block";
-                $('#detail_gly').removeClass('glyphicon-triangle-bottom').addClass('glyphicon-triangle-top');
-            } else {
-                x.style.display = "none";
-                $('#detail_gly').removeClass('glyphicon-triangle-top').addClass('glyphicon-triangle-bottom');
-
-            }
-        }
-
-
-    </script>
-    <script>
-        function ConfirmDelete(elem) {
-            if (confirm("Are you sure you want to delete the selected model?")){
-                $.ajax({
-                        url: "{{ url_for('delete', _external=True) }}",
-                        type: 'POST',
-                        dataType: 'json',
-                        contentType: 'application/json;charset=UTF-8',
-                        accepts: {
-                            json: 'application/json',
-                        },
-                        data: JSON.stringify({'deleteID': $(elem).attr('data-id')}),
-                        success: function (data) {
-                            var $radios = $('input[name="radiob"]');
-                            var $selected = $radios.filter(':checked');
-                            if ($selected.val() && $selected.val() != $(elem).attr('data-id')) {
-                                $('#predict_button').prop('disabled', false);
-                                $('#defaultCheck2').prop('disabled', false);
-                            } else {
-                                $('#predict_button').prop('disabled', true);
-                                $('#defaultCheck2').prop('disabled', true);
-                            }
-                            $('#tablediv').empty();
-
-                            $.each(data.checkpoints, function (key, value) {
-                                var checked = '';
-                                if (key == $selected.val()) {
-                                    checked = 'checked';
-                                }
-                                $('#tablediv').append('<tr>');
-                                $('#tablediv').append('<td> <input type="radio" id="radiob" name="radiob" value="' + key + '" ' + checked + '>' + key);
-                                $('#tablediv').append('<td> ' + value['accuracy']);
-                                $('#tablediv').append('<td> ' + value['loss']);
-                                $('#tablediv').append('<td> <a data-id=' + key + ' onclick="ConfirmDelete(this)" ><span class="glyphicon glyphicon-remove"></span></a> </tr>');
-
-                            });
-                        }
-
-                    })
-            }
-        }
-
-        function ConfirmDeleteAll(elem) {
-
-            if (confirm("Are you sure you want to delete all saved models?")){
-                $.ajax({
-                        url: "{{ url_for('delete', _external=True) }}",
-                        type: 'POST',
-                        dataType: 'json',
-                        contentType: 'application/json;charset=UTF-8',
-                        accepts: {
-                            json: 'application/json',
-                        },
-                        data: JSON.stringify({'deleteID': $(elem).attr('data-id')}),
-                        success: function (data) {
-                            $('#tablediv').empty();
-                            $('#predict_button').prop('disabled', true);
-                            $('#defaultCheck2').prop('disabled', true);
-                        }
-                    })
-            }
-        }
-    </script>
-    <script>
-        $(document).ready(function () {
-            setInterval(function () {
-                $.ajax({
-                    url: "{{ url_for('refresh', _external=True) }}",
-                    type: 'GET',
-                    dataType: 'json',
-                    contentType: 'application/json;charset=UTF-8',
-                    accepts: {
-                        json: 'application/json',
-                    },
-                    data: JSON.stringify("checkpoints"),
-                    success: function (data) {
-                        var $radios = $('input[name="radiob"]');
-                        var $selected = $radios.filter(':checked');
-                        if ($selected.val()) {
-                            $('#predict_button').prop('disabled', false);
-                            $('#defaultCheck2').prop('disabled', false);
-                        } else {
-                            $('#predict_button').prop('disabled', true);
-                            $('#defaultCheck2').prop('disabled', true);
-                        }
-                        $('#tablediv').empty();
-
-                        $.each(data.checkpoints, function (key, value) {
-                            var checked = '';
-                            if (key == $selected.val()) {
-                                checked = 'checked';
-                            }
-                            $('#tablediv').append('<tr>');
-                            $('#tablediv').append('<td> <input type="radio" id="radiob" name="radiob" value="' + key + '" ' + checked + '>' + key);
-                            $('#tablediv').append('<td> ' + value['accuracy']);
-                            $('#tablediv').append('<td> ' + value['loss']);
-                            $('#tablediv').append('<td> <a data-id=' + key + ' onclick="ConfirmDelete(this)" ><span class="glyphicon glyphicon-remove"></span></a> </tr>');
-
-                        });
-                    }
-                })
-
-            }, 10000)
-        });
-    </script>
-    <script>
-        $("#predict_button").click(function (e) {
-            $.ajax({
-                url: "{{ url_for('predict', _external=True) }}",
-                type: 'POST',
-
-                data: $("#predict_form").serialize(),
-                success: function (data) {
-                    if (data.prediction == 'None'){
-                        alert('Model\'s structure does not match the new parameter configuration')
-                    }else{
-                        $('#predict_val').text(data.prediction)
-                    }
-
-                }
-
-            })
-        });
-    </script>
-    <script>
-        $("#run_button").click(function (e) {
-            var form_data = {'action': 'pause'}
-
-            if (document.getElementById("run_button").className == 'play') {
-                form_data['action'] = 'run';
-            };
-            if (document.getElementById("defaultCheck2").checked == true) {
-                var $radios = $('input[name="radiob"]');
-                var $selected = $radios.filter(':checked');
-
-                form_data['resume_from'] = $selected.val();
-            };
-            $.ajax({
-                url: "{{ url_for('run', _external=True) }}",
-                type: 'POST',
-                data: form_data,
-                success: function () {
-                    $('.play').toggleClass('active');
-                }
-            })
-        });
     </script>
 
 {% endblock %}
@@ -297,23 +108,20 @@
                                 </div>
                                 <tfoot align="right">
                                 <tr>
-                                    <td colspan="4">Clear all models <a data-id=all onclick="ConfirmDeleteAll(this)">
+                                    <td colspan="4">Clear all models <a data-id=all
+                                                                        onclick="ConfirmDelete(this, true)">
                                         <span class="glyphicon glyphicon-trash" style="color:red"></span></a>
                                     </td>
                                 </tr>
-
                                 </tfoot>
-
                             </table>
 
-                            <div align="left" >
+                            <div align="left">
                                 <label class="checkbox-inline">
-                                    <input  type="checkbox" value="" id="defaultCheck2" disabled> Resume training from selected model
+                                    <input type="checkbox" value="" id="defaultCheck2" disabled> Resume training from
+                                    selected model
                                 </label>
-
-
                             </div>
-
                         </div>
                     </div>
 
@@ -337,19 +145,10 @@
         </form>
     </div>
 
-
-
     <button class="btn btn-link btn-details" onclick="hidde_show()">
         <span id="detail_gly" class="glyphicon glyphicon-triangle-bottom"></span> Details
     </button>
     <div id="log" class="log"></div>
-
-
-    <div class="alert alert-{{ category }} alert-dismissible" role="alert">
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
-                aria-hidden="true">&times;</span></button>
-        <!-- <strong>Title</strong> --> {{ message }}
-    </div>
 
 
 {% endblock %}

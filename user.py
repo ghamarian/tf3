@@ -1,29 +1,3 @@
-#
-# #TODO change to a database to save user data
-# class User(UserMixin):
-#     def __init__(self, username, password, email):
-#         self.id = username
-#         self.username = username
-#         self.password = password
-#         self.email = email
-#         self.configs = {}
-#         self.sessions = []
-#
-#     def get_id(self):
-#         return self.id
-#
-#     def add_config(self,config_name, config):
-#         self.configs[config_name] = config
-#
-#     def get_config(self, config_name):
-#         return self.configs[config_name]
-#
-#     def add_session(self,new_session):
-#         self.sessions.append(new_session)
-#
-#     def is_session(self, session):
-#         return self.id if session in self.sessions else None
-
 from database.db import db
 from flask_login import UserMixin
 

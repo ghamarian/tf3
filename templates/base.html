@@ -7,7 +7,7 @@
 
 {% block styles %}
     {{ super() }}
-    <link rel="stylesheet" href="{{ url_for('.static', filename='my.css') }}">
+    <link rel="stylesheet" href="{{ url_for('.static', filename='css/my.css') }}">
 {% endblock %}
 
 
@@ -23,7 +23,7 @@
                     <span class="icon-bar"></span>
                 </button>
                 <a class="navbar-brand" href="#">
-                    <img id="brand-image" src="{{ url_for('static', filename='logotext.png') }}" alt="Machine2Learn"
+                    <img id="brand-image" src="{{ url_for('static', filename='images/logotext.png') }}" alt="Machine2Learn"
                          class="img-fluid"> </a>
             </div>
             <div id="navbar" class="collapse navbar-collapse navbar-right">

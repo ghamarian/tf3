@@ -1,8 +1,6 @@
 from classifier import Classifier, KerasClassifier
-from config import config_reader
-from train_csv_reader import TrainCSVReader
-from validation_csv_reader import ValidationCSVReader
-import tensorflow as tf
+from reader.train_csv_reader import TrainCSVReader
+from reader.validation_csv_reader import ValidationCSVReader
 
 
 class Runner:

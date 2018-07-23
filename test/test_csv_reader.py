@@ -1,7 +1,7 @@
 from config import config_reader
-from train_csv_reader import TrainCSVReader
-from validation_csv_reader import ValidationCSVReader
-import utils
+from reader.train_csv_reader import TrainCSVReader
+from reader.validation_csv_reader import ValidationCSVReader
+from utils import sys_ops
 import pytest
 import numpy as np
 
@@ -14,7 +14,7 @@ CONFIG_FILE = "config/default.ini"
 
 @pytest.fixture
 def config():
-    return config_reader.read_config(utils.abs_path_of(CONFIG_FILE))
+    return config_reader.read_config(sys_ops.abs_path_of(CONFIG_FILE))
 
 
 @pytest.fixture

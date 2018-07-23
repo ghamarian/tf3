@@ -3,7 +3,7 @@ from config import config_reader
 from flask import session, redirect, url_for
 from feature_selection import FeatureSelection
 import itertools
-from utilities import feature_util, target_util
+from utils import feature_util, preprocessing
 
 import pandas as pd
 
@@ -53,10 +53,6 @@ class Session:
         user = self.get_session('user')
         self._config_writer[user].config = conf
 
-    # def update_config(self, key, value):
-    #     config = self.get_config()
-    #     config[key] = value
-
     def update_split(self, train_file, validation_file):
         self.set('train_file', train_file)
         self.set('validation_file', validation_file)
@@ -86,7 +82,7 @@ class Session:
         self.set('train_file', conf['PATHS']['train_file'])
         self.set('validation_file', conf['PATHS']['validation_file'])
         self.set('df', pd.read_csv(conf['PATHS']['file']))
-        self.get_features()
+        self.load_features()
         # target select
         target = conf['TARGET']['target']
         self.set_target(target)
@@ -100,21 +96,13 @@ class Session:
         return category_list, unique_values, default_list, frequent_values2frequency
 
     def update_new_features(self, cat_columns, default_values):
-        categories = self.get('category_list')
         self.set('category_list', cat_columns)
         self.get('data').Category = self.get('category_list')
         self.get('data').Defaults = default_values
         self.set('defaults', dict(zip(self.get('data').index.tolist(), default_values)))
         self.get('fs').update(self.get('category_list'), dict(zip(self.get('data').index.tolist(), default_values)))
 
-        for label, categories in zip(self.get('data').index, categories):
-            cat = self.get('data').Category[label] if self.get('data').Category[label] != 'range' else 'int-range'
-            if 'none' in cat:
-                cat = 'none' + '-' + categories if 'none' not in categories else categories
-                self.get_writer().add_item('COLUMN_CATEGORIES', label, cat)
-        self.get_writer().write_config(self.get('config_file'))
-
-    def get_features(self):
+    def load_features(self):
         # retrieve values from config, assign_category does this
         self.set('df', pd.read_csv(self.get('file')))
         df = self.get('df')
@@ -122,15 +110,8 @@ class Session:
         categories, unique_values, default_list, frequent_values2frequency = self.assign_category(df)
         default_values = [str(v) for v in default_list.values()]
         self.set('data',
-                 feature_util.insert_data(df, categories, unique_values, default_list, frequent_values2frequency,
+                 preprocessing.insert_data(df, categories, unique_values, default_list, frequent_values2frequency,
                                           SAMPLE_DATA_SIZE))
         self.set('defaults', dict(zip(self.get('data').index.tolist(), default_values)))
         self.set('category_list', categories)
         return categories
-
-    def split(self):
-        if 'split_df' in self.get_config():
-            train_file, validation_file = target_util.split_train_test(self.get('split_df'), self.get('file'),
-                                                                       self.get('target'), self.get('df'))
-            self.update_split(train_file, validation_file)
-        self.get_writer().write_config(self.get('config_file'))

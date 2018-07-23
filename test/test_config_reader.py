@@ -1,13 +1,13 @@
-import utils
 from config import config_reader
 import pytest
+from utils import sys_ops
 
 CONFIG_FILE = "config/default.ini"
 
 
 @pytest.fixture
 def config():
-    return config_reader.read_config(utils.abs_path_of(CONFIG_FILE))
+    return config_reader.read_config(sys_ops.abs_path_of(CONFIG_FILE))
 
 
 def test_from_process(config: config_reader.CustomConfigParser):

@@ -1,5 +1,5 @@
 from utils import feature_util
-
+import pytest
 
 def test_already_order_reorder_request():
     features = ['sepal_length', 'sepal_width', 'petal_length', 'petal_width', 'class']
@@ -22,13 +22,14 @@ def test_disorder_reorder_request():
 
 
 def test_remove_target():
-    features = ['sepal_length', 'petal_length', 'petal_width', 'class', 'sepal_width']
-    target = 0
+    features = {'sepal_length': '5.8', 'sepal_width': '3', 'petal_length': '4.35', 'petal_width': '1.3', 'class': 'Iris-setosa'}
+    target = 'class'
     new_features = feature_util.remove_target(features, target)
-    assert features[0] not in new_features
+    assert target not in new_features
 
-def test_remove_target():
-    features = ['sepal_length', 'petal_length', 'petal_width', 'class', 'sepal_width']
-    target = 9
-    new_features = feature_util.remove_target(features, target)
-    assert new_features == features
+def test_remove_target_out_of_range():
+    features = {'sepal_length': '5.8', 'sepal_width': '3', 'petal_length': '4.35', 'petal_width': '1.3', 'class': 'Iris-setosa'}
+    target = 'classfasdfad'
+    with pytest.raises(ValueError):
+        feature_util.remove_target(features, target)
+

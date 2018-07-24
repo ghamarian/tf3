@@ -9,6 +9,14 @@ def reorder_request(features, categories, defaults, list_features):
     return cat_columns, default_values
 
 
+def remove_target(features, target):
+    sfeatures = features.copy()
+    if target in features.keys():
+        sfeatures.pop(target)
+        return sfeatures
+    raise ValueError('Target not in features')
+
+
 def get_target_labels(target, target_type, fs):
     # TODO labels if target type is a RANGE, BOOL, ...
     if target_type == 'categorical' or target_type == 'hash':
@@ -25,13 +33,6 @@ def write_features(categories, data, writer, config_file):
             cat = 'none' + '-' + categories if 'none' not in categories else categories
             writer.add_item('COLUMN_CATEGORIES', label, cat)
     writer.write_config(config_file)
-
-
-def remove_target(features, target):
-    sfeatures = features.copy()
-    if target <= len(features):
-        sfeatures.pop(target)
-    return sfeatures
 
 
 def get_new_features(form, feat_defaults, target, fs_list):

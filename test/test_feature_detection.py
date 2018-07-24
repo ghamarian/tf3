@@ -59,7 +59,6 @@ def test_group_by(fs):
                                                'range': ['int_col']}
 
 def test_select_target(fs):
-
     datatypes = ['numerical', 'numerical', 'numerical', 'numerical', 'categorical', 'range', 'categorical', 'hash', 'hash']
     fs.create_tf_features(datatypes)
     feature_len  = len(fs.feature_columns)
@@ -75,16 +74,3 @@ def test_defaults(fs):
     pprint(fs.frequent_values)
     # pprint(fs.defaults)
 
-
-
-    # def populate_defaults(self):
-    #     self.means = self.df.mean().to_dict()
-    #     self.modes = self.df.mode().iloc[0,:].to_dict()
-    #     frequent_values = {}
-    #     for col in self.df.columns:
-    #         frequent_values.update(self.df[col].value_counts.head(1).to_dict())
-    #
-    #     self.frequent_values = frequent_values
-    #
-    #     self.defaults = self.means
-    #     self.defaults.update(self.modes)

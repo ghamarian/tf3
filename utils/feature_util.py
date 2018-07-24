@@ -29,7 +29,8 @@ def write_features(categories, data, writer, config_file):
 
 def remove_target(features, target):
     sfeatures = features.copy()
-    sfeatures.pop(target)
+    if target <= len(features):
+        sfeatures.pop(target)
     return sfeatures
 
 

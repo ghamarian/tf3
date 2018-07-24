@@ -2,49 +2,6 @@
 {% import 'bootstrap/wtf.html' as wtf %}
 {% from '_render_field.html' import render_field, render_single_field %}
 
-{% block scripts %}
-    {{ super() }}
-    <script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.16/sl-1.2.5/datatables.min.js"></script>
-    <script type="text/javascript"
-            src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.8/socket.io.min.js"></script>
-    <script type="text/javascript" src="{{ url_for('.static', filename='run.js') }}"></script>
-    <script type=text/javascript>
-        $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
-    </script>
-    <script type="text/javascript">
-        var handle_key = {};
-        handle_key.features = {{ features | tojson | safe }};
-        handle_key.types = {{ types | tojson | safe }};
-        handle_key.categoricals = {{ categoricals | tojson | safe }};
-        handle_key.checkpoints = {{ checkpoints | tojson | safe }};
-
-        $.each(handle_key.features, function (key, value) {
-            if (handle_key.types[key] == "number") {
-                $('#maindiv').append('<tr> <th>' + key + ' </th> <th>')
-                $('#maindiv').append('<input type="' + handle_key.types[key] + '" name ="' +
-                    key + '" value="' + value + '"  step="0.001"> </th></tr> ');
-            }
-            ;
-        });
-        $.each(handle_key.categoricals, function (key, value) {
-            var i;
-            var len = handle_key.categoricals[key].length;
-            $('#maindiv').append('<tr> <th>' + key + ' </th> <th>');
-            $('#maindiv').append('<select id="' + key + '" name="' + key + '"> </select>');
-            $('#maindiv').append('</th></tr>');
-            for (i = 0; i < len; i++) {
-                $('#' + key).append(new Option(handle_key.categoricals[key][i], handle_key.categoricals[key][i]));
-            }
-        });
-        $.each(handle_key.checkpoints, function (key, value) {
-            add_new_row(key, value['accuracy'], value['loss'], false);
-        });
-
-    </script>
-
-{% endblock %}
-
-
 {% block styles %}
     {{ super() }}
     <link rel="stylesheet" type="text/css"
@@ -54,7 +11,6 @@
 {% block app_content %}
 
     {#    <meta http-equiv="refresh" content="60"/>#}
-    {#    <div class="bs-callout bs-callout-default">#}
     <div class="center-block">
         <form id="run_form" method="post">
             <button type="button" formmethod="post" id="run_button" name="run_button" class="play">
@@ -65,7 +21,6 @@
         </form>
         <a role="button" name="tensor" class="btn btn-warning" target="_blank"
            href="http://localhost:{{ port }}"><span class="glyphicon glyphicon-blackboard"></span> TensorBoard</a>
-        {#    </div>#}
     </div>
 
     <div class="bs-callout bs-callout-warning" align="center">
@@ -149,6 +104,43 @@
         <span id="detail_gly" class="glyphicon glyphicon-triangle-bottom"></span> Details
     </button>
     <div id="log" class="log"></div>
+{% endblock %}
 
+
+{% block scripts %}
+    {{ super() }}
+    <script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.16/sl-1.2.5/datatables.min.js"></script>
+    <script type="text/javascript"
+            src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.8/socket.io.min.js"></script>
+    <script type="text/javascript" src="{{ url_for('.static', filename='run.js') }}"></script>
+{#    <script type=text/javascript>#}
+{#        $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};#}
+{#    </script>#}
+    <script type="text/javascript">
+        var handle_key = {};
+        handle_key.features = {{ features | tojson | safe }};
+        handle_key.types = {{ types | tojson | safe }};
+        handle_key.categoricals = {{ categoricals | tojson | safe }};
+        handle_key.checkpoints = {{ checkpoints | tojson | safe }};
+
+        $.each(handle_key.features, function (key, value) {
+            if (handle_key.types[key] == "number") {
+                $('#maindiv').append('<tr> <th>' + key + ' </th> <th>')
+                $('#maindiv').append('<input type="' + handle_key.types[key] + '" name ="' + key + '" value="' + value + '"  step="0.001"> </th></tr> ');
+            }
+        });
+        $.each(handle_key.categoricals, function (key, value) {
+            var i;
+            var len = handle_key.categoricals[key].length;
+            $('#maindiv').append('<tr> <th>' + key + ' </th> <th>');
+            $('#maindiv').append('<select id="' + key + '" name="' + key + '"> </select> </th></tr> ');
+            for (i = 0; i < len; i++) {
+                $('#' + key).append(new Option(handle_key.categoricals[key][i], handle_key.categoricals[key][i]));
+            }
+        });
+        $.each(handle_key.checkpoints, function (key, value) {
+            add_new_row(key, value['accuracy'], value['loss'], false);
+        });
+    </script>
 
 {% endblock %}

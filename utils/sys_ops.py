@@ -15,7 +15,14 @@ def mkdir_recursive(path):
         os.mkdir(path)
 
 
+def delete_recursive(paths, export_dir):
+    if os.path.isdir(export_dir):
+        for p in paths:
+            if os.path.exists(os.path.join(export_dir, p)):  gfile.DeleteRecursively(os.path.join(export_dir, p))
+
+
 def copyfile(src, dst):
+    """Copy the contents (no metadata) of the file named src to a file named dst"""
     from shutil import copyfile
     if os.path.exists(src): copyfile(src, dst)
 
@@ -39,7 +46,3 @@ def save_filename(target, dataset_form_field, dataset_type, dataset_name, sess):
         dataset_file.save(destination)
         sess.set(dataset_type, destination)
     return True
-
-def delete_recursive(paths, export_dir):
-    for p in paths:
-        gfile.DeleteRecursively(os.path.join(export_dir, p))

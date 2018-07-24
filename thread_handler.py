@@ -13,6 +13,7 @@ logging.basicConfig(level=logging.DEBUG,
                     format='[%(levelname)s] (%(threadName)-10s) %(message)s',
                     )
 
+
 class ThreadHandler:
 
     def __init__(self):
@@ -77,5 +78,15 @@ class ThreadHandler:
         r_thread.start()
         final_pred = self._return_queue.get()
         r_thread.join()
-        # final_pred = self._return_dict['output']
         return final_pred
+
+    def handle_request(self, option, all_params_config, features, target, labels, defaults, dtypes, username):
+        if option == 'run':
+            # if 'resume_from' in request.form:
+            #     pass
+            #     # TODO del checkpoints if resume_from exists, copy ckpt to checkpoints folder
+            self.run_estimator(all_params_config, features, target, labels, defaults, dtypes, username)
+        elif option == 'pause':
+            self.pause_threads(username)
+        else:
+            raise ValueError("Invalid option")

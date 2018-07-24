@@ -34,7 +34,7 @@ $(document).ready(function () {
 
     var output = document.getElementById('log');
     setInterval(function () {
-        output.textContent = xhr.responseText;
+        output.append(xhr.responseText);
         console.log(xhr.responseText);
         $('#log').scrollTop($('#log')[0].scrollHeight);
     }, 1000);
@@ -91,7 +91,6 @@ $(document).ready(function () {
 
     $("#run_button").click(function (e) {
         var form_data = {'action': 'pause'}
-
         if (document.getElementById("run_button").className == 'play') {
             form_data['action'] = 'run';
         }

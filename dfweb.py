@@ -134,46 +134,34 @@ def parameters():
 
 @app.route('/run', methods=['GET', 'POST'])
 def run():
-    target = sess.get('target')
-    target_type = sess.get('data').Category[sess.get('target')]
-    CONFIG_FILE = sess.get('config_file')
-    features = sess.get('defaults')
-
-    labels = feature_util.get_target_labels(sess.get('target'), target_type, sess.get('fs'))
-
-    all_params_config = config_reader.read_config(CONFIG_FILE)
+    labels = feature_util.get_target_labels(sess.get('target'), sess.get('data').Category[sess.get('target')],
+                                            sess.get('fs'))
+    all_params_config = config_reader.read_config(sess.get('config_file'))
     export_dir = all_params_config.export_dir()
-    checkpoints = run_utils.get_eval_results(export_dir, sess.get_writer(), CONFIG_FILE)
-
-    th.run_tensor_board(session['user'], CONFIG_FILE)
-
+    checkpoints = run_utils.get_eval_results(export_dir, sess.get_writer(), sess.get('config_file'))
+    th.run_tensor_board(session['user'], sess.get('config_file'))
     if request.method == 'POST':
-        if request.form['action'] == 'run':
-            if 'resume_from' in request.form:
-                pass
-                # TODO del checkpoints if resume_from exists, copy ckpt to checkpoints folder
-            dtypes = sess.get('fs').group_by(sess.get('category_list'))
-            th.run_estimator(all_params_config, sess.get('features'), sess.get('target'), labels, sess.get('defaults'),
-                             dtypes, session['user'])
-        else:
-            th.pause_threads(sess.get_session('user'))
+        dtypes = sess.get('fs').group_by(sess.get('category_list'))
+        th.handle_request(request.form['action'], all_params_config, sess.get('features'), sess.get('target'), labels,
+                          sess.get('defaults'), dtypes, session['user'])
         return jsonify(True)
-
     dict_types, categoricals = run_utils.get_dictionaries(sess.get('defaults'), sess.get('category_list'),
-                                                          sess.get('fs'),
-                                                          sess.get('target'))
-    sfeatures = feature_util.remove_target(features, target)
+                                                          sess.get('fs'), sess.get('target'))
+    sfeatures = feature_util.remove_target(sess.get('defaults'), sess.get('target'))
     return render_template('run.html', page=5, features=sfeatures, target=sess.get('target'),
                            types=run_utils.get_html_types(dict_types), categoricals=categoricals,
-                           checkpoints=checkpoints, port=th.get_port(session['user'], CONFIG_FILE))
+                           checkpoints=checkpoints, port=th.get_port(session['user'], sess.get('config_file')))
 
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    new_features = feature_util.get_new_features(request.form, sess.get('defaults'), sess.get('target'), sess.get('fs').group_by(sess.get('category_list'))['none'])
+    new_features = feature_util.get_new_features(request.form, sess.get('defaults'), sess.get('target'),
+                                                 sess.get('fs').group_by(sess.get('category_list'))['none'])
     all_params_config = config_reader.read_config(sess.get('config_file'))
-    all_params_config.set('PATHS', 'checkpoint_dir', os.path.join(all_params_config.export_dir(), request.form['radiob']))
-    labels = feature_util.get_target_labels(sess.get('target'), sess.get('data').Category[sess.get('target')], sess.get('fs'))
+    all_params_config.set('PATHS', 'checkpoint_dir',
+                          os.path.join(all_params_config.export_dir(), request.form['radiob']))
+    labels = feature_util.get_target_labels(sess.get('target'), sess.get('data').Category[sess.get('target')],
+                                            sess.get('fs'))
     dtypes = sess.get('fs').group_by(sess.get('category_list'))
     final_pred = th.predict_estimator(all_params_config, sess.get('features'), sess.get('target'), labels,
                                       sess.get('defaults'), dtypes,
@@ -211,13 +199,12 @@ def stream():
     logfile = os.path.join(APP_ROOT, 'user_data', session['user'], config[-3], config[-2], 'log', 'tensorflow.log')
 
     def generate():
-        import tailer
         while not os.path.isfile(logfile):
             time.sleep(2)
-        while True:
-            for line in tailer.follow(open(logfile)):
-                if line is not None:
-                    yield line + '\n'
+        with open(logfile) as f:
+            while True:
+                yield f.read()
+                # time.sleep(1)
 
     return app.response_class(generate(), mimetype='text/plain')
 

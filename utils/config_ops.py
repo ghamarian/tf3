@@ -1,5 +1,4 @@
 import os
-from utils import sys_ops
 import configparser
 from tensorflow.python.platform import gfile
 from utils import upload_util, sys_ops

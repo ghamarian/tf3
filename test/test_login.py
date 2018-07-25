@@ -5,6 +5,39 @@ import pytest
 from flask_login import LoginManager, login_user, login_required, logout_user
 from utils import db_ops
 from session import Session
+from user import User
+from flask import session, Flask
+import sqlalchemy
+from database.db import db
+from flask_login import UserMixin
+from user import User
+from werkzeug.security import generate_password_hash
+from dfweb import app
+
+
+def create_app(debug=False):
+    app = Flask(__name__)
+    app.debug = debug
+    session.setdefault('test')
+    return app
+
+
+@pytest.fixture
+def user():
+    return User()
+#
+#
+# def test_user():
+#
+#     hashed_passwd = generate_password_hash(password, method='sha256')
+#     with create_app().app_context():
+#         new_user = User(username=username, email=email, password=hashed_passwd)
+#         db.session.add(new_user)
+#         try:
+#             db.session.commit()
+#         except sqlalchemy.exc.IntegrityError:
+#             db.session.rollback()
+
 #
 # def test_checklogin():
 #     username = 'test'

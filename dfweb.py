@@ -186,6 +186,14 @@ def delete():
     return jsonify(checkpoints=checkpoints)
 
 
+@app.route('/delete_config', methods=['POST'])
+@login_required
+def delete_config():
+    sys_ops.delete_configs(request.get_json()['config'],request.get_json()['dataset'], session['user'])
+    user_dataset, user_configs, param_configs = config_ops.get_configs_files(APP_ROOT, session['user'])
+    return jsonify(configs=user_configs, params=param_configs)
+
+
 @app.route('/refresh', methods=['GET'])
 @login_required
 def refresh():

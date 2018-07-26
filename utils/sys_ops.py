@@ -3,7 +3,7 @@ import socket
 from tensorflow.python.platform import gfile
 from contextlib import closing
 from werkzeug.utils import secure_filename
-
+import shutil
 
 def mkdir_recursive(path):
     if not path:
@@ -46,3 +46,14 @@ def save_filename(target, dataset_form_field, dataset_type, dataset_name, sess):
         dataset_file.save(destination)
         sess.set(dataset_type, destination)
     return True
+
+
+def delete_configs(config, dataset, username):
+    if config != 'all':
+        paths = [os.path.join('user_data', username, dataset, config)]
+    else:
+        paths = [os.path.join('user_data', username, dataset, d) for d in
+                 os.listdir(os.path.join('user_data', username, dataset)) if
+                 os.path.isdir(os.path.join('user_data', username, dataset, d))]
+    for path in paths:
+        shutil.rmtree(path)

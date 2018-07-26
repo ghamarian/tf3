@@ -21,15 +21,14 @@
         $.each(handle_key.features, function (key, value) {
             if (handle_key.types[key] == "number") {
                 $('#maindiv').append('<tr> <th>' + key + ' </th> <th>')
-                $('#maindiv').append('<input type="' + handle_key.types[key] + '" name ="' +
-                    key + '" value="' + value + '"  step="0.001"> </th></tr> ');
+                $('#maindiv').append('<input type="' + handle_key.types[key] + '" name ="' + key + '" value="' + value + '"  step="0.001"> </th></tr> ');
             }
         });
         $.each(handle_key.categoricals, function (key, value) {
             var i;
             var len = handle_key.categoricals[key].length;
             $('#maindiv').append('<tr> <th>' + key + ' </th> <th>');
-            $('#maindiv').append('<select id="' + key + '" name="' + key + '"> </select>');
+            $('#maindiv').append('<select  id="' + key + '" name="' + key + '"> </select>');
             $('#maindiv').append('</th></tr>');
             for (i = 0; i < len; i++) {
                 $('#' + key).append(new Option(handle_key.categoricals[key][i], handle_key.categoricals[key][i]));

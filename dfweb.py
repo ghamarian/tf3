@@ -65,7 +65,7 @@ def upload():
     if form.validate_on_submit():
         if hasattr(form, 'exisiting_files') and form.is_existing.data:
             return redirect(
-                url_for(upload_util.existing_data(request.form, user_configs, session['user'], sess, APP_ROOT)))
+                      url_for(upload_util.existing_data(request.form, user_configs, session['user'], sess, APP_ROOT)))
         elif not form.new_files.train_file.data == '':
             return redirect(
                 url_for(config_ops.new_config(form.new_files.train_file.data, form.new_files.test_file.data, APP_ROOT,
@@ -88,12 +88,13 @@ def feature():
     sess.load_features()
     form = Submit()
     if form.validate_on_submit():
+        old_cats = sess.get('category_list')
         cat_columns, default_values = feature_util.reorder_request(json.loads(request.form['default_featu']),
                                                                    json.loads(request.form['cat_column']),
                                                                    json.loads(request.form['default_column']),
                                                                    sess.get('df').keys())
         sess.update_new_features(cat_columns, default_values)
-        feature_util.write_features(sess.get('category_list'), sess.get('data'), sess.get_writer(),
+        feature_util.write_features(old_cats, sess.get('data'), sess.get_writer(),
                                     sess.get('config_file'))
         return redirect(url_for('target'))
     return render_template("feature_selection.html", name='Dataset features selection',
@@ -129,6 +130,7 @@ def parameters():
     flash_errors(form)
     param_utils.get_defaults_param_form(form, CONFIG_FILE, sess.get('data'), sess.get('target'),
                                         sess.get('train_file'))
+    pprint(request.form)
     return render_template('parameters.html', form=form, page=4)
 
 
@@ -171,6 +173,7 @@ def predict():
 
 
 @app.route('/delete', methods=['POST'])
+@login_required
 def delete():
     CONFIG_FILE = sess.get('config_file')
     all_params_config = config_reader.read_config(CONFIG_FILE)
@@ -197,15 +200,12 @@ def refresh():
 def stream():
     config = sess.get('config_file').split('/')
     logfile = os.path.join(APP_ROOT, 'user_data', session['user'], config[-3], config[-2], 'log', 'tensorflow.log')
-
     def generate():
         while not os.path.isfile(logfile):
             time.sleep(2)
         with open(logfile) as f:
             while True:
                 yield f.read()
-                # time.sleep(1)
-
     return app.response_class(generate(), mimetype='text/plain')
 
 

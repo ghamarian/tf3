@@ -1,10 +1,8 @@
-import pytest
+
 import os
 import socket
-from contextlib import closing
-from werkzeug.utils import secure_filename
 from utils import sys_ops
-
+from dfweb import APP_ROOT
 paths = ['a.ini', 'a2.ini']
 export_dir = 'test_recursive/test'
 
@@ -15,6 +13,7 @@ def test_mkdir_recurstive():
     assert os.path.exists(path) == True
 
 
+
 def test_delete_recursive():
     sys_ops.delete_recursive(paths, export_dir)
     assert os.path.exists(os.path.join(export_dir, paths[0])) == False
@@ -22,17 +21,18 @@ def test_delete_recursive():
 
 
 def test_copyfile():
-    filename = 'main.py'
+    filename = 'test_recursive/default_config.ini'
     destiny = 'test_recursive/default.ini'
     sys_ops.copyfile(filename, destiny)
     assert os.path.isfile(destiny) == True
+    os.remove(destiny)
 
 
 def test_not_existing_copyfile():
     filename = 'maindfasdfas.py'
-    destiny = 'test_recursive/default2.ini'
-    sys_ops.copyfile(filename, destiny)
-    assert os.path.isfile(destiny) == False
+    dest = 'test_recursive/default2.ini'
+    sys_ops.copyfile(filename, dest)
+    assert os.path.isfile(dest) == False
 
 
 def test_find_free_port():
@@ -43,3 +43,7 @@ def test_find_free_port():
     # s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # s.bind(("127.0.0.1", p))
 
+
+def test_abs_path_of():
+    path = 'data_test'
+    assert sys_ops.abs_path_of(path) == APP_ROOT + '/utils/data_test'

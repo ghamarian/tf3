@@ -1,7 +1,7 @@
 from forms.parameters_form import GeneralClassifierForm, GeneralRegressorForm
 import pandas as pd
 from config import config_reader
-
+import os
 
 def define_param_form(target_type):
     if target_type == 'numerical':
@@ -32,9 +32,14 @@ def get_defaults_param_form(form, CONFIG_FILE, data, target, train_file):
     number_inputs = get_number_inputs(data.Category)
     number_outputs = get_number_outputs(target, data)
     num_samples = get_number_samples(train_file)
+    hidden_layers = get_hidden_layers(number_inputs, number_outputs, num_samples)
+    set_form(form, CONFIG_FILE, hidden_layers)
 
-    form.network.form.hidden_layers.default = get_hidden_layers(number_inputs, number_outputs, num_samples)
+
+def set_form(form, CONFIG_FILE, hidden_layers):
+    form.network.form.hidden_layers.default = hidden_layers
     form.network.form.process()
+    # if os.path.isfile(CONFIG_FILE) :
     reader = config_reader.read_config(CONFIG_FILE)
     if 'EXPERIMENT' in reader.keys():
         form.experiment.form.keep_checkpoint_max.default = reader['EXPERIMENT']['keep_checkpoint_max']

@@ -64,7 +64,7 @@ class NetworkRegressorForm(FlaskForm):
                              description="MODEL TYPE: ")
 
 class CustomModelForm(FlaskForm):
-    models = os.listdir('models')
+    models = os.listdir('/Users/aracelicanadas/Desktop/tf3/tf3/models')
     choices = [(x,x) for x in models]
     choices.append(('None','None'))
     custom_model_path = SelectField('Custom model',

@@ -6,6 +6,7 @@ import os
 from model_builder import ModelBuilder
 from keras.models import load_model
 from best_exporter import BestExporter
+
 HIDDEN_LAYERS = 'hidden_layers'
 
 MAX_STEPS = 'max_steps'
@@ -63,10 +64,11 @@ class Classifier:
             return predictions[0]['predictions'][0]
         return predictions[0]['classes'][0].decode("utf-8")
 
-    def input_predict_fn(self, features,  df):
+    def input_predict_fn(self, features, df):
         input_predict = {}
         for k, v in features.items():
-            input_predict[k] = np.array([v]).astype(df[k].dtype) if df[k].dtype == 'object' else np.array([float(v)]).astype(df[k].dtype)
+            input_predict[k] = np.array([v]).astype(df[k].dtype) if df[k].dtype == 'object' else np.array(
+                [float(v)]).astype(df[k].dtype)
         # input_predict.pop(target, None)
         return input_predict
 
@@ -134,29 +136,29 @@ class Classifier:
 
 class KerasClassifier:
 
-    def __init__(self,params, train_csv_reader, validation_csv_reader, feature_columns, label_unique_values):
-       self.params = params
-       self.checkpoint_dir = params['checkpoint_dir']
-       self.train_csv_reader = train_csv_reader
-       self.validation_csv_reader = validation_csv_reader
+    def __init__(self, params, train_csv_reader, validation_csv_reader, feature_columns, label_unique_values):
+        self.params = params
+        self.checkpoint_dir = params['checkpoint_dir']
+        self.train_csv_reader = train_csv_reader
+        self.validation_csv_reader = validation_csv_reader
 
-       tf.logging.set_verbosity(tf.logging.DEBUG)
+        tf.logging.set_verbosity(tf.logging.DEBUG)
 
-       tf.reset_default_graph()
+        tf.reset_default_graph()
 
-       self._create_run_config()
-       self._create_model()
-       self._create_specs()
+        self._create_run_config()
+        self._create_model()
+        self._create_specs()
 
     def predict(self, features, target, df):
-        predict_input_fn = tf.estimator.inputs.numpy_input_fn(x={self.input_name: self.input_predict_fn(features, target, df)},
-                                                               y=None, num_epochs=1, shuffle=False)
+        predict_input_fn = tf.estimator.inputs.numpy_input_fn(
+            x={self.input_name: self.input_predict_fn(features, target, df)},
+            y=None, num_epochs=1, shuffle=False)
         predictions = list(self.model.predict(input_fn=predict_input_fn))
 
         return np.argmax(predictions[0][self.output_name.split('/')[0]])
 
-
-    def input_predict_fn(self,features, target, df):
+    def input_predict_fn(self, features, target, df):
         for c in df.columns:
             if df[c].dtype == 'object':
                 df[c] = df[c].astype('category')
@@ -169,39 +171,40 @@ class KerasClassifier:
         return input_predict
 
     def clear_checkpoint(self):
-       shutil.rmtree(self.checkpoint_dir, ignore_errors=True)
+        shutil.rmtree(self.checkpoint_dir, ignore_errors=True)
 
     def run(self):
-       tf.estimator.train_and_evaluate(self.model, self.train_spec, self.eval_spec)
+        tf.estimator.train_and_evaluate(self.model, self.train_spec, self.eval_spec)
 
     def _create_model(self):
-       self.keras_model = load_model('models/' +self.params['custom_model_path'])
-       self.model = tf.keras.estimator.model_to_estimator(keras_model_path='models/' +self.params['custom_model_path'], config=self.runConfig) #TODO
-       self.input_name = self.keras_model.inputs[0].name.split(':')[0]
-       self.output_name = self.keras_model.outputs[0].name.split(':')[0]
-       train_dataset, train_labels = self.train_csv_reader.make_numpy_array(self.train_csv_reader.label_name)
-       val_dataset, val_labels = self.train_csv_reader.make_numpy_array(self.train_csv_reader.label_name)
-       self._validation_input_fn = tf.estimator.inputs.numpy_input_fn(x={self.input_name: val_dataset}, y=val_labels, num_epochs=1, shuffle=True)
-       self._train_input_fn = tf.estimator.inputs.numpy_input_fn(x={self.input_name: train_dataset}, y=train_labels, shuffle=True)
+        self.keras_model = load_model('models/' + self.params['custom_model_path'])
+        self.model = tf.keras.estimator.model_to_estimator(
+            keras_model_path='models/' + self.params['custom_model_path'], config=self.runConfig)  # TODO
+        self.input_name = self.keras_model.inputs[0].name.split(':')[0]
+        self.output_name = self.keras_model.outputs[0].name.split(':')[0]
+        train_dataset, train_labels = self.train_csv_reader.make_numpy_array(self.train_csv_reader.label_name)
+        val_dataset, val_labels = self.train_csv_reader.make_numpy_array(self.train_csv_reader.label_name)
+        self._validation_input_fn = tf.estimator.inputs.numpy_input_fn(x={self.input_name: val_dataset}, y=val_labels,
+                                                                       num_epochs=1, shuffle=True)
+        self._train_input_fn = tf.estimator.inputs.numpy_input_fn(x={self.input_name: train_dataset}, y=train_labels,
+                                                                  shuffle=True)
 
     def _create_specs(self):
-       max_steps = self.params[MAX_STEPS]
-       self.train_spec = tf.estimator.TrainSpec(
-           input_fn=self._train_input_fn,
-           max_steps=max_steps)
+        max_steps = self.params[MAX_STEPS]
+        self.train_spec = tf.estimator.TrainSpec(
+            input_fn=self._train_input_fn,
+            max_steps=max_steps)
 
-       self.eval_spec = tf.estimator.EvalSpec(
-           input_fn=self._validation_input_fn,
-           steps=None,  # How many batches of test data
-           start_delay_secs=0, throttle_secs=1)
-
+        self.eval_spec = tf.estimator.EvalSpec(
+            input_fn=self._validation_input_fn,
+            steps=None,  # How many batches of test data
+            start_delay_secs=0, throttle_secs=1)
 
     def _create_run_config(self):
-       save_checkpoints_steps = self.params[SAVE_CHECKPOINTS_STEPS]
-       save_summary_steps = self.params[SAVE_SUMMARY_STEPS]
-       keep_checkpoint_max = self.params[KEEP_CHECKPOINT_MAX]
-       self.runConfig = tf.estimator.RunConfig(model_dir=self.checkpoint_dir,
-                                               save_checkpoints_steps=save_checkpoints_steps,
-                                               save_summary_steps=save_summary_steps,
-                                               keep_checkpoint_max=keep_checkpoint_max)
-
+        save_checkpoints_steps = self.params[SAVE_CHECKPOINTS_STEPS]
+        save_summary_steps = self.params[SAVE_SUMMARY_STEPS]
+        keep_checkpoint_max = self.params[KEEP_CHECKPOINT_MAX]
+        self.runConfig = tf.estimator.RunConfig(model_dir=self.checkpoint_dir,
+                                                save_checkpoints_steps=save_checkpoints_steps,
+                                                save_summary_steps=save_summary_steps,
+                                                keep_checkpoint_max=keep_checkpoint_max)

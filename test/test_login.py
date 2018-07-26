@@ -13,20 +13,42 @@ from flask_login import UserMixin
 from user import User
 from werkzeug.security import generate_password_hash
 from dfweb import app
+from database.db import db
+
+
+# def test_add_user_db():
+#     user = User()
+#     db.session.add(user)
+#     db.session.commit()
+#     # this works
+#     assert user in db.session
+#     # this raises an AssertionError
+
 
 
 def create_app(debug=False):
     app = Flask(__name__)
     app.debug = debug
     session.setdefault('test')
+    # db.init_app(app)
+    # app.run()
     return app
 
 
 @pytest.fixture
 def user():
     return User()
-#
-#
+
+# def test_get_db_user(user: user()):
+#     with create_app().app_context():
+#         new_user = db_ops.get_db_user(user.username)
+
+# def test_def_get_user_by_username():
+#     with create_app().app_context():
+#         username = 'test'
+#         my_user= db_ops.get_user_by_username(username)
+
+
 # def test_user():
 #
 #     hashed_passwd = generate_password_hash(password, method='sha256')

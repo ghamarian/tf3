@@ -588,10 +588,3 @@ tr:hover td {
     width: inherit;
     max-width: 150px;
 }
-
-select {
-  width: 250px;
-}
-option {
-  width: 250px;
-}

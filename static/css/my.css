@@ -312,6 +312,7 @@ h1 {
 .bs-callout-explain {
     border-left-color: #225c60;
     background-color: #f7f7f7;
+    margin: 0px !important;
 
 }
 

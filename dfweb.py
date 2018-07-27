@@ -234,10 +234,13 @@ def delete_config():
 @app.route('/refresh', methods=['GET'])
 @login_required
 def refresh():
-    CONFIG_FILE = sess.get('config_file')
-    export_dir = config_reader.read_config(CONFIG_FILE).export_dir()
-    checkpoints = run_utils.get_eval_results(export_dir, sess.get_writer(), CONFIG_FILE)
-    return jsonify(checkpoints=checkpoints)
+    try:
+        CONFIG_FILE = sess.get('config_file')
+        export_dir = config_reader.read_config(CONFIG_FILE).export_dir()
+        checkpoints = run_utils.get_eval_results(export_dir, sess.get_writer(), CONFIG_FILE)
+        return jsonify(checkpoints=checkpoints)
+    except:
+        return jsonify(checkpoints='')
 
 
 @app.route('/stream')

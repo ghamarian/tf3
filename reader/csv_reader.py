@@ -87,17 +87,24 @@ class CSVReader(metaclass=ABCMeta):
         df = pd.read_csv(self.filename, usecols=[label_column])
         return df[label_column].unique()
 
-    def make_numpy_array(self, target):
+    def make_numpy_array(self, target, include_features=None, numerical_labels=True):
         df = pd.read_csv(self.filename)
         y = df[target].values
         del df[target]
+        if include_features is not None:
+            df = df[include_features]
         for c in df.columns:
             if df[c].dtype == 'object':
                 df[c] = df[c].astype('category')
         cat_columns = df.select_dtypes(['category']).columns
         df[cat_columns] = df[cat_columns].apply(lambda x: x.cat.codes)
         unique = np.unique(y).tolist()
-        labels = np.zeros((len(y), len(unique)))
-        for i in range(len(y)):
-            labels[i][unique.index(y[i])] = 1
-        return df.values, np.array(labels)
+
+        if numerical_labels: #one-hot encoding
+            labels = np.zeros((len(y), len(unique)))
+            for i in range(len(y)):
+                labels[i][unique.index(y[i])] = 1
+            labels = np.array(labels)
+        else:
+            labels = y
+        return df.values, labels

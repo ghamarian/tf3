@@ -7,6 +7,7 @@ from config import config_reader
 class FeatureSelection:
     MAX_CATEGORICAL_SIZE = 2000
     MAX_RANGE_SIZE = 100
+    MIN_RANGE_SIZE = 10
 
     def __init__(self, df):
         self.features = {}
@@ -61,6 +62,14 @@ class FeatureSelection:
             else:
                 self.hash_columns.append(col)
             self.unique_value_size_dict[col] = len(unique)
+
+        for col in self.int_columns[:]:
+            unique = self.unique_value_size_dict[col]
+            if (unique < self.MIN_RANGE_SIZE):
+                self.cat_unique_values_dict[col] = unique
+                self.categorical_columns.append(col)
+                self.int_columns.remove(col)
+
 
     def group_by(self, datatypes):
         columns_types_dict = dict(zip(self.df.columns, datatypes))

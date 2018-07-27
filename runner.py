@@ -39,3 +39,10 @@ class Runner:
         except:
             result = None
         return result
+
+    def explain(self, features, target, df, feature_types, num_features, top_labels):
+        try:
+            result = self.classifier.explain(features, target, df, feature_types, num_features, top_labels)
+        except:
+            result = None
+        return result

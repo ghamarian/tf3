@@ -108,7 +108,7 @@ class BestExporter(Exporter):
       serving_input_receiver_fn: a function that takes no arguments and returns
         a `ServingInputReceiver`.
       event_file_pattern: event file name pattern relative to model_dir. If
-        None, however, the exporter would not be preemption-safe. To be
+        None, however, the exporter would not be preemption-safe. To bex
         preemption-safe, event_file_pattern should be specified.
       compare_fn: a function that compares two evaluation results and returns
         true if current evaluation result is better. Follows the signature:

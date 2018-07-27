@@ -26,12 +26,11 @@ def get_target_labels(target, target_type, fs):
     return None
 
 
-def write_features(categories, data, writer, config_file):
-    for label, categories in zip(data.index, categories):
-        cat = data.Category[label] if data.Category[label] != 'range' else 'int-range'
-        if 'none' in cat:
-            cat = 'none' + '-' + categories if 'none' not in categories else categories
-            writer.add_item('COLUMN_CATEGORIES', label, cat)
+def write_features(old_categories, data, writer, config_file):
+    for label, old_cat in zip(data.index, old_categories):
+        new_cat = data.Category[label]  # if data.Category[label] != 'range' else 'int-range'
+        cat = new_cat + '-' + old_cat.replace('none-', '') if 'none' in new_cat else new_cat
+        writer.add_item('COLUMN_CATEGORIES', label, cat)
     writer.write_config(config_file)
 
 

@@ -61,3 +61,14 @@ def change_checkpoints(config, resume_from):
         shutil.copy(p, os.path.join(cdir, p.name))
 
     shutil.copy(os.path.join(rdir, 'checkpoint'), os.path.join(cdir, 'checkpoint'))
+
+
+def delete_configs(config, dataset, username):
+    if config != 'all':
+        paths = [os.path.join('user_data', username, dataset, config)]
+    else:
+        paths = [os.path.join('user_data', username, dataset, d) for d in
+                 os.listdir(os.path.join('user_data', username, dataset)) if
+                 os.path.isdir(os.path.join('user_data', username, dataset, d))]
+    for path in paths:
+        shutil.rmtree(path)

@@ -1,23 +1,25 @@
-
 from utils import upload_util
-from session import Session
+import os
+import shutil
+import pytest
+from forms.upload_form import UploadForm, UploadNewForm
 
-# def test_create_form():
-#     user_configs = {}
-#     user_dataset = 'test_dataset'
-#     form, url = upload_util.create_form(user_configs, user_dataset)
-#     print(form, url)
-
-#def test_existing_data():
-
-#both methods above need app context, hooooow?
+@pytest.fixture
+def form():
+    return UploadForm()
 
 
 def test_generate_dataset_name():
-    app_root = 'test_folder'
-    username = 'test_user'
-    dataset_name = 'test_dataset'
+    app_root = 'data_test'
+    username = 'user'
+    dataset_name = 'iris'
+    os.makedirs(os.path.join(app_root, username, dataset_name))
+    new_dataset_name = upload_util.generate_dataset_name(app_root, username, dataset_name)
+    assert new_dataset_name == 'iris_1'
+    shutil.rmtree(os.path.join(app_root, username, dataset_name))
 
-    name = upload_util.generate_dataset_name(app_root, username, dataset_name)
-    assert name == dataset_name + '_1'
-
+# def test_create_form():
+#     user_configs= {}
+#     user_dataset = 'iris'
+#     form , html_name = upload_util.create_form(user_configs, user_dataset)
+#     assert html_name ==  'upload_file_new_form.html'

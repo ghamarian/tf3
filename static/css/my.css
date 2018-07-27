@@ -469,3 +469,117 @@ th2 {
     box-shadow: none;
     text-decoration: none !important;
 }
+
+/*the container must be positioned relative:*/
+.custom-select {
+    position: relative;
+    font-family: Arial;
+}
+
+.custom-select select {
+    display: none; /*hide original SELECT element:*/
+}
+
+.select-selected {
+    background-color: #13255d;
+}
+
+/*style the arrow inside the select element:*/
+.select-selected:after {
+    position: absolute;
+    content: "";
+    top: 14px;
+    right: 10px;
+    width: 0;
+    height: 0;
+    border: 6px solid transparent;
+    border-color: #fff transparent transparent transparent;
+}
+
+/*point the arrow upwards when the select box is open (active):*/
+.select-selected.select-arrow-active:after {
+    border-color: transparent transparent #fff transparent;
+    top: 7px;
+}
+
+/*style the items (options), including the selected item:*/
+.select-items div, .select-selected {
+    color: #ffffff;
+    padding: 8px 16px;
+    border: 1px solid transparent;
+    border-color: transparent transparent rgba(0, 0, 0, 0.1) transparent;
+    cursor: pointer;
+}
+
+/*style items (options):*/
+.select-items {
+    position: absolute;
+    background-color: #13255d;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 99;
+}
+
+/*hide the items when the select box is closed:*/
+.select-hide {
+    display: none;
+}
+
+.select-items div:hover, .same-as-selected {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.custom-select {
+    position: relative;
+    display: block;
+    /* max-width: 300px; */
+    min-width: 152px;
+    margin: 0 auto;
+}
+
+.row {
+    margin-left: 90px;
+}
+
+.table-responsive .upload-table {
+    max-width: 60%;
+}
+
+.upload-table .cell {
+    display: table-cell;
+    font-size: 18px;
+    color: #fff;
+    line-height: 1.2;
+    font-weight: unset !important;
+    padding-top: 19px;
+    padding-bottom: 19px;
+
+}
+
+.upload-table .row.header {
+    color: #ffffff;
+    background: #13255d;
+}
+
+input[type="radio"] {
+    /*display: block;*/
+    /*margin-left: 5px;*/
+    margin-right: 5px !important;
+}
+
+row .upload {
+    margin-left: 0px !important;
+}
+
+tr:hover {
+    background-color: rgba(163, 179, 185, 0.42);
+}
+
+tr:hover td {
+    background-color: transparent; /* or #000 */
+}
+
+.invisible-radio {
+    display : none;
+}

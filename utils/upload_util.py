@@ -17,7 +17,7 @@ def create_form(user_configs, user_dataset):
 def existing_data(form, user_configs, username, sess, APP_ROOT):
     dataset_name = form['exisiting_files-train_file_exist']
     path = os.path.join(APP_ROOT, 'user_data', username, dataset_name)
-    if 'exisiting_files-configuration' in form:
+    if form['exisiting_files-configuration'] != 'new_config':
         config_name = form['exisiting_files-configuration']
         sess.set('config_file', os.path.join(path, config_name, 'config.ini'))
         sess.load_config()

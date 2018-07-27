@@ -24,17 +24,25 @@
                 {{ render_field(form.exisiting_files) }}
                 <label for="exisiting_files-configuration" class="control-label" title="">Configuration</label>
                 <div class="table-responsive">
-                    <table class="table table-striped table-bordered" id="table_config">
+                    <table class="table table-bordered upload-table" id="table_config">
                         <thead class="thead-light">
                         <tr>
                             <th scope="col">Config name</th>
                             <th scope="col">Model</th>
                             <th scope="col">Accuracy</th>
                             <th scope="col">Loss</th>
+                            <th scope="col"></th>
                         </tr>
                         </thead>
                         <tbody id="tablediv">
                         </tbody>
+                        <tfoot align="right">
+                        <tr>
+                            <td colspan="5">Clear all configs <a data-id=all onclick="ConfirmDelete(this, true)">
+                                <span class="glyphicon glyphicon-trash" style="color:#ff0000"></span></a>
+                            </td>
+                        </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>
@@ -49,17 +57,39 @@
 
 {% block scripts %}
     {{ super() }}
+
     <script src="{{ url_for('.static', filename='choose.js') }}"></script>
     <script src="{{ url_for('.static', filename='upload.js') }}"></script>
     <script type="text/javascript">
+        var handle_key = {};
+        handle_key.configs = {{  user_configs | tojson | safe }};
+        handle_key.parameters = {{  parameters | tojson | safe }};
         $(document).ready(function () {
-            var handle_key = {};
-            handle_key.configs = {{  user_configs | tojson | safe }};
-            handle_key.parameters = {{  parameters | tojson | safe }};
+            show_configs();
 
+            $('#exisiting_files-train_file_exist').change(function () {
+                $("#tablediv").empty();
+                show_configs();
+            });
+
+
+            $('#table_config').on('click', '.clickable', function () {
+                var id =  $(this).attr('id');
+                var idb = id + 'b';
+
+                var $radios = $('input[name="exisiting_files-configuration"]');
+                var $selected = $radios.filter(':checked')[0];
+                var idt = $selected.id.slice(0,-1);
+                document.getElementById(idt).style.background = 'white';
+                document.getElementById(idb).checked = true;
+                document.getElementById(id).style.background = '#b0bed9';
+
+            });
+        });
+
+        function show_configs() {
             var dataset_selected = $('#exisiting_files-train_file_exist').find("option:selected").text();
             var len = handle_key.configs[dataset_selected].length;
-
             $('#exisiting_files-configuration').find('option').remove();
             var i;
             for (i = 0; i < len; i++) {
@@ -68,22 +98,37 @@
                 handle_key2.configs_parame = handle_key.parameters[data_and_conf];
                 add_new_row(handle_key.configs[dataset_selected][i], handle_key2.configs_parame['model'], handle_key2.configs_parame['acc'], handle_key2.configs_parame['loss']);
             }
+            add_new_config_row();
+        }
 
+        function ConfirmDelete(elem, all) {
+            var message = "Are you sure you want to delete the selected configuration?";
+            if (all == true) {
+                message = "Are you sure you want to delete all saved configurations?";
+            }
+            if (confirm(message)) {
+                $.ajax({
+                    url: "/delete_config",
+                    type: 'POST',
+                    dataType: 'json',
+                    contentType: 'application/json;charset=UTF-8',
+                    accepts: {
+                        json: 'application/json',
+                    },
+                    data: JSON.stringify({
+                        'config': $(elem).attr('data-id'),
+                        'dataset': $('#exisiting_files-train_file_exist').find("option:selected").text()
+                    }),
+                    success: function (data) {
+                        $('#tablediv').empty();
+                        handle_key.configs = data.configs;
+                        handle_key.parameters = data.params;
+                        show_configs();
+                    }
+                })
+            }
+        }
 
-            $('#exisiting_files-train_file_exist').change(function () {
-                var dataset_selected = $('#exisiting_files-train_file_exist').find("option:selected").text();
-                var len = handle_key.configs[dataset_selected].length;
-                $('#exisiting_files-configuration').find('option').remove();
-                $("#tablediv").empty();
-                var i;
-                for (i = 0; i < len; i++) {
-                    var data_and_conf = dataset_selected + '_' + handle_key.configs[dataset_selected][i];
-                    var handle_key2 = {};
-                    handle_key2.configs_parame = handle_key.parameters[data_and_conf];
-                    add_new_row(handle_key.configs[dataset_selected][i], handle_key2.configs_parame['model'], handle_key2.configs_parame['acc'], handle_key2.configs_parame['loss']);
-                }
-            });
-        });
     </script>
 
 {% endblock %}

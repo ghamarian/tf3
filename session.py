@@ -11,7 +11,6 @@ SAMPLE_DATA_SIZE = 5
 
 
 class Session:
-
     def __init__(self, app):
         self._config_writer = {}
         self._config = {}
@@ -86,6 +85,7 @@ class Session:
         # target select
         target = conf['TARGET']['target']
         self.set_target(target)
+        self.update_new_features(list(dict(conf.items('COLUMN_CATEGORIES')).values()), list(self.get('defaults').values()))
         self.update_writer_conf(conf)
 
     def assign_category(self, df):

@@ -225,7 +225,8 @@ class KerasClassifier:
 
         return np.argmax(predictions[0][self.output_name.split('/')[0]])
 
-    def input_predict_fn(self, features, target, df):
+
+    def input_predict_fn(self,features, target, df):
         for c in df.columns:
             if df[c].dtype == 'object':
                 df[c] = df[c].astype('category')

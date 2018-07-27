@@ -89,12 +89,13 @@ def feature():
     sess.load_features()
     form = Submit()
     if form.validate_on_submit():
+        old_cats = sess.get('category_list')
         cat_columns, default_values = feature_util.reorder_request(json.loads(request.form['default_featu']),
                                                                    json.loads(request.form['cat_column']),
                                                                    json.loads(request.form['default_column']),
                                                                    sess.get('df').keys())
         sess.update_new_features(cat_columns, default_values)
-        feature_util.write_features(sess.get('category_list'), sess.get('data'), sess.get_writer(),
+        feature_util.write_features(old_cats, sess.get('data'), sess.get_writer(),
                                     sess.get('config_file'))
         return redirect(url_for('target'))
     return render_template("feature_selection.html", name='Dataset features selection',
@@ -209,6 +210,7 @@ def explain():
 
 
 @app.route('/delete', methods=['POST'])
+@login_required
 def delete():
     CONFIG_FILE = sess.get('config_file')
     all_params_config = config_reader.read_config(CONFIG_FILE)
@@ -219,6 +221,14 @@ def delete():
     sys_ops.delete_recursive(paths, export_dir)
     checkpoints = run_utils.get_eval_results(export_dir, sess.get_writer(), CONFIG_FILE)
     return jsonify(checkpoints=checkpoints)
+
+
+@app.route('/delete_config', methods=['POST'])
+@login_required
+def delete_config():
+    sys_ops.delete_configs(request.get_json()['config'], request.get_json()['dataset'], session['user'])
+    user_dataset, user_configs, param_configs = config_ops.get_configs_files(APP_ROOT, session['user'])
+    return jsonify(configs=user_configs, params=param_configs)
 
 
 @app.route('/refresh', methods=['GET'])
@@ -250,4 +260,4 @@ def flash_errors(form):
 db.init_app(app)
 
 if __name__ == '__main__':
-    app.run(debug=False, threaded=True)
+    app.run(debug=True, threaded=True)

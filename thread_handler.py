@@ -8,14 +8,13 @@ from utils.sys_ops import find_free_port, change_checkpoints
 from config import config_reader
 import threading
 import logging
+import subprocess
 
 logging.basicConfig(level=logging.DEBUG,
                     format='[%(levelname)s] (%(threadName)-10s) %(message)s',
                     )
 
-
 class ThreadHandler:
-
     def __init__(self):
         self._processes = {}
         self._ports = {}
@@ -28,18 +27,19 @@ class ThreadHandler:
         return self._ports[username + '_' + config_file]
 
     def tensor_board_thread(self, config_file, port):
-        # TODO testing to multiuser
         config_path = config_reader.read_config(config_file).all()['checkpoint_dir']
         logging.debug('Starting tensor board')
         time.sleep(3)
-        os.system("tensorboard --logdir=" + config_path + "  --port=" + port)
+        pro = "tensorboard --logdir=" + config_path + " --port=" + port
+        subprocess.call(pro, shell=True)
         logging.debug('Exiting tensor board')
 
     def run_tensor_board(self, username, config_file):
         if not username + '_' + config_file in self._ports.keys():
             port = find_free_port()
             self.add_port(username, config_file, port)
-            tboard_thread = threading.Thread(name='tensor_board',
+            name = 'tensorboard-' + str(port)
+            tboard_thread = threading.Thread(name=name,
                                              target=lambda: self.tensor_board_thread(config_file, port))
             tboard_thread.setDaemon(True)
             tboard_thread.start()
@@ -107,3 +107,5 @@ class ThreadHandler:
             self.pause_threads(username)
         else:
             raise ValueError("Invalid option")
+
+

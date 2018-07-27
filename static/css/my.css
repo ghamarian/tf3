@@ -19,9 +19,12 @@ body {
 }
 
 #bottom-left {
-    left: 12px;
-    bottom: 16px;
-    position: absolute;
+    /*left: 12px;*/
+    /*bottom: 16px;*/
+    /*position: absolute;*/
+    left: -70px;
+    bottom: -16px;
+    position: relative;
 }
 
 .navbar {
@@ -299,10 +302,31 @@ h1 {
 
 }
 
-.bs-callout-success h3 {
+.bs-callout-sucess h3 {
     color: #225c60;
     font-size: 18px;
 }
+
+
+
+.bs-callout-explain {
+    border-left-color: #225c60;
+    background-color: #f7f7f7;
+
+}
+
+.bs-callout-explain h4 {
+    color: #225c60;
+    font-size: 18px;
+
+}
+
+.bs-callout-explain h3 {
+    color: #225c60;
+    font-size: 18px;
+}
+
+
 
 .bs-callout-info {
     border-left-color: #2f4e7f;
@@ -589,6 +613,6 @@ tr:hover td {
     max-width: 150px;
 }
 
-.pre-scrollable select{
+.pre-scrollable select {
     width: 150px !important;
 }

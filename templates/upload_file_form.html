@@ -76,14 +76,12 @@
             $('#table_config').on('click', '.clickable', function () {
                 var id =  $(this).attr('id');
                 var idb = id + 'b';
-
                 var $radios = $('input[name="exisiting_files-configuration"]');
                 var $selected = $radios.filter(':checked')[0];
                 var idt = $selected.id.slice(0,-1);
                 document.getElementById(idt).style.background = 'white';
                 document.getElementById(idb).checked = true;
                 document.getElementById(id).style.background = '#b0bed9';
-
             });
         });
 

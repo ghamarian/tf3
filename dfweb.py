@@ -65,7 +65,7 @@ def upload():
     if form.validate_on_submit():
         if hasattr(form, 'exisiting_files') and form.is_existing.data:
             return redirect(
-                      url_for(upload_util.existing_data(request.form, user_configs, session['user'], sess, APP_ROOT)))
+                url_for(upload_util.existing_data(request.form, user_configs, session['user'], sess, APP_ROOT)))
         elif not form.new_files.train_file.data == '':
             return redirect(
                 url_for(config_ops.new_config(form.new_files.train_file.data, form.new_files.test_file.data, APP_ROOT,
@@ -189,7 +189,7 @@ def delete():
 @app.route('/delete_config', methods=['POST'])
 @login_required
 def delete_config():
-    sys_ops.delete_configs(request.get_json()['config'],request.get_json()['dataset'], session['user'])
+    sys_ops.delete_configs(request.get_json()['config'], request.get_json()['dataset'], session['user'])
     user_dataset, user_configs, param_configs = config_ops.get_configs_files(APP_ROOT, session['user'])
     return jsonify(configs=user_configs, params=param_configs)
 
@@ -208,13 +208,25 @@ def refresh():
 def stream():
     config = sess.get('config_file').split('/')
     logfile = os.path.join(APP_ROOT, 'user_data', session['user'], config[-3], config[-2], 'log', 'tensorflow.log')
+
     def generate():
         while not os.path.isfile(logfile):
             time.sleep(2)
         with open(logfile) as f:
             while True:
+                time.sleep(1)
                 yield f.read()
-    return app.response_class(generate(), mimetype='text/plain')
+
+    def create_subprocess():
+        from multiprocessing import Process, Queue
+        queue = Queue()
+        p = Process(target=generate(), args=(queue, 1))
+        p.start()
+        p.join()  # this blocks until the process terminates
+        result = queue.get()
+        return result
+
+    return app.response_class(create_subprocess(), mimetype='text/plain')
 
 
 @app.route('/')

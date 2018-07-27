@@ -556,10 +556,10 @@ th2 {
     background: #13255d;
 }
 
-input[type="checkbox"] {
-    display: block;
-    margin-left: 5px;
-    margin-right: 5px;
+input[type="radio"] {
+    /*display: block;*/
+    /*margin-left: 5px;*/
+    margin-right: 5px !important;
 }
 
 row .upload {
@@ -572,4 +572,8 @@ tr:hover {
 
 tr:hover td {
     background-color: transparent; /* or #000 */
+}
+
+.invisible-radio {
+    display : none;
 }

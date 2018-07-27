@@ -38,7 +38,7 @@
                         </tbody>
                         <tfoot align="right">
                         <tr>
-                            <td colspan="4">Clear all configs <a data-id=all onclick="ConfirmDelete(this, true)">
+                            <td colspan="5">Clear all configs <a data-id=all onclick="ConfirmDelete(this, true)">
                                 <span class="glyphicon glyphicon-trash" style="color:#ff0000"></span></a>
                             </td>
                         </tr>
@@ -72,6 +72,19 @@
                 show_configs();
             });
 
+
+            $('#table_config').on('click', '.clickable', function () {
+                var id =  $(this).attr('id');
+                var idb = id + 'b';
+
+                var $radios = $('input[name="exisiting_files-configuration"]');
+                var $selected = $radios.filter(':checked')[0];
+                var idt = $selected.id.slice(0,-1);
+                document.getElementById(idt).style.background = 'white';
+                document.getElementById(idb).checked = true;
+                document.getElementById(id).style.background = '#b0bed9';
+
+            });
         });
 
         function show_configs() {
@@ -85,6 +98,7 @@
                 handle_key2.configs_parame = handle_key.parameters[data_and_conf];
                 add_new_row(handle_key.configs[dataset_selected][i], handle_key2.configs_parame['model'], handle_key2.configs_parame['acc'], handle_key2.configs_parame['loss']);
             }
+            add_new_config_row();
         }
 
         function ConfirmDelete(elem, all) {

@@ -243,7 +243,10 @@ def refresh():
 @app.route('/stream')
 @login_required
 def stream():
-    return jsonify(data=sess.get('log_fp').read())
+    try:
+        return jsonify(data=sess.get('log_fp').read())
+    except:
+        return ''
 
 
 @app.route('/')

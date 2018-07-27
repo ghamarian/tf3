@@ -178,6 +178,7 @@ function ConfirmDelete(elem, all) {
                     $('#predict_button').prop('disabled', true);
                     $('#explain_button').prop('disabled', true);
                     $('#defaultCheck2').prop('disabled', true);
+                    document.getElementById("defaultCheck2").checked = false;
                 } else {
                     var $radios = $('input[name="radiob"]');
                     var $selected = $radios.filter(':checked');
@@ -189,6 +190,7 @@ function ConfirmDelete(elem, all) {
                         $('#predict_button').prop('disabled', true);
                         $('#explain_button').prop('disabled', true);
                         $('#defaultCheck2').prop('disabled', true);
+                        document.getElementById("defaultCheck2").checked = false;
                     }
                     $('#tablediv').empty();
 

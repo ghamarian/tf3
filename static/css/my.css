@@ -18,6 +18,12 @@ body {
     margin: 50px;
 }
 
+#bottom-left
+{
+left: 12px;
+bottom: 16px;
+position: absolute;
+}
 .navbar {
     margin-bottom: 20px;
 }

@@ -41,7 +41,6 @@ def existing_data(form, user_configs, username, sess, APP_ROOT):
         return 'slider'
 
 
-
 def generate_dataset_name(app_root, username, dataset_name):
     user_datasets = []
     if os.path.isdir(os.path.join(app_root, 'user_data', username)):

@@ -93,6 +93,31 @@
                                 PREDICT
                             </button>
 
+                            <div id="bottom-left">
+                                <button type="button" class="btn btn-link btn-details" onclick="hide_show_det()">
+                                    <span id="detail_gly2" class="glyphicon glyphicon-triangle-bottom"></span> Details
+                                </button>
+                            </div>
+
+                            <div class="bs-callout bs-callout-success" id="explain_form">
+                                <div class="block">
+                                    <label class="cust_label" for="top_labels">
+                                        Top labels:
+                                        <input type="number" name="top_labels" id="top_labels" value="2" step="1" min="1">
+                                    </label>
+                                </div>
+                                 <div class="block">
+                                    <label class="cust_label" for="num_feat">
+                                        #Features:
+                                        <input type="number" name="num_feat" id="num_feat" value="5" step="1" min="2">
+                                    </label>
+                                </div>
+                                <br>
+                                <button type="button" id="explain_button" class="btn btn-primary" disabled>
+                                    EXPLAIN
+                                </button>
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -100,7 +125,7 @@
         </form>
     </div>
 
-    <button class="btn btn-link btn-details" onclick="hidde_show()">
+    <button class="btn btn-link btn-details" onclick="hide_show()">
         <span id="detail_gly" class="glyphicon glyphicon-triangle-bottom"></span> Details
     </button>
     <div id="log" class="log"></div>

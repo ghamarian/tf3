@@ -1,10 +1,11 @@
 import json
 import os
 import time
+from io import BytesIO
 from utils import run_utils, upload_util, db_ops, feature_util, param_utils, preprocessing, config_ops, sys_ops
 from config import config_reader
 from database.db import db
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_file
 from flask_bootstrap import Bootstrap
 from flask_login import LoginManager, login_user, login_required, logout_user
 from forms.login_form import LoginForm
@@ -113,7 +114,10 @@ def target():
         return redirect(url_for('parameters'))
     reader = config_reader.read_config(sess.get('config_file'))
     target_selected = reader['TARGET']['target'] if 'TARGET' in reader.keys() else 'None'
-    return render_template('target_selection.html', name="Dataset target selection", form=form, data=sess.get('data'),
+    # filter hash and none columns
+    data = sess.get('data')[(sess.get('data').Category !='hash') & (sess.get('data').Category !='none')]
+
+    return render_template('target_selection.html', name="Dataset target selection", form=form, data=data,
                            page=3, target_selected=target_selected)
 
 
@@ -134,16 +138,25 @@ def parameters():
 
 @app.route('/run', methods=['GET', 'POST'])
 def run():
+    all_params_config = config_reader.read_config(sess.get('config_file'))
+    logfile = os.path.join(all_params_config['PATHS']['log_dir'], 'tensorflow.log')
+    try:
+        sess.set('log_fp', open(logfile))
+    except:
+        open(logfile, 'a').close()
+        sess.set('log_fp', open(logfile))
+
     labels = feature_util.get_target_labels(sess.get('target'), sess.get('data').Category[sess.get('target')],
                                             sess.get('fs'))
-    all_params_config = config_reader.read_config(sess.get('config_file'))
+
     export_dir = all_params_config.export_dir()
     checkpoints = run_utils.get_eval_results(export_dir, sess.get_writer(), sess.get('config_file'))
     th.run_tensor_board(session['user'], sess.get('config_file'))
     if request.method == 'POST':
+
         dtypes = sess.get('fs').group_by(sess.get('category_list'))
         th.handle_request(request.form['action'], all_params_config, sess.get('features'), sess.get('target'), labels,
-                          sess.get('defaults'), dtypes, session['user'])
+                          sess.get('defaults'), dtypes, session['user'], request.form['resume_from'])
         return jsonify(True)
     dict_types, categoricals = run_utils.get_dictionaries(sess.get('defaults'), sess.get('category_list'),
                                                           sess.get('fs'), sess.get('target'))
@@ -168,6 +181,31 @@ def predict():
                                       new_features, sess.get('df'))
 
     return jsonify(prediction=str(final_pred))
+
+
+@app.route('/explain', methods=['GET', 'POST'])
+def explain():
+    if request.method == 'POST':
+        new_features = feature_util.get_new_features(request.form, sess.get('defaults'), sess.get('target'),
+                                                     sess.get('fs').group_by(sess.get('category_list'))['none'])
+        all_params_config = config_reader.read_config(sess.get('config_file'))
+        all_params_config.set('PATHS', 'checkpoint_dir',
+                              os.path.join(all_params_config.export_dir(), request.form['radiob']))
+        labels = feature_util.get_target_labels(sess.get('target'), sess.get('data').Category[sess.get('target')],
+                                                sess.get('fs'))
+        dtypes = sess.get('fs').group_by(sess.get('category_list'))
+        result = th.explain_estimator(all_params_config, sess.get('features'), sess.get('target'), labels,
+                                      sess.get('defaults'), dtypes, new_features, sess.get('df'),
+                                      sess.get('data').Category,
+                                      int(request.form['num_feat']), int(request.form['top_labels']))
+        if result is not None:
+            fp = BytesIO(str.encode(result.as_html(show_table=True)))
+            sess.set('explain_fp', fp)
+            return jsonify(explanation='ok')
+
+        return jsonify(explanation=str(result))
+    else:
+        return send_file(sess.get('explain_fp'),  mimetype='text/html')
 
 
 @app.route('/delete', methods=['POST'])
@@ -195,18 +233,7 @@ def refresh():
 @app.route('/stream')
 @login_required
 def stream():
-    config = sess.get('config_file').split('/')
-    logfile = os.path.join(APP_ROOT, 'user_data', session['user'], config[-3], config[-2], 'log', 'tensorflow.log')
-
-    def generate():
-        while not os.path.isfile(logfile):
-            time.sleep(2)
-        with open(logfile) as f:
-            while True:
-                yield f.read()
-                # time.sleep(1)
-
-    return app.response_class(generate(), mimetype='text/plain')
+    return jsonify(data=sess.get('log_fp').read())
 
 
 @app.route('/')
@@ -223,4 +250,4 @@ def flash_errors(form):
 db.init_app(app)
 
 if __name__ == '__main__':
-    app.run(debug=True, threaded=True)
+    app.run(debug=False, threaded=True)

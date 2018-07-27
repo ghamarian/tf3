@@ -4,7 +4,7 @@ import os
 import time
 import psutil
 from multiprocessing import Manager, Process, Queue
-from utils.sys_ops import find_free_port
+from utils.sys_ops import find_free_port, change_checkpoints
 from config import config_reader
 import threading
 import logging
@@ -52,6 +52,11 @@ class ThreadHandler:
         runner = Runner(all_params_config, features, target, labels, defaults, dtypes)
         self._return_queue.put(runner.predict(new_features, target, df))
 
+    def explain_thread(self, all_params_config, features, target, labels, defaults, dtypes, new_features, df,
+                       feature_types, num_features, top_labels):
+        runner = Runner(all_params_config, features, target, labels, defaults, dtypes)
+        self._return_queue.put(runner.explain(new_features, target, df, feature_types, num_features, top_labels))
+
     def pause_threads(self, username):
         p = self._processes[username] if username in self._processes.keys() else None
         if not isinstance(p, str) and p:
@@ -80,11 +85,23 @@ class ThreadHandler:
         r_thread.join()
         return final_pred
 
-    def handle_request(self, option, all_params_config, features, target, labels, defaults, dtypes, username):
+    def explain_estimator(self, all_params_config, features, target, labels, defaults, dtypes, new_features, df,
+                          feature_types, num_features, top_labels):
+        r_thread = Process(target=lambda: self.explain_thread(all_params_config, features, target,
+                                                              labels, defaults, dtypes, new_features,
+                                                              df, feature_types, num_features, top_labels),
+                           name='explain')
+        r_thread.daemon = True
+        r_thread.start()
+        exp = self._return_queue.get()
+        r_thread.join()
+        return exp
+
+    def handle_request(self, option, all_params_config, features, target, labels, defaults, dtypes, username,
+                       resume_from):
         if option == 'run':
-            # if 'resume_from' in request.form:
-            #     pass
-            #     # TODO del checkpoints if resume_from exists, copy ckpt to checkpoints folder
+            if resume_from != '':
+                change_checkpoints(all_params_config, resume_from)
             self.run_estimator(all_params_config, features, target, labels, defaults, dtypes, username)
         elif option == 'pause':
             self.pause_threads(username)

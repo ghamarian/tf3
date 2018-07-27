@@ -6,6 +6,8 @@ import os
 from model_builder import ModelBuilder
 from keras.models import load_model
 from best_exporter import BestExporter
+from explainer import Explainer
+
 HIDDEN_LAYERS = 'hidden_layers'
 
 MAX_STEPS = 'max_steps'
@@ -48,11 +50,79 @@ class Classifier:
         self._create_model()
         self._create_specs()
 
+    def _create_explainer(self, features, df, target_type):
+        feature_names = list(features.keys())
+        train_dataset, training_labels = self.train_csv_reader.make_numpy_array(self.train_csv_reader.label_name,
+                                                                                include_features=feature_names,
+                                                                                numerical_labels=False)
+
+        df = df[feature_names]
+        categorical_features = [i for i in range(len(df.columns)) if df[df.columns[i]].dtype == 'object']
+        mode = 'regression' if target_type == 'numerical' else 'classification'
+        categorical_names = {k: df[feature_names[k]].unique() for k in categorical_features}
+
+        return Explainer(train_dataset, training_labels, feature_names, self.label_unique_values, categorical_features,
+                         categorical_names, mode)
+
     def clear_checkpoint(self):
         shutil.rmtree(self.checkpoint_dir, ignore_errors=True)
 
     def run(self):
         tf.estimator.train_and_evaluate(self.model, self.train_spec, self.eval_spec)
+
+    def _to_array(self, features, feature_types, df):
+        for c in df.columns:
+            if c in features.keys():
+                if df[c].dtype == 'object':
+                    if feature_types[c] == 'hash':
+                        try:
+                            features[c] = float(features[c])
+                        except:
+                            pass
+                    df[c] = df[c].astype('category')
+                    mapp = {y: x for x, y in dict(enumerate(df[c].cat.categories)).items()}
+                    features[c] = float(mapp[features[c]])
+                else:
+                    features[c] = float(features[c])
+        input_predict = np.fromiter(features.values(), dtype=float)
+        return input_predict
+
+    def _from_array(self, features, feature_types, df):
+        for c in df.columns:
+            if c in features.keys():
+                if df[c].dtype == 'object':
+                    df[c] = df[c].astype('category')
+                    mapp = {x: y for x, y in dict(enumerate(df[c].cat.categories)).items()}
+                    features[c] = np.vectorize(mapp.get)(features[c])
+                    if feature_types[c] == 'hash':
+                        features[c] = features[c].astype(str)
+                else:
+                    features[c] = features[c].astype(df[c].dtype)
+        return features
+
+    def explain(self, features, target, df, feature_types, num_features, top_labels):
+        del features[target]
+        feat_array = self._to_array(features, feature_types, df.copy())
+
+        explainer = self._create_explainer(features, df, feature_types[target])
+
+        def model_predict(x):
+            x = x.reshape(-1, len(features))
+
+            local_features = {k: x[:, i] for i, k in enumerate(features.keys())}
+            local_features = self._from_array(local_features, feature_types, df.copy())
+
+            predict_input_fn = tf.estimator.inputs.numpy_input_fn(x=local_features,
+                                                                  y=None, num_epochs=1, shuffle=False)
+            predictions = list(self.model.predict(input_fn=predict_input_fn))
+            if explainer.get_mode() == 'classification':
+                probs = np.array([x['probabilities'] for x in predictions])
+                return probs
+            else:
+                preds = np.array([x['predictions'] for x in predictions]).reshape(-1)
+                return preds
+
+        return explainer.explain_instance(feat_array, model_predict, num_features, top_labels)
 
     def predict(self, features, target, df):
         del features[target]
@@ -155,8 +225,7 @@ class KerasClassifier:
 
         return np.argmax(predictions[0][self.output_name.split('/')[0]])
 
-
-    def input_predict_fn(self,features, target, df):
+    def input_predict_fn(self, features, target, df):
         for c in df.columns:
             if df[c].dtype == 'object':
                 df[c] = df[c].astype('category')

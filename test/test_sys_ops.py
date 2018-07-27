@@ -40,6 +40,10 @@ def test_find_free_port():
     p = int(port)
     assert isinstance(port, str)
     assert isinstance(p, int)
-    # s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # s.bind(("127.0.0.1", p))
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    s.bind(("127.0.0.1", p))
+
+    s.close()
+
 

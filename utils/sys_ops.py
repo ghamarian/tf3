@@ -3,7 +3,8 @@ import socket
 from tensorflow.python.platform import gfile
 from contextlib import closing
 from werkzeug.utils import secure_filename
-
+from pathlib import Path
+import shutil
 
 def mkdir_recursive(path):
     if not path:
@@ -46,3 +47,17 @@ def save_filename(target, dataset_form_field, dataset_type, dataset_name, sess):
         dataset_file.save(destination)
         sess.set(dataset_type, destination)
     return True
+
+
+def change_checkpoints(config, resume_from):
+
+    rdir = os.path.join(config.get('PATHS', 'export_dir'), resume_from)
+    cdir = config.get('PATHS', 'checkpoint_dir')
+
+    for p in Path(cdir).glob("model.*"):
+        p.unlink()
+
+    for p in Path(rdir).glob("model.*"):
+        shutil.copy(p, os.path.join(cdir, p.name))
+
+    shutil.copy(os.path.join(rdir, 'checkpoint'), os.path.join(cdir, 'checkpoint'))

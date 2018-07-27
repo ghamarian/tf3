@@ -85,7 +85,7 @@ class Session:
         # target select
         target = conf['TARGET']['target']
         self.set_target(target)
-        self.update_new_features(list(dict(conf.items('COLUMN_CATEGORIES')).values()), list(self.get('defaults').values()))
+        self.update_new_features(self.get('category_list'), list(self.get('defaults').values()))
         self.update_writer_conf(conf)
 
     def assign_category(self, df):

@@ -66,7 +66,7 @@ class FeatureSelection:
         for col in self.int_columns[:]:
             unique = self.unique_value_size_dict[col]
             if (unique < self.MIN_RANGE_SIZE):
-                self.cat_unique_values_dict[col] = unique
+                self.cat_unique_values_dict[col] = self.df[col].unique().tolist()
                 self.categorical_columns.append(col)
                 self.int_columns.remove(col)
 

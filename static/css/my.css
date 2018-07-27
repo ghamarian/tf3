@@ -18,12 +18,12 @@ body {
     margin: 50px;
 }
 
-#bottom-left
-{
-left: 12px;
-bottom: 16px;
-position: absolute;
+#bottom-left {
+    left: 12px;
+    bottom: 16px;
+    position: absolute;
 }
+
 .navbar {
     margin-bottom: 20px;
 }
@@ -581,5 +581,17 @@ tr:hover td {
 }
 
 .invisible-radio {
-    display : none;
+    display: none;
+}
+
+.cat_features {
+    width: inherit;
+    max-width: 150px;
+}
+
+select {
+  width: 250px;
+}
+option {
+  width: 250px;
 }

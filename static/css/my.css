@@ -588,3 +588,7 @@ tr:hover td {
     width: inherit;
     max-width: 150px;
 }
+
+.pre-scrollable select{
+    width: 150px !important;
+}

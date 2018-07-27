@@ -12,9 +12,12 @@ def split_train_test(percent, dataset_file, target, dataframe):
     percent = int(percent)
     counts = dataframe[target].value_counts()
     dataframe = dataframe[dataframe[target].isin(counts[counts > 1].index)]
-    target = dataframe[[target]]
     test_size = (dataframe.shape[0] * percent) // 100
-    train_df, test_df = train_test_split(dataframe, test_size=test_size, stratify=target, random_state=42)
+    if dataframe[target].dtype == 'object':
+        target = dataframe[[target]]
+        train_df, test_df = train_test_split(dataframe, test_size=test_size, stratify=target, random_state=42)
+    else:
+        train_df, test_df = train_test_split(dataframe, test_size=test_size, random_state=42)
     train_df.to_csv(train_file, index=False)
     test_df.to_csv(validation_file, index=False)
     return train_file, validation_file

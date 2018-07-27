@@ -64,6 +64,7 @@
         var handle_key = {};
         handle_key.configs = {{  user_configs | tojson | safe }};
         handle_key.parameters = {{  parameters | tojson | safe }};
+
         $(document).ready(function () {
             show_configs();
 
@@ -74,16 +75,14 @@
 
 
             $('#table_config').on('click', '.clickable', function () {
-                var id =  $(this).attr('id');
+                var id = $(this).attr('id');
                 var idb = id + 'b';
-
                 var $radios = $('input[name="exisiting_files-configuration"]');
                 var $selected = $radios.filter(':checked')[0];
-                var idt = $selected.id.slice(0,-1);
+                var idt = $selected.id.slice(0, -1);
                 document.getElementById(idt).style.background = 'white';
                 document.getElementById(idb).checked = true;
                 document.getElementById(id).style.background = '#b0bed9';
-
             });
         });
 
@@ -99,6 +98,7 @@
                 add_new_row(handle_key.configs[dataset_selected][i], handle_key2.configs_parame['model'], handle_key2.configs_parame['acc'], handle_key2.configs_parame['loss']);
             }
             add_new_config_row();
+            document.getElementById('new_config').style.background = '#b0bed9';
         }
 
         function ConfirmDelete(elem, all) {

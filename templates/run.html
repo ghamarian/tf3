@@ -124,31 +124,35 @@
 
                     <div class="col-md-3">
                         <div class="bs-callout bs-callout-success">
-                            <h4><span class="glyphicon glyphicon-ok"></span></h4>
-                            <h4> PREDICT</h4>
-                            Get the predict value for your feature values
-                            <br>
-                            <h3>{{ target }} : <b>
-                                <div id="predict_val"></div>
-                            </b></h3>
-                            <button type="button" id="predict_button" class="btn btn-primary" disabled>
-                                PREDICT
-                            </button>
-
-                            <div id="bottom-left">
-                                <button type="button" class="btn btn-link btn-details" onclick="hide_show_det()">
-                                    <span id="detail_gly2" class="glyphicon glyphicon-triangle-bottom"></span> Details
+                            <div>
+                                <h4><span class="glyphicon glyphicon-ok"></span></h4>
+                                <h4> PREDICT</h4>
+                                Get the predict value for your feature values
+                                <br>
+                                <h3>{{ target }} : <b>
+                                    <div id="predict_val"></div>
+                                </b></h3>
+                                <button type="button" id="predict_button" class="btn btn-primary" disabled>
+                                    PREDICT
                                 </button>
+
+                                <div id="bottom-left">
+                                    <button type="button" class="btn btn-link btn-details" onclick="hide_show_det()">
+                                        <span id="detail_gly2" class="glyphicon glyphicon-triangle-bottom"></span>
+                                        Details
+                                    </button>
+                                </div>
                             </div>
 
-                            <div class="bs-callout bs-callout-success" id="explain_form">
+                            <div class="bs-callout bs-callout-explain" id="explain_form">
                                 <div class="block">
                                     <label class="cust_label" for="top_labels">
                                         Top labels:
-                                        <input type="number" name="top_labels" id="top_labels" value="2" step="1" min="1">
+                                        <input type="number" name="top_labels" id="top_labels" value="2" step="1"
+                                               min="1">
                                     </label>
                                 </div>
-                                 <div class="block">
+                                <div class="block">
                                     <label class="cust_label" for="num_feat">
                                         #Features:
                                         <input type="number" name="num_feat" id="num_feat" value="5" step="1" min="2">

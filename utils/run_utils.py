@@ -36,8 +36,10 @@ def get_eval_results(directory, config_writer, CONFIG_FILE):
     max_acc_index = 0
     min_loss = math.inf
     min_loss_index = 0
-    for k, v in log_file.items():
+    for k in list(log_file.keys()):
+        v = log_file[k]
         if not os.path.isdir(k):
+            del log_file[k]
             continue
         step = str(int(v['global_step']))
         if 'accuracy' in v.keys():
@@ -58,6 +60,7 @@ def get_eval_results(directory, config_writer, CONFIG_FILE):
         except ValueError:
             acc = acc
         results[k.split('/')[-1]] = {'accuracy': acc, 'loss': float("{0:.3f}".format(loss)), 'step': step}
+    json.dump(log_file, open(os.path.join(directory, 'export.log'), 'w'))
     # SAVE best model
     config_writer.add_item('BEST_MODEL', 'max_acc',str(float("{0:.3f}".format(max_acc))))
     config_writer.add_item('BEST_MODEL', 'max_acc_index', str(max_acc_index))

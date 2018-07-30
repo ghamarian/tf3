@@ -34,7 +34,7 @@ def abs_path_of(rel_path):
 
 def find_free_port():
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
-        s.bind(('', 0))
+        s.bind(('0.0.0.0', 0))
         return str(s.getsockname()[1])
 
 

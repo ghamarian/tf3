@@ -13,8 +13,8 @@
     </script>
     <script type="text/javascript">
         var running = {{ running | tojson | safe}};
-        if (running == 'running'){
-             $('.play').toggleClass('active');
+        if (running == 'running') {
+            $('.play').toggleClass('active');
         }
         var handle_key = {};
         handle_key.features = {{ features | tojson | safe }};
@@ -62,10 +62,12 @@
 
             </button>
             <h1>Training Play/Pause </h1>
-            <span class="headline">click/touch the button to train your model.</span>
+{#            <span class="headline">click/touch the button to train your model.</span>#}
         </form>
+        <br>
         <a role="button" name="tensor" class="btn btn-warning" target="_blank"
-           href="/" onclick="javascript:event.target.port={{ port }}"><span class="glyphicon glyphicon-blackboard"></span> TensorBoard</a>
+           href="/" onclick="javascript:event.target.port={{ port }}"><span
+                class="glyphicon glyphicon-blackboard"></span> TensorBoard</a>
         {#    </div>#}
     </div>
 
@@ -75,7 +77,7 @@
             <div class="container">
                 <div class="row">
                     <div class="col-md-3">
-                        <div class="bs-callout bs-callout-primary">
+                        <div class="bs-callout bs-callout-primary feat-div">
                             <h4><span class="glyphicon glyphicon-pencil"></span></h4>
                             <h4>FEATURES VALUES </h4>
                             Add new feature values.
@@ -94,7 +96,7 @@
                             <h4> CHECKPOINTS</h4>
                             Select trained model
                             <br>
-                            <table class="table table-striped">
+                            <table id="stable" class="table table-striped table-sm">
                                 <thead>
                                 <tr>
                                     <th scope="col">Model</th>
@@ -103,10 +105,10 @@
                                     <th scope="col"></th>
                                 </tr>
                                 </thead>
-                                <div class="pre-scrollable">
-                                    <tbody id="tablediv">
-                                    </tbody>
-                                </div>
+
+                                <tbody id="tablediv">
+                                </tbody>
+
                                 <tfoot align="right">
                                 <tr>
                                     <td colspan="4">Clear all models <a data-id=all
@@ -131,7 +133,7 @@
                             <div>
                                 <h4><span class="glyphicon glyphicon-ok"></span></h4>
                                 <h4> PREDICT</h4>
-                                Get the predict value for your feature values
+                                Get a prediction for your selected feature values
                                 <br>
                                 <h3>{{ target }} : <b>
                                     <div id="predict_val"></div>
@@ -140,35 +142,68 @@
                                     PREDICT
                                 </button>
 
-                                <div id="bottom-left">
-                                    <button type="button" class="btn btn-link btn-details" onclick="hide_show_det()">
-                                        <span id="detail_gly2" class="glyphicon glyphicon-triangle-bottom"></span>
-                                        Details
+                                {#                                <div id="bottom-left">#}
+                                {#                                    <button type="button" class="btn btn-link btn-details" onclick="hide_show_det()">#}
+                                {#                                        <span id="detail_gly2" class="glyphicon glyphicon-triangle-bottom"></span>#}
+                                {#                                        Details#}
+                                {#                                    </button>#}
+                                {#                                </div>#}
+                            </div>
+
+                            {#                            <div class="bs-callout bs-callout-explain" id="explain_form">#}
+                            {#                                <div class="block">#}
+                            {#                                    <label class="cust_label" for="top_labels">#}
+                            {#                                        Top labels:#}
+                            {#                                        <input type="number" name="top_labels" id="top_labels" value="2" step="1"#}
+                            {#                                               min="1">#}
+                            {#                                    </label>#}
+                            {#                                </div>#}
+                            {#                                <div class="block">#}
+                            {#                                    <label class="cust_label" for="num_feat">#}
+                            {#                                        #Features:#}
+                            {#                                        <input type="number" name="num_feat" id="num_feat" value="5" step="1" min="2">#}
+                            {#                                    </label>#}
+                            {#                                </div>#}
+                            {#                                <br>#}
+                            {#                                <button type="button" id="explain_button" class="btn btn-primary" disabled>#}
+                            {#                                    EXPLAIN#}
+                            {#                                </button>#}
+                            {#                            </div>#}
+
+                        </div>
+                    </div>
+                    <div class="col-md-3 explain-div">
+                        <div class="bs-callout bs-callout-info">
+                            <div>
+                                <h4><span class="glyphicon glyphicon-eye-open"></span></h4>
+                                <h4> EXPLAIN</h4>
+                                Explain the prediction for your selected feature values
+                                <br>
+                                <div class="bs-callout bs-callout-explain" id="explain_form">
+                                    <div class="block">
+                                        <label class="cust_label" for="top_labels">
+                                            Top labels:
+                                            <input type="number" name="top_labels" id="top_labels" value="2"
+                                                   step="1"
+                                                   min="1">
+                                        </label>
+                                    </div>
+                                    <div class="block">
+                                        <label class="cust_label" for="num_feat">
+                                            #Features:
+                                            <input type="number" name="num_feat" id="num_feat" value="5" step="1"
+                                                   min="2">
+                                        </label>
+                                    </div>
+                                    <br>
+                                    <button type="button" id="explain_button" class="btn btn-primary" disabled>
+                                        EXPLAIN
                                     </button>
                                 </div>
                             </div>
-
-                            <div class="bs-callout bs-callout-explain" id="explain_form">
-                                <div class="block">
-                                    <label class="cust_label" for="top_labels">
-                                        Top labels:
-                                        <input type="number" name="top_labels" id="top_labels" value="2" step="1"
-                                               min="1">
-                                    </label>
-                                </div>
-                                <div class="block">
-                                    <label class="cust_label" for="num_feat">
-                                        #Features:
-                                        <input type="number" name="num_feat" id="num_feat" value="5" step="1" min="2">
-                                    </label>
-                                </div>
-                                <br>
-                                <button type="button" id="explain_button" class="btn btn-primary" disabled>
-                                    EXPLAIN
-                                </button>
-                            </div>
-
                         </div>
+
+
                     </div>
                 </div>
             </div>

@@ -616,4 +616,10 @@ tr:hover td {
 
 .pre-scrollable select {
     width: 150px !important;
+
+    /*// margin-bottom: 200px! important;*/
 }
+.pre-scrollable{
+    min-height: 460px !important;
+}
+

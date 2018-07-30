@@ -22,21 +22,21 @@ function hide_show() {
     }
 }
 
-function hide_show_det() {
-    var x = document.getElementById("explain_form");
-    if (x.style.display === "none") {
-        x.style.display = "block";
-        $('#detail_gly2').removeClass('glyphicon-triangle-bottom').addClass('glyphicon-triangle-top');
-    } else {
-        x.style.display = "none";
-        $('#detail_gly2').removeClass('glyphicon-triangle-top').addClass('glyphicon-triangle-bottom');
-
-    }
-}
+// function hide_show_det() {
+//     var x = document.getElementById("explain_form");
+//     if (x.style.display === "none") {
+//         x.style.display = "block";
+//         $('#detail_gly2').removeClass('glyphicon-triangle-bottom').addClass('glyphicon-triangle-top');
+//     } else {
+//         x.style.display = "none";
+//         $('#detail_gly2').removeClass('glyphicon-triangle-top').addClass('glyphicon-triangle-bottom');
+//
+//     }
+// }
 
 $(document).ready(function () {
-    var x = document.getElementById("explain_form");
-    x.style.display = "none";
+    // var x = document.getElementById("explain_form");
+    // x.style.display = "none";
     $('#tablediv').on('click change', 'input:radio[name="radiob"]', function () {
         $('#predict_button').prop('disabled', false);
         $('#explain_button').prop('disabled', false);

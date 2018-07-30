@@ -170,6 +170,9 @@ class BestExporter(Exporter):
           full_event_file_pattern)
     if os.path.isfile(os.path.join(export_path, 'export.log')):
       self._log = json.load(open(os.path.join(export_path, 'export.log'), 'r'))
+      if len(self._log) == 0:
+        self._best_eval_result = None
+
 
     if self._best_eval_result is None or self._compare_fn(
         best_eval_result=self._best_eval_result,

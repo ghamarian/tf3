@@ -30,7 +30,7 @@ class ThreadHandler:
         config_path = config_reader.read_config(config_file).all()['checkpoint_dir']
         logging.debug('Starting tensor board')
         time.sleep(3)
-        pro = "tensorboard --logdir=" + config_path + " --port=" + port
+        pro = "tensorboard --host=0.0.0.0 --logdir=" + config_path + " --port=" + port
         subprocess.call(pro, shell=True)
         logging.debug('Exiting tensor board')
 

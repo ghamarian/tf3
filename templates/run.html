@@ -12,6 +12,10 @@
         $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
     </script>
     <script type="text/javascript">
+        var running = {{ running | tojson | safe}};
+        if (running == 'running'){
+             $('.play').toggleClass('active');
+        }
         var handle_key = {};
         handle_key.features = {{ features | tojson | safe }};
         handle_key.types = {{ types | tojson | safe }};

@@ -76,7 +76,7 @@ class Classifier:
                 if df[c].dtype == 'object':
                     if feature_types[c] == 'hash':
                         try:
-                            features[c] = float(features[c])
+                            features[c] = int(float(features[c]))
                         except:
                             pass
                     df[c] = df[c].astype('category')
@@ -102,6 +102,9 @@ class Classifier:
 
     def explain(self, features, target, df, feature_types, num_features, top_labels):
         del features[target]
+        for c in feature_types.index:
+            if feature_types[c] == 'hash':
+                del features[c]
         feat_array = self._to_array(features, feature_types, df.copy())
 
         explainer = self._create_explainer(features, df, feature_types[target])

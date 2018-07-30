@@ -143,9 +143,13 @@ def run():
     logfile = os.path.join(all_params_config['PATHS']['log_dir'], 'tensorflow.log')
     try:
         sess.set('log_fp', open(logfile))
-    except:
+    except FileNotFoundError:
         open(logfile, 'a').close()
         sess.set('log_fp', open(logfile))
+    try:
+        sess.get('status')
+    except KeyError:
+        sess.set('status', 'paused')
 
     labels = feature_util.get_target_labels(sess.get('target'), sess.get('data').Category[sess.get('target')],
                                             sess.get('fs'))
@@ -154,6 +158,10 @@ def run():
     checkpoints = run_utils.get_eval_results(export_dir, sess.get_writer(), sess.get('config_file'))
     th.run_tensor_board(session['user'], sess.get('config_file'))
     if request.method == 'POST':
+        if request.form['action'] == 'run':
+            sess.set('status', 'running')
+        else:
+            sess.set('status', 'paused')
 
         dtypes = sess.get('fs').group_by(sess.get('category_list'))
         th.handle_request(request.form['action'], all_params_config, sess.get('features'), sess.get('target'), labels,
@@ -164,7 +172,8 @@ def run():
     sfeatures = feature_util.remove_target(sess.get('defaults'), sess.get('target'))
     return render_template('run.html', page=5, features=sfeatures, target=sess.get('target'),
                            types=run_utils.get_html_types(dict_types), categoricals=categoricals,
-                           checkpoints=checkpoints, port=th.get_port(session['user'], sess.get('config_file')))
+                           checkpoints=checkpoints, port=th.get_port(session['user'], sess.get('config_file')),
+                           running=sess.get('status'))
 
 
 @app.route('/predict', methods=['POST'])
@@ -239,7 +248,7 @@ def refresh():
         export_dir = config_reader.read_config(CONFIG_FILE).export_dir()
         checkpoints = run_utils.get_eval_results(export_dir, sess.get_writer(), CONFIG_FILE)
         return jsonify(checkpoints=checkpoints)
-    except:
+    except KeyError:
         return jsonify(checkpoints='')
 
 
@@ -248,7 +257,7 @@ def refresh():
 def stream():
     try:
         return jsonify(data=sess.get('log_fp').read())
-    except:
+    except KeyError:
         return ''
 
 

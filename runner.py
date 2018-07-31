@@ -1,6 +1,7 @@
 from classifier import Classifier, KerasClassifier
 from reader.train_csv_reader import TrainCSVReader
 from reader.validation_csv_reader import ValidationCSVReader
+from tensorflow.python.framework.errors import InvalidArgumentError
 
 
 class Runner:
@@ -29,20 +30,20 @@ class Runner:
         try:
             self.classifier.run()
         # except tf.errors.NotFoundError:
-        except:
+        except InvalidArgumentError:
             self.classifier.clear_checkpoint()
             self.classifier.run()
 
     def predict(self, features, target, df):
         try:
             result = self.classifier.predict(features, target, df)
-        except:
+        except InvalidArgumentError:
             result = None
         return result
 
     def explain(self, features, target, df, feature_types, num_features, top_labels):
         try:
             result = self.classifier.explain(features, target, df, feature_types, num_features, top_labels)
-        except:
+        except InvalidArgumentError:
             result = None
         return result

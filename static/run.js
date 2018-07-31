@@ -35,17 +35,21 @@ function hide_show() {
 // }
 
 $(document).ready(function () {
+
     // var x = document.getElementById("explain_form");
     // x.style.display = "none";
     $('#tablediv').on('click change', 'input:radio[name="radiob"]', function () {
         $('#predict_button').prop('disabled', false);
-        $('#explain_button').prop('disabled', false);
+        if (localStorage.getItem('has_hash') != 'true') {
+            $('#explain_button').prop('disabled', false);
+        }
+
         $('#defaultCheck2').prop('disabled', false);
     });
 
     var output = document.getElementById('log');
     setInterval(function () {
-         $.ajax({
+        $.ajax({
             url: "/stream",
             type: 'GET',
             dataType: 'json',
@@ -54,15 +58,15 @@ $(document).ready(function () {
                 json: 'application/json',
             },
             data: JSON.stringify(""),
-             success: function(data){
+            success: function (data) {
 
-                if (data.data != ''){
+                if (data.data != '') {
                     output.append(data.data)
                     $('#log').scrollTop($('#log')[0].scrollHeight);
                 }
 
             }
-         })
+        })
     }, 1000);
 
     setInterval(function () {
@@ -80,7 +84,9 @@ $(document).ready(function () {
                 var $selected = $radios.filter(':checked');
                 if ($selected.val()) {
                     $('#predict_button').prop('disabled', false);
-                    $('#explain_button').prop('disabled', false);
+                    if (localStorage.getItem('has_hash') != 'true') {
+                        $('#explain_button').prop('disabled', false);
+                    }
                     $('#defaultCheck2').prop('disabled', false);
                 } else {
                     $('#predict_button').prop('disabled', true);
@@ -184,7 +190,9 @@ function ConfirmDelete(elem, all) {
                     var $selected = $radios.filter(':checked');
                     if ($selected.val() && $selected.val() != $(elem).attr('data-id')) {
                         $('#predict_button').prop('disabled', false);
-                        $('#explain_button').prop('disabled', false);
+                        if (localStorage.getItem('has_hash') != 'true') {
+                            $('#explain_button').prop('disabled', false);
+                        }
                         $('#defaultCheck2').prop('disabled', false);
                     } else {
                         $('#predict_button').prop('disabled', true);

@@ -12,8 +12,16 @@
         $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
     </script>
     <script type="text/javascript">
+        var hh = {{has_hash | tojson | safe}};
+        localStorage.setItem('has_hash', hh);
+        if(hh=='true'){
+            $errormsg = "<span style='color: red'>* this function cannot be used with hash features</span>";
+             $("#error_exp").addClass('error').html($errormsg)
+        }
+
         var running = {{ running | tojson | safe}};
         if (running == 'running') {
+
             $('.play').toggleClass('active');
         }
         var handle_key = {};
@@ -199,6 +207,7 @@
                                     <button type="button" id="explain_button" class="btn btn-primary" disabled>
                                         EXPLAIN
                                     </button>
+                                    <div id="error_exp" class="bottom-left"></div>
                                 </div>
                             </div>
                         </div>

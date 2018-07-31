@@ -170,10 +170,14 @@ def run():
     dict_types, categoricals = run_utils.get_dictionaries(sess.get('defaults'), sess.get('category_list'),
                                                           sess.get('fs'), sess.get('target'))
     sfeatures = feature_util.remove_target(sess.get('defaults'), sess.get('target'))
+    has_hash = 'false'
+    if any(k in sess.get('category_list') for k in ("hash", "int-hash")):
+        has_hash = 'true'
+
     return render_template('run.html', page=5, features=sfeatures, target=sess.get('target'),
                            types=run_utils.get_html_types(dict_types), categoricals=categoricals,
                            checkpoints=checkpoints, port=th.get_port(session['user'], sess.get('config_file')),
-                           running=sess.get('status'))
+                           running=sess.get('status'), has_hash=has_hash)
 
 
 @app.route('/predict', methods=['POST'])

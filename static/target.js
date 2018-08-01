@@ -10,34 +10,36 @@ $(document).ready(function () {
             }
         ],
         'ordering': false,
-        'select': 'multi'
+        'select': 'api'
     });
 
     $('#submit').prop('disabled', true);
 
-    let selected = 0;
-
     $('#target tbody').on('click', 'tr', function () {
-        if ($(this).hasClass('selected')) {
-            selected -= 1;
-            if (selected === 0) {
-                $('#submit').prop('disabled', true);
-            }
+        if (table.row(this, {selected: true}).any()) {
+            table.row(this).deselect();
         }
         else {
-            $(this).addClass('selected');
-            selected += 1;
-            if (selected > 0) {
-                $('#submit').prop('disabled', false);
-            }
+            table.row(this).select();
+        }
+
+        if (table.rows({selected: true}).any()) {
+            $('#submit').prop('disabled', false);
+        }
+        else {
+            $('#submit').prop('disabled', true);
         }
     });
 
     $('form').submit(function () {
-        let selected_row = table.row('.selected').data();
-        var input = $("<input>")
+        // let selected_rows = table.rows({selected: true}).data().map
+        let selected_rows = [];
+        table.rows({selected: true}).every(function (rowIdx, tableLoop, rowLoop) {
+            selected_rows.push(this.data()[0]);
+        });
+        let input = $("<input>")
             .attr("type", "hidden")
-            .attr("name", "selected_row").val(JSON.stringify(selected_row));
+            .attr("name", "selected_rows").val(JSON.stringify(selected_rows));
         $('form').append($(input));
     });
 

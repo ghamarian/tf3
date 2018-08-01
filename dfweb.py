@@ -106,7 +106,7 @@ def feature():
 def target():
     form = Submit()
     if form.validate_on_submit():
-        sess.set_target(json.loads(request.form['selected_row'])[0])
+        sess.set_target(json.loads(request.form['selected_rows'])[0])
         if 'split_df' in sess.get_config():
             train_file, validation_file = preprocessing.split_train_test(sess.get('split_df'), sess.get('file'),
                                                                          sess.get('target'), sess.get('df'))
